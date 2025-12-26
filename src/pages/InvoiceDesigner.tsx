@@ -150,18 +150,14 @@ const InvoiceDesigner = () => {
       </Helmet>
 
       <MainLayout>
-        <div className="p-6">
+        <div className="p-4 lg:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Palette className="w-8 h-8 text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">تصميم الفاتورة</h1>
+              <Palette className="w-6 h-6 lg:w-8 lg:h-8 text-primary" />
+              <h1 className="text-xl lg:text-2xl font-bold text-foreground">تصميم الفاتورة</h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => setShowPreview(true)}>
-                <Eye size={18} className="ml-2" />
-                معاينة
-              </Button>
               <Button onClick={handleSave} disabled={createTemplate.isPending || updateTemplate.isPending}>
                 <Save size={18} className="ml-2" />
                 حفظ
@@ -169,21 +165,22 @@ const InvoiceDesigner = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Templates List */}
-            <div className="bg-card rounded-lg p-4 shadow-lg border border-border">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold">القوالب</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-6">
+            {/* Templates List - Left Column */}
+            <div className="xl:col-span-2 bg-card rounded-lg p-3 lg:p-4 shadow-lg border border-border h-fit">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold text-sm lg:text-base">القوالب</h2>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setSelectedTemplate(null)}
+                  className="h-8 w-8 p-0"
                 >
-                  <Plus size={16} />
+                  <Plus size={14} />
                 </Button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[200px] xl:max-h-[400px] overflow-y-auto">
                 {isLoading ? (
                   <p className="text-muted-foreground text-sm">جاري التحميل...</p>
                 ) : templates?.length === 0 ? (
@@ -193,15 +190,15 @@ const InvoiceDesigner = () => {
                     <div
                       key={template.id}
                       onClick={() => setSelectedTemplate(template)}
-                      className={`p-3 rounded-lg cursor-pointer transition-all ${
+                      className={`p-2 lg:p-3 rounded-lg cursor-pointer transition-all text-sm ${
                         selectedTemplate?.id === template.id
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted hover:bg-muted/80"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{template.name}</span>
-                        {template.is_default && <Star size={14} className="fill-current" />}
+                        <span className="font-medium truncate">{template.name}</span>
+                        {template.is_default && <Star size={12} className="fill-current shrink-0" />}
                       </div>
                     </div>
                   ))
@@ -209,65 +206,71 @@ const InvoiceDesigner = () => {
               </div>
             </div>
 
-            {/* Settings Panel */}
-            <div className="lg:col-span-2 bg-card rounded-lg p-4 shadow-lg border border-border">
-              <h2 className="font-bold mb-4 flex items-center gap-2">
-                <Settings2 size={20} />
+            {/* Settings Panel - Middle Column */}
+            <div className="xl:col-span-5 bg-card rounded-lg p-3 lg:p-4 shadow-lg border border-border overflow-y-auto max-h-[calc(100vh-180px)]">
+              <h2 className="font-bold mb-3 flex items-center gap-2 text-sm lg:text-base">
+                <Settings2 size={18} />
                 إعدادات القالب
               </h2>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Template Name */}
                 <div>
-                  <Label>اسم القالب</Label>
+                  <Label className="text-sm">اسم القالب</Label>
                   <Input
                     value={templateName}
                     onChange={(e) => setTemplateName(e.target.value)}
+                    className="h-9"
                   />
                 </div>
 
                 {/* Company Info */}
-                <div className="p-4 bg-muted/30 rounded-lg space-y-3">
-                  <h3 className="font-semibold">معلومات الشركة</h3>
-                  <div>
-                    <Label>اسم الشركة</Label>
-                    <Input
-                      value={settings.companyName}
-                      onChange={(e) => updateSetting("companyName", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>العنوان</Label>
-                    <Input
-                      value={settings.companyAddress}
-                      onChange={(e) => updateSetting("companyAddress", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>الهاتف</Label>
-                    <Input
-                      value={settings.companyPhone}
-                      onChange={(e) => updateSetting("companyPhone", e.target.value)}
-                    />
+                <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                  <h3 className="font-semibold text-sm">معلومات الشركة</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">اسم الشركة</Label>
+                      <Input
+                        value={settings.companyName}
+                        onChange={(e) => updateSetting("companyName", e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">العنوان</Label>
+                      <Input
+                        value={settings.companyAddress}
+                        onChange={(e) => updateSetting("companyAddress", e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">الهاتف</Label>
+                      <Input
+                        value={settings.companyPhone}
+                        onChange={(e) => updateSetting("companyPhone", e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {/* Display Options */}
-                <div className="p-4 bg-muted/30 rounded-lg space-y-3">
-                  <h3 className="font-semibold">خيارات العرض</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                  <h3 className="font-semibold text-sm">خيارات العرض</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {[
-                      { key: "showLogo", label: "عرض الشعار" },
-                      { key: "showTime", label: "عرض الوقت" },
-                      { key: "showClientName", label: "عرض اسم العميل" },
-                      { key: "showPaymentMethod", label: "عرض طريقة الدفع" },
-                      { key: "showItemNumber", label: "عرض رقم الصنف" },
-                      { key: "showNotes", label: "عرض الملاحظات" },
-                      { key: "showSignatures", label: "عرض التوقيعات" },
-                      { key: "showFooter", label: "عرض التذييل" },
+                      { key: "showLogo", label: "الشعار" },
+                      { key: "showTime", label: "الوقت" },
+                      { key: "showClientName", label: "العميل" },
+                      { key: "showPaymentMethod", label: "الدفع" },
+                      { key: "showItemNumber", label: "رقم الصنف" },
+                      { key: "showNotes", label: "الملاحظات" },
+                      { key: "showSignatures", label: "التوقيعات" },
+                      { key: "showFooter", label: "التذييل" },
                     ].map((option) => (
-                      <div key={option.key} className="flex items-center justify-between">
-                        <Label>{option.label}</Label>
+                      <div key={option.key} className="flex items-center justify-between bg-background rounded p-2">
+                        <Label className="text-xs">{option.label}</Label>
                         <Switch
                           checked={settings[option.key as keyof TemplateSettings] as boolean}
                           onCheckedChange={(checked) =>
@@ -279,56 +282,49 @@ const InvoiceDesigner = () => {
                   </div>
                 </div>
 
-                {/* Colors */}
-                <div className="p-4 bg-muted/30 rounded-lg space-y-3">
-                  <h3 className="font-semibold">الألوان</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>اللون الرئيسي</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={settings.headerColor}
-                          onChange={(e) => updateSetting("headerColor", e.target.value)}
-                          className="w-12 h-10 p-1"
-                        />
-                        <Input
-                          value={settings.headerColor}
-                          onChange={(e) => updateSetting("headerColor", e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label>اللون الثانوي</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={settings.accentColor}
-                          onChange={(e) => updateSetting("accentColor", e.target.value)}
-                          className="w-12 h-10 p-1"
-                        />
-                        <Input
-                          value={settings.accentColor}
-                          onChange={(e) => updateSetting("accentColor", e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
+                {/* Colors, Size & Paper */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div>
+                    <Label className="text-xs">اللون الرئيسي</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="color"
+                        value={settings.headerColor}
+                        onChange={(e) => updateSetting("headerColor", e.target.value)}
+                        className="w-10 h-8 p-0.5"
+                      />
+                      <Input
+                        value={settings.headerColor}
+                        onChange={(e) => updateSetting("headerColor", e.target.value)}
+                        className="flex-1 h-8 text-xs"
+                      />
                     </div>
                   </div>
-                </div>
-
-                {/* Size & Font */}
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>حجم الخط</Label>
+                    <Label className="text-xs">اللون الثانوي</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="color"
+                        value={settings.accentColor}
+                        onChange={(e) => updateSetting("accentColor", e.target.value)}
+                        className="w-10 h-8 p-0.5"
+                      />
+                      <Input
+                        value={settings.accentColor}
+                        onChange={(e) => updateSetting("accentColor", e.target.value)}
+                        className="flex-1 h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">حجم الخط</Label>
                     <Select
                       value={settings.fontSize}
                       onValueChange={(value: "small" | "medium" | "large") =>
                         updateSetting("fontSize", value)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -339,20 +335,20 @@ const InvoiceDesigner = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label>حجم الورق</Label>
+                    <Label className="text-xs">حجم الورق</Label>
                     <Select
                       value={settings.paperSize}
                       onValueChange={(value: "a4" | "a5" | "thermal") =>
                         updateSetting("paperSize", value)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="a4">A4</SelectItem>
                         <SelectItem value="a5">A5</SelectItem>
-                        <SelectItem value="thermal">حراري (80mm)</SelectItem>
+                        <SelectItem value="thermal">حراري</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -360,27 +356,53 @@ const InvoiceDesigner = () => {
 
                 {/* Footer Text */}
                 <div>
-                  <Label>نص التذييل</Label>
+                  <Label className="text-xs">نص التذييل</Label>
                   <Textarea
                     value={settings.footerText}
                     onChange={(e) => updateSetting("footerText", e.target.value)}
                     rows={2}
+                    className="text-sm"
                   />
+                </div>
+
+                {/* Elements Order */}
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <h3 className="font-semibold text-sm mb-2">ترتيب العناصر (اسحب للترتيب)</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+                    {settings.elementsOrder.map((element) => (
+                      <div
+                        key={element}
+                        draggable
+                        onDragStart={() => handleDragStart(element)}
+                        onDragOver={(e) => handleDragOver(e, element)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center gap-1 p-2 rounded cursor-move transition-all text-xs ${
+                          draggedElement === element
+                            ? "bg-primary/20 border border-primary"
+                            : "bg-background hover:bg-muted"
+                        }`}
+                      >
+                        <GripVertical size={12} className="text-muted-foreground shrink-0" />
+                        <span className="truncate">{elementLabels[element]}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Actions */}
                 {selectedTemplate && (
-                  <div className="flex gap-2 pt-4 border-t">
+                  <div className="flex gap-2 pt-3 border-t">
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={handleSetDefault}
                       disabled={selectedTemplate.is_default}
                     >
-                      <Star size={16} className="ml-2" />
-                      تعيين كافتراضي
+                      <Star size={14} className="ml-1" />
+                      افتراضي
                     </Button>
-                    <Button variant="destructive" onClick={handleDelete}>
-                      <Trash2 size={16} className="ml-2" />
+                    <Button variant="destructive" size="sm" onClick={handleDelete}>
+                      <Trash2 size={14} className="ml-1" />
                       حذف
                     </Button>
                   </div>
@@ -388,45 +410,32 @@ const InvoiceDesigner = () => {
               </div>
             </div>
 
-            {/* Elements Order */}
-            <div className="bg-card rounded-lg p-4 shadow-lg border border-border">
-              <h2 className="font-bold mb-4">ترتيب العناصر</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                اسحب العناصر لإعادة ترتيبها
-              </p>
-
-              <div className="space-y-2">
-                {settings.elementsOrder.map((element) => (
-                  <div
-                    key={element}
-                    draggable
-                    onDragStart={() => handleDragStart(element)}
-                    onDragOver={(e) => handleDragOver(e, element)}
-                    onDragEnd={handleDragEnd}
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-move transition-all ${
-                      draggedElement === element
-                        ? "bg-primary/20 border-2 border-primary"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
-                  >
-                    <GripVertical size={16} className="text-muted-foreground" />
-                    <span>{elementLabels[element]}</span>
-                  </div>
-                ))}
+            {/* Live Preview - Right Column */}
+            <div className="xl:col-span-5 bg-card rounded-lg p-3 lg:p-4 shadow-lg border border-border">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold text-sm lg:text-base flex items-center gap-2">
+                  <Eye size={18} />
+                  معاينة مباشرة
+                </h2>
+                <span className="text-xs text-muted-foreground">
+                  {settings.paperSize.toUpperCase()}
+                </span>
+              </div>
+              
+              <div className="border rounded-xl bg-gray-100 p-3 overflow-auto max-h-[calc(100vh-240px)]">
+                <div 
+                  className={`bg-white shadow mx-auto transition-all ${
+                    settings.paperSize === "thermal" ? "max-w-[80mm]" : 
+                    settings.paperSize === "a5" ? "max-w-[148mm]" : "max-w-[210mm]"
+                  }`}
+                  style={{ transform: "scale(0.85)", transformOrigin: "top center" }}
+                >
+                  <InvoicePreview settings={settings} />
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Preview Modal */}
-        <Dialog open={showPreview} onOpenChange={setShowPreview}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle>معاينة الفاتورة</DialogTitle>
-            </DialogHeader>
-            <InvoicePreview settings={settings} />
-          </DialogContent>
-        </Dialog>
       </MainLayout>
     </>
   );
@@ -439,12 +448,6 @@ const InvoicePreview = ({ settings }: { settings: TemplateSettings }) => {
     medium: "text-base",
     large: "text-lg",
   }[settings.fontSize];
-
-  const paperWidthClass = {
-    a4: "max-w-[210mm]",
-    a5: "max-w-[148mm]",
-    thermal: "max-w-[80mm]",
-  }[settings.paperSize];
 
   const renderElement = (element: string) => {
     switch (element) {
@@ -499,6 +502,14 @@ const InvoicePreview = ({ settings }: { settings: TemplateSettings }) => {
                 <td className="border p-2 text-center">100.00</td>
                 <td className="border p-2 text-center font-bold">200.00</td>
               </tr>
+              <tr className="bg-white">
+                <td className="border p-2 text-center">2</td>
+                {settings.showItemNumber && <td className="border p-2">002</td>}
+                <td className="border p-2">منتج آخر</td>
+                <td className="border p-2 text-center">1</td>
+                <td className="border p-2 text-center">150.00</td>
+                <td className="border p-2 text-center font-bold">150.00</td>
+              </tr>
             </tbody>
           </table>
         );
@@ -512,7 +523,7 @@ const InvoicePreview = ({ settings }: { settings: TemplateSettings }) => {
                 style={{ backgroundColor: settings.headerColor }}
               >
                 <span>الإجمالي:</span>
-                <span>200.00</span>
+                <span>350.00</span>
               </div>
             </div>
           </div>
@@ -557,7 +568,7 @@ const InvoicePreview = ({ settings }: { settings: TemplateSettings }) => {
 
   return (
     <div
-      className={`bg-white text-black p-6 mx-auto ${fontSizeClass} ${paperWidthClass}`}
+      className={`bg-white text-black p-6 ${fontSizeClass}`}
       dir="rtl"
     >
       {settings.elementsOrder.map((element) => (
