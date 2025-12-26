@@ -30,6 +30,46 @@ export const useProducts = () => {
   });
 };
 
+export const useNextProductNumber = () => {
+  return useQuery({
+    queryKey: ["products", "nextNumber"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("item_number")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const lastNumber = parseInt(data[0].item_number) || 0;
+        return String(lastNumber + 1).padStart(4, "0");
+      }
+      
+      return "0001";
+    },
+  });
+};
+
+export const useProductCategories = () => {
+  return useQuery({
+    queryKey: ["products", "categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("category")
+        .not("category", "is", null);
+      
+      if (error) throw error;
+      
+      // Get unique categories
+      const categories = [...new Set(data.map(p => p.category).filter(Boolean))] as string[];
+      return categories.sort();
+    },
+  });
+};
+
 export const useProductSearch = (searchTerm: string) => {
   return useQuery({
     queryKey: ["products", "search", searchTerm],

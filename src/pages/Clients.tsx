@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Helmet } from "react-helmet-async";
+import { ClientImportExport } from "@/components/clients/ClientImportExport";
 
 const Clients = () => {
   const { data: clients, isLoading } = useClients();
@@ -105,6 +106,10 @@ const Clients = () => {
               <h1 className="text-2xl font-bold text-foreground">إدارة العملاء</h1>
             </div>
             
+            <div className="flex items-center gap-3">
+              {/* Import/Export */}
+              <ClientImportExport />
+            
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
               setIsDialogOpen(open);
               if (!open) resetForm();
@@ -179,6 +184,7 @@ const Clients = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {/* Search */}
