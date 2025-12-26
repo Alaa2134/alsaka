@@ -13,9 +13,12 @@ import {
   ChevronLeft,
   Sparkles,
   Building2,
-  RotateCcw
+  RotateCcw,
+  Moon,
+  Sun
 } from "lucide-react";
 import { useAuth, roleLabels, AppRole } from "@/contexts/AuthContext";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const navItems: { path: string; label: string; icon: typeof FileText; roles: AppRole[] }[] = [
@@ -34,9 +37,14 @@ const navItems: { path: string; label: string; icon: typeof FileText; roles: App
 export const Sidebar = () => {
   const location = useLocation();
   const { user, logout, hasPermission } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const filteredNavItems = navItems.filter(item => hasPermission(item.roles));
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   return (
     <aside className={`${isCollapsed ? "w-20" : "w-72"} bg-card border-l border-border min-h-screen flex flex-col shadow-soft transition-all duration-300 relative`}>
@@ -103,8 +111,38 @@ export const Sidebar = () => {
         })}
       </nav>
 
-      {/* Logout Button */}
-      <div className={`${isCollapsed ? "p-3" : "p-5"} border-t border-border`}>
+      {/* Theme Toggle & Logout */}
+      <div className={`${isCollapsed ? "p-3" : "p-5"} border-t border-border space-y-2`}>
+        {/* Theme Toggle */}
+        {isCollapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center justify-center w-full p-3 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+              >
+                {theme === "dark" ? <Sun size={22} className="text-yellow-500" /> : <Moon size={22} />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="font-semibold">
+              {theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-all font-semibold group"
+          >
+            {theme === "dark" ? (
+              <Sun size={22} className="text-yellow-500 group-hover:scale-110 transition-transform" />
+            ) : (
+              <Moon size={22} className="group-hover:scale-110 transition-transform" />
+            )}
+            <span>{theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}</span>
+          </button>
+        )}
+
+        {/* Logout */}
         {isCollapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>

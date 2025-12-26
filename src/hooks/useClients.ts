@@ -70,8 +70,9 @@ export const useNextClientNumber = () => {
   });
 };
 
-export const useCreateClient = () => {
+export const useCreateClient = (options?: { showToast?: boolean }) => {
   const queryClient = useQueryClient();
+  const showToast = options?.showToast ?? true;
   
   return useMutation({
     mutationFn: async (client: Omit<Client, "id" | "created_at" | "updated_at">) => {
@@ -86,10 +87,14 @@ export const useCreateClient = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast.success("تم إضافة العميل بنجاح");
+      if (showToast) {
+        toast.success("تم إضافة العميل بنجاح");
+      }
     },
     onError: (error: Error) => {
-      toast.error(`خطأ في إضافة العميل: ${error.message}`);
+      if (showToast) {
+        toast.error(`خطأ في إضافة العميل: ${error.message}`);
+      }
     },
   });
 };

@@ -142,14 +142,33 @@ export const useSalesReport = (startDate: string, endDate: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*")
+        .select("*, invoice_items(*)")
         .gte("invoice_date", startDate)
         .lte("invoice_date", endDate)
         .order("invoice_date");
       
       if (error) throw error;
-      return data as Invoice[];
+      return data as (Invoice & { invoice_items: InvoiceItem[] })[];
     },
     enabled: !!startDate && !!endDate,
+  });
+};
+
+export const useClientInvoices = (clientId: string | null) => {
+  return useQuery({
+    queryKey: ["clientInvoices", clientId],
+    queryFn: async () => {
+      if (!clientId) return [];
+      
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*, invoice_items(*)")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId,
   });
 };
