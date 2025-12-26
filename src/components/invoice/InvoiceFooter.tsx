@@ -1,4 +1,4 @@
-import { Plus, FileText, Printer, Eye, BarChart3, ChevronRight, ChevronLeft, ChevronsRight, ChevronsLeft, Save } from "lucide-react";
+import { Plus, FileText, Printer, Eye, BarChart3, ChevronRight, ChevronLeft, ChevronsRight, ChevronsLeft, Save, MessageSquare } from "lucide-react";
 
 interface InvoiceFooterProps {
   totalAmount: number;
@@ -22,94 +22,98 @@ export const InvoiceFooter = ({
   onNotesChange,
 }: InvoiceFooterProps) => {
   return (
-    <div className="mt-6 space-y-4 animate-fade-in">
+    <div className="mt-8 space-y-6 animate-fade-in">
       {/* Total and Add Button Row */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Total Amount */}
-        <div className="flex items-center gap-3">
-          <span className="font-bold text-lg text-foreground">اجمالي الفاتورة</span>
-          <div className="bg-invoice-input-field border-2 border-primary rounded-md px-6 py-2 min-w-[150px] text-center">
-            <span className="text-2xl font-bold text-primary">{totalAmount.toFixed(2)}</span>
+        <div className="flex items-center gap-4">
+          <span className="font-bold text-lg text-foreground">إجمالي الفاتورة</span>
+          <div className="bg-card border-3 border-primary rounded-xl px-8 py-3 min-w-[180px] text-center shadow-glow">
+            <span className="text-3xl font-bold gradient-text">{totalAmount.toFixed(2)}</span>
+            <span className="text-sm text-muted-foreground mr-2">ج.م</span>
           </div>
         </div>
 
         {/* Add Item Button */}
         <button
           onClick={onAddItem}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-semibold hover:bg-primary/90 transition-all shadow-md hover:shadow-lg"
+          className="flex items-center gap-2 gradient-primary text-primary-foreground px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-glow hover:shadow-glow-lg group"
         >
-          <Plus size={20} />
+          <Plus size={22} className="group-hover:scale-110 transition-transform" />
           إضافة صنف
         </button>
       </div>
 
       {/* Notes Section */}
-      <div className="flex items-start gap-3">
-        <label className="font-semibold text-foreground pt-2 min-w-[80px]">ملاحظات</label>
+      <div className="bg-muted/50 rounded-xl p-4">
+        <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2 mb-3">
+          <MessageSquare size={16} />
+          ملاحظات
+        </label>
         <textarea
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           placeholder="أضف ملاحظاتك هنا..."
-          className="flex-1 bg-invoice-input-field border border-border rounded-md px-3 py-2 text-foreground min-h-[80px] resize-none focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+          className="w-full bg-card border-2 border-border rounded-xl px-4 py-3 text-foreground min-h-[100px] resize-none focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
         />
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
-        {/* Navigation Buttons */}
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-border">
+        {/* Primary Actions */}
+        <div className="flex items-center gap-3">
           {onSave && (
             <button
               onClick={onSave}
               disabled={isSaving}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-700 transition-all shadow-md disabled:opacity-50"
+              className="flex items-center gap-2 bg-success text-success-foreground px-5 py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-md disabled:opacity-50 group"
             >
-              <Save size={18} />
+              <Save size={20} className="group-hover:scale-110 transition-transform" />
               {isSaving ? "جاري الحفظ..." : "حفظ الفاتورة"}
             </button>
           )}
 
           <button
             onClick={onNewInvoice}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md font-semibold hover:bg-primary/90 transition-all shadow-md"
+            className="flex items-center gap-2 gradient-primary text-primary-foreground px-5 py-3 rounded-xl font-bold hover:opacity-90 transition-all shadow-md group"
           >
-            <FileText size={18} />
+            <FileText size={20} className="group-hover:scale-110 transition-transform" />
             فاتورة جديدة
           </button>
 
           {/* Navigation Arrows */}
-          <div className="flex items-center gap-1 bg-invoice-nav-btn rounded-md overflow-hidden">
-            <button className="p-2 hover:bg-invoice-nav-btn-hover transition-colors">
-              <ChevronsRight size={18} />
+          <div className="flex items-center bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+            <button className="p-3 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+              <ChevronsRight size={20} />
             </button>
-            <button className="p-2 hover:bg-invoice-nav-btn-hover transition-colors border-r border-border/30">
-              <ChevronRight size={18} />
+            <button className="p-3 hover:bg-muted transition-colors border-r border-border text-muted-foreground hover:text-foreground">
+              <ChevronRight size={20} />
             </button>
-            <button className="p-2 hover:bg-invoice-nav-btn-hover transition-colors border-r border-border/30">
-              <ChevronLeft size={18} />
+            <button className="p-3 hover:bg-muted transition-colors border-r border-border text-muted-foreground hover:text-foreground">
+              <ChevronLeft size={20} />
             </button>
-            <button className="p-2 hover:bg-invoice-nav-btn-hover transition-colors border-r border-border/30">
-              <ChevronsLeft size={18} />
+            <button className="p-3 hover:bg-muted transition-colors border-r border-border text-muted-foreground hover:text-foreground">
+              <ChevronsLeft size={20} />
             </button>
           </div>
         </div>
 
-        {/* Print and View Buttons */}
-        <div className="flex items-center gap-2">
+        {/* Secondary Actions */}
+        <div className="flex items-center gap-3">
           <button
             onClick={onPrint}
-            className="flex items-center gap-2 bg-invoice-nav-btn text-foreground px-4 py-2 rounded-md font-semibold hover:bg-invoice-nav-btn-hover transition-all"
+            className="flex items-center gap-2 bg-secondary text-secondary-foreground px-5 py-3 rounded-xl font-semibold hover:bg-secondary/80 transition-all group"
           >
-            <Printer size={18} />
+            <Printer size={20} className="group-hover:scale-110 transition-transform" />
             طباعة
           </button>
-          <button className="flex flex-col items-center gap-1 bg-invoice-nav-btn text-foreground px-4 py-2 rounded-md font-semibold hover:bg-invoice-nav-btn-hover transition-all">
-            <Eye size={18} />
-            <span className="text-xs">معاينة الفاتورة</span>
+          <button className="flex items-center gap-2 bg-secondary text-secondary-foreground px-5 py-3 rounded-xl font-semibold hover:bg-secondary/80 transition-all group">
+            <Eye size={20} className="group-hover:scale-110 transition-transform" />
+            معاينة
           </button>
-          <button className="flex flex-col items-center gap-1 bg-invoice-nav-btn text-foreground px-4 py-2 rounded-md font-semibold hover:bg-invoice-nav-btn-hover transition-all">
-            <BarChart3 size={18} />
-            <span className="text-xs">معاينة الأوامر بالكميات</span>
+          <button className="flex items-center gap-2 bg-secondary text-secondary-foreground px-5 py-3 rounded-xl font-semibold hover:bg-secondary/80 transition-all group">
+            <BarChart3 size={20} className="group-hover:scale-110 transition-transform" />
+            الأوامر
           </button>
         </div>
       </div>

@@ -10,7 +10,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto">
-        {children}
+        <div className="animate-fade-in">
+          {children}
+        </div>
       </main>
     </div>
   );

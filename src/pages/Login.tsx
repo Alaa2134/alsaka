@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Lock, LogIn, Eye, EyeOff } from "lucide-react";
+import { Lock, LogIn, Eye, EyeOff, Sparkles, FileText, Shield, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Helmet } from "react-helmet-async";
@@ -34,6 +34,12 @@ const Login = () => {
     }
   };
 
+  const features = [
+    { icon: FileText, title: "إدارة الفواتير", desc: "إنشاء وتتبع الفواتير بسهولة" },
+    { icon: Shield, title: "آمن وموثوق", desc: "حماية بيانات عملك" },
+    { icon: BarChart3, title: "تقارير شاملة", desc: "تحليلات ورؤى للمبيعات" },
+  ];
+
   return (
     <>
       <Helmet>
@@ -41,80 +47,126 @@ const Login = () => {
         <meta name="description" content="تسجيل الدخول إلى نظام الفواتير" />
       </Helmet>
 
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-full mb-4">
-              <Lock className="w-10 h-10 text-primary-foreground" />
-            </div>
-            <h1 className="text-3xl font-bold text-foreground">نظام الفواتير</h1>
-            <p className="text-muted-foreground mt-2">أدخل كود الدخول للمتابعة</p>
-          </div>
-
-          {/* Login Form */}
-          <div className="bg-card rounded-xl shadow-2xl p-8 border border-border">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="code" className="block text-sm font-semibold text-foreground mb-2">
-                  كود الدخول
-                </label>
-                <div className="relative">
-                  <Input
-                    id="code"
-                    type={showCode ? "text" : "password"}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="أدخل الكود..."
-                    className="text-center text-lg tracking-widest pr-4 pl-12"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCode(!showCode)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showCode ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
+      <div className="min-h-screen flex">
+        {/* Left Side - Login Form */}
+        <div className="flex-1 flex items-center justify-center p-8 bg-background">
+          <div className="w-full max-w-md animate-fade-in">
+            {/* Logo */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 gradient-primary rounded-2xl mb-6 shadow-glow animate-pulse-slow">
+                <Sparkles className="w-10 h-10 text-primary-foreground" />
               </div>
+              <h1 className="text-4xl font-bold gradient-text mb-2">نظام الفواتير</h1>
+              <p className="text-muted-foreground text-lg">مرحباً بك مجدداً</p>
+            </div>
 
-              {error && (
-                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-center text-sm font-medium">
-                  {error}
+            {/* Login Form */}
+            <div className="bg-card rounded-2xl shadow-soft p-8 border border-border">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="code" className="block text-sm font-semibold text-foreground mb-3">
+                    كود الدخول
+                  </label>
+                  <div className="relative">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <Lock size={20} />
+                    </div>
+                    <Input
+                      id="code"
+                      type={showCode ? "text" : "password"}
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="أدخل الكود..."
+                      className="h-14 text-center text-lg tracking-widest pr-12 pl-12 rounded-xl border-2 focus:border-primary transition-all"
+                      autoComplete="off"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCode(!showCode)}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showCode ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
-              )}
 
-              <Button
-                type="submit"
-                className="w-full h-12 text-lg font-semibold"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  "جاري التحقق..."
-                ) : (
-                  <>
-                    <LogIn className="ml-2" size={20} />
-                    دخول
-                  </>
+                {error && (
+                  <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-xl text-center text-sm font-medium animate-scale-in">
+                    {error}
+                  </div>
                 )}
-              </Button>
-            </form>
 
-            <div className="mt-6 pt-6 border-t border-border">
-              <p className="text-center text-sm text-muted-foreground">
-                للحصول على كود الدخول، تواصل مع مدير النظام
-              </p>
+                <Button
+                  type="submit"
+                  className="w-full h-14 text-lg font-bold rounded-xl gradient-primary hover:opacity-90 transition-all shadow-glow"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      جاري التحقق...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <LogIn size={22} />
+                      دخول
+                    </span>
+                  )}
+                </Button>
+              </form>
+
+              <div className="mt-6 pt-6 border-t border-border">
+                <p className="text-center text-sm text-muted-foreground">
+                  للحصول على كود الدخول، تواصل مع مدير النظام
+                </p>
+              </div>
+            </div>
+
+            {/* Demo Info */}
+            <div className="mt-6">
+              <div className="bg-accent/10 rounded-xl p-4 border border-accent/20">
+                <p className="text-sm text-accent font-bold mb-2 flex items-center gap-2">
+                  <Sparkles size={16} />
+                  للتجربة:
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  كود الأدمن: <code className="bg-muted px-3 py-1.5 rounded-lg font-mono text-foreground">admin123</code>
+                </p>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Demo Info */}
-          <div className="mt-6 text-center">
-            <div className="bg-primary/10 rounded-lg p-4">
-              <p className="text-sm text-primary font-semibold">للتجربة:</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                كود الأدمن: <code className="bg-muted px-2 py-1 rounded font-mono">admin123</code>
-              </p>
+        {/* Right Side - Features */}
+        <div className="hidden lg:flex flex-1 gradient-primary items-center justify-center p-12 relative overflow-hidden">
+          {/* Background decorations */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-white/10 rounded-full blur-3xl animate-float" />
+            <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-white/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+          </div>
+
+          <div className="relative z-10 text-primary-foreground max-w-lg">
+            <h2 className="text-4xl font-bold mb-6">نظام فواتير متكامل</h2>
+            <p className="text-xl text-primary-foreground/80 mb-12">
+              إدارة فواتيرك ومبيعاتك بكل سهولة واحترافية
+            </p>
+
+            <div className="space-y-6">
+              {features.map((feature, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center gap-4 bg-white/10 rounded-xl p-5 backdrop-blur-sm animate-slide-in"
+                  style={{ animationDelay: `${index * 150}ms` }}
+                >
+                  <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                    <feature.icon size={28} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">{feature.title}</h3>
+                    <p className="text-primary-foreground/70">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Calendar, User, Hash, CreditCard, Clock } from "lucide-react";
 
 interface InvoiceHeaderProps {
   invoiceNumber: string;
@@ -44,81 +45,87 @@ export const InvoiceHeader = ({
   return (
     <div className="animate-fade-in">
       {/* Title Banner */}
-      <div className="bg-invoice-header text-invoice-header-foreground py-3 px-6 text-center mb-4 rounded-md shadow-lg">
-        <h1 className="text-2xl font-bold tracking-wide">فاتـــورة البيع</h1>
+      <div className="gradient-primary text-primary-foreground py-5 px-6 text-center mb-6 rounded-xl shadow-glow">
+        <h1 className="text-3xl font-bold tracking-wide">فاتـــورة البيع</h1>
       </div>
 
       {/* Time Display */}
-      <div className="flex justify-end mb-4">
-        <div className="bg-accent text-accent-foreground px-4 py-2 rounded-md font-bold text-lg shadow-md">
+      <div className="flex justify-end mb-6">
+        <div className="flex items-center gap-2 bg-accent text-accent-foreground px-5 py-3 rounded-xl font-bold text-lg shadow-md">
+          <Clock size={20} />
           {formatTime(currentTime)}
         </div>
       </div>
 
       {/* Header Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         {/* Invoice Number */}
-        <div className="flex items-center gap-2">
-          <label className="font-semibold text-foreground whitespace-nowrap min-w-[100px]">
+        <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+          <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
+            <Hash size={16} />
             رقم الفاتورة
           </label>
           <input
             type="text"
             value={invoiceNumber}
             readOnly
-            className="flex-1 bg-invoice-input-field border border-border rounded-md px-3 py-2 text-foreground font-bold text-center"
+            className="w-full bg-card border-2 border-primary/30 rounded-lg px-4 py-3 text-foreground font-bold text-center text-lg"
           />
         </div>
 
         {/* Client Number */}
-        <div className="flex items-center gap-2">
-          <label className="font-semibold text-foreground whitespace-nowrap min-w-[80px]">
+        <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+          <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
+            <Hash size={16} />
             رقم العميل
           </label>
           <input
             type="text"
             value={clientNumber}
             onChange={(e) => onClientNumberChange(e.target.value)}
-            className="flex-1 bg-invoice-input-field border border-border rounded-md px-3 py-2 text-foreground text-center focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+            className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground text-center focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
           />
         </div>
 
         {/* Date */}
-        <div className="flex items-center gap-2">
-          <label className="font-semibold text-foreground whitespace-nowrap min-w-[60px]">
+        <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+          <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
+            <Calendar size={16} />
             التاريخ
           </label>
           <input
             type="date"
             value={date}
             onChange={(e) => onDateChange(e.target.value)}
-            className="flex-1 bg-invoice-input-field border border-border rounded-md px-3 py-2 text-foreground text-center focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+            className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground text-center focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
           />
         </div>
 
         {/* Client Name */}
-        <div className="flex items-center gap-2">
-          <label className="font-semibold text-foreground whitespace-nowrap min-w-[80px]">
+        <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+          <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
+            <User size={16} />
             اسم العميل
           </label>
           <input
             type="text"
             value={clientName}
             onChange={(e) => onClientNameChange(e.target.value)}
-            className="flex-1 bg-invoice-input-field border border-border rounded-md px-3 py-2 text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+            className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
           />
         </div>
       </div>
 
       {/* Payment Method */}
-      <div className="flex items-center gap-2 mb-4 max-w-xs">
-        <label className="font-semibold text-foreground whitespace-nowrap min-w-[80px]">
+      <div className="bg-muted/50 rounded-xl p-4 max-w-sm">
+        <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2 mb-2">
+          <CreditCard size={16} />
           طريقة الدفع
         </label>
         <select
           value={paymentMethod}
           onChange={(e) => onPaymentMethodChange(e.target.value)}
-          className="flex-1 bg-invoice-input-field border border-border rounded-md px-3 py-2 text-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-all cursor-pointer"
+          className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
         >
           <option value="نقدي">نقدي</option>
           <option value="آجل">آجل</option>
