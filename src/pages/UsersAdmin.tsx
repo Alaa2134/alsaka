@@ -43,6 +43,24 @@ const UsersAdmin = () => {
   const isAdmin = hasPermission(["admin"]);
   const isManager = hasPermission(["manager"]);
 
+  // Check if manager can assign cashiers
+  const { data: managerPermissions } = useQuery({
+    queryKey: ["manager_permissions", currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser?.id) return [];
+      const { data, error } = await supabase
+        .from("user_permissions")
+        .select("permission")
+        .eq("user_id", currentUser.id);
+      
+      if (error) throw error;
+      return data?.map(p => p.permission) || [];
+    },
+    enabled: !!currentUser?.id && isManager && !isAdmin,
+  });
+
+  const managerCanAssignCashier = isAdmin || (managerPermissions?.includes("assign_cashier") ?? false);
+
   // Check if user has admin or manager permission
   if (!isAdmin && !isManager) {
     return <Navigate to="/" replace />;
@@ -331,7 +349,7 @@ const UsersAdmin = () => {
                     <Select
                       value={formData.role}
                       onValueChange={(value: AppRole) => setFormData({ ...formData, role: value })}
-                      disabled={isManager && !isAdmin}
+                      disabled={isManager && !isAdmin && !managerCanAssignCashier}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الصلاحية" />
@@ -339,12 +357,14 @@ const UsersAdmin = () => {
                       <SelectContent>
                         {isAdmin && <SelectItem value="admin">مدير النظام</SelectItem>}
                         {isAdmin && <SelectItem value="manager">مدير</SelectItem>}
-                        <SelectItem value="cashier">كاشير</SelectItem>
+                        {(isAdmin || (isManager && managerCanAssignCashier)) && (
+                          <SelectItem value="cashier">كاشير</SelectItem>
+                        )}
                         <SelectItem value="viewer">مشاهد فقط</SelectItem>
                       </SelectContent>
                     </Select>
-                    {isManager && !isAdmin && (
-                      <p className="text-xs text-muted-foreground mt-1">يمكنك فقط تعيين كاشير أو مشاهد</p>
+                    {isManager && !isAdmin && !managerCanAssignCashier && (
+                      <p className="text-xs text-amber-600 mt-1">ليس لديك صلاحية تعيين كاشير</p>
                     )}
                   </div>
 
@@ -458,9 +478,14 @@ const UsersAdmin = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(user.role)}`}>
-                          {roleLabels[user.role]}
-                        </span>
+                        <div className="flex items-center justify-center gap-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(user.role)}`}>
+                            {roleLabels[user.role]}
+                          </span>
+                          {isAdmin && user.role === "manager" && (
+                            <ManagerPermissionToggle userId={user.id} />
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         {user.device_id ? (
@@ -534,6 +559,66 @@ const UsersAdmin = () => {
         </div>
       </MainLayout>
     </>
+  );
+};
+
+// Manager Permission Toggle Component
+const ManagerPermissionToggle = ({ userId }: { userId: string }) => {
+  const queryClient = useQueryClient();
+  
+  const { data: permissions } = useQuery({
+    queryKey: ["user_permissions", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_permissions")
+        .select("*")
+        .eq("user_id", userId);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const hasAssignCashierPermission = permissions?.some(p => p.permission === "assign_cashier") ?? false;
+
+  const togglePermission = useMutation({
+    mutationFn: async () => {
+      if (hasAssignCashierPermission) {
+        const { error } = await supabase
+          .from("user_permissions")
+          .delete()
+          .eq("user_id", userId)
+          .eq("permission", "assign_cashier");
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("user_permissions")
+          .insert({ user_id: userId, permission: "assign_cashier" });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user_permissions", userId] });
+      toast.success(hasAssignCashierPermission ? "تم إلغاء صلاحية تعيين الكاشير" : "تم منح صلاحية تعيين الكاشير");
+    },
+    onError: (error: Error) => {
+      toast.error(`خطأ: ${error.message}`);
+    },
+  });
+
+  return (
+    <button
+      onClick={() => togglePermission.mutate()}
+      disabled={togglePermission.isPending}
+      className={`text-xs px-2 py-1 rounded-full transition-colors ${
+        hasAssignCashierPermission
+          ? "bg-green-100 text-green-800 hover:bg-green-200"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`}
+      title={hasAssignCashierPermission ? "إلغاء صلاحية تعيين الكاشير" : "منح صلاحية تعيين الكاشير"}
+    >
+      {hasAssignCashierPermission ? "✓ يعين كاشير" : "لا يعين"}
+    </button>
   );
 };
 
