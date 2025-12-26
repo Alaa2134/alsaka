@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { InvoiceItem } from "@/types/invoice";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
 
@@ -44,17 +44,21 @@ const SuggestionDropdown = ({ suggestions, onSelect, onClose, visible }: Suggest
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto"
+      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-soft z-50 max-h-52 overflow-y-auto animate-scale-in"
     >
+      <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground">
+        <Search size={14} />
+        <span className="text-xs">اختر منتج</span>
+      </div>
       {suggestions.map((product) => (
         <button
           key={product.id}
           type="button"
           onClick={() => onSelect(product)}
-          className="w-full px-3 py-2 text-right hover:bg-muted transition-colors flex justify-between items-center gap-2 border-b border-border/30 last:border-0"
+          className="w-full px-4 py-3 text-right hover:bg-primary/10 transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0"
         >
           <span className="font-semibold text-foreground truncate">{product.name}</span>
-          <span className="text-xs text-muted-foreground whitespace-nowrap">{product.item_number}</span>
+          <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">{product.item_number}</span>
         </button>
       ))}
     </div>
@@ -67,10 +71,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
   const [activeInput, setActiveInput] = useState<{ id: string; field: "itemNumber" | "itemName" } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const warehouses = warehousesList?.map(w => w.name) || [
-    "السقا للادوات المنزلية",
-    "المخزن الرئيسي",
-  ];
+  const warehouses = warehousesList?.map(w => w.name) || [];
 
   const getSuggestions = (): Product[] => {
     if (!products || !searchTerm || searchTerm.length < 1) return [];
@@ -101,7 +102,6 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
   };
 
   const handleInputBlur = () => {
-    // Delay to allow click on suggestion
     setTimeout(() => {
       setActiveInput(null);
       setSearchTerm("");
@@ -109,19 +109,19 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg shadow-lg border border-border animate-slide-in">
+    <div className="overflow-x-auto rounded-xl shadow-soft border border-border animate-slide-in mt-6">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="bg-invoice-table-header text-invoice-table-header-foreground">
-            <th className="px-3 py-3 text-right font-bold border-l border-border/30 w-10">#</th>
-            <th className="px-3 py-3 text-right font-bold border-l border-border/30 w-24">رقم الصنف</th>
-            <th className="px-3 py-3 text-right font-bold border-l border-border/30">اسم الصنف</th>
-            <th className="px-3 py-3 text-center font-bold border-l border-border/30 w-20">الكمية</th>
-            <th className="px-3 py-3 text-center font-bold border-l border-border/30 w-24">السعر</th>
-            <th className="px-3 py-3 text-center font-bold border-l border-border/30 w-24">الحد الأدنى</th>
-            <th className="px-3 py-3 text-center font-bold border-l border-border/30 w-24">الاجمالي</th>
-            <th className="px-3 py-3 text-right font-bold border-l border-border/30">المخـــــــزن</th>
-            <th className="px-3 py-3 text-center font-bold w-12">حذف</th>
+          <tr className="bg-foreground text-background">
+            <th className="px-4 py-4 text-right font-bold w-12">#</th>
+            <th className="px-4 py-4 text-right font-bold w-28">رقم الصنف</th>
+            <th className="px-4 py-4 text-right font-bold">اسم الصنف</th>
+            <th className="px-4 py-4 text-center font-bold w-24">الكمية</th>
+            <th className="px-4 py-4 text-center font-bold w-28">السعر</th>
+            <th className="px-4 py-4 text-center font-bold w-28">الحد الأدنى</th>
+            <th className="px-4 py-4 text-center font-bold w-28">الإجمالي</th>
+            <th className="px-4 py-4 text-right font-bold">المخزن</th>
+            <th className="px-4 py-4 text-center font-bold w-14">حذف</th>
           </tr>
         </thead>
         <tbody>
@@ -129,13 +129,13 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
             <tr
               key={item.id}
               className={`${
-                index % 2 === 0 ? "bg-invoice-row-even" : "bg-invoice-row-odd"
-              } hover:bg-muted/50 transition-colors`}
+                index % 2 === 0 ? "bg-card" : "bg-muted/30"
+              } hover:bg-primary/5 transition-colors`}
             >
-              <td className="px-3 py-2 border border-border/20 text-center font-semibold text-muted-foreground">
+              <td className="px-4 py-3 border-b border-border/50 text-center font-bold text-muted-foreground">
                 {index + 1}
               </td>
-              <td className="px-3 py-2 border border-border/20 relative">
+              <td className="px-4 py-3 border-b border-border/50 relative">
                 <input
                   type="text"
                   value={item.itemNumber}
@@ -145,7 +145,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                     setSearchTerm(item.itemNumber);
                   }}
                   onBlur={handleInputBlur}
-                  className="w-full bg-invoice-input-field border border-border rounded px-2 py-1 text-center focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                   autoComplete="off"
                 />
                 {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
@@ -157,7 +157,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                   />
                 )}
               </td>
-              <td className="px-3 py-2 border border-border/20 relative">
+              <td className="px-4 py-3 border-b border-border/50 relative">
                 <input
                   type="text"
                   value={item.itemName}
@@ -167,7 +167,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                     setSearchTerm(item.itemName);
                   }}
                   onBlur={handleInputBlur}
-                  className="w-full bg-invoice-input-field border border-border rounded px-2 py-1 focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 focus:border-primary focus:outline-none transition-all"
                   placeholder="اسم الصنف..."
                   autoComplete="off"
                 />
@@ -180,43 +180,43 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                   />
                 )}
               </td>
-              <td className="px-3 py-2 border border-border/20">
+              <td className="px-4 py-3 border-b border-border/50">
                 <input
                   type="number"
                   min="1"
                   value={item.quantity}
                   onChange={(e) => onUpdateItem(item.id, "quantity", parseInt(e.target.value) || 0)}
-                  className="w-full bg-invoice-input-field border border-border rounded px-2 py-1 text-center focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                 />
               </td>
-              <td className="px-3 py-2 border border-border/20">
+              <td className="px-4 py-3 border-b border-border/50">
                 <input
                   type="number"
                   min="0"
                   step="0.5"
                   value={item.price}
                   onChange={(e) => onUpdateItem(item.id, "price", parseFloat(e.target.value) || 0)}
-                  className="w-full bg-invoice-input-field border border-border rounded px-2 py-1 text-center focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                 />
               </td>
-              <td className="px-3 py-2 border border-border/20">
+              <td className="px-4 py-3 border-b border-border/50">
                 <input
                   type="number"
                   min="0"
                   step="0.5"
                   value={item.minPrice}
                   onChange={(e) => onUpdateItem(item.id, "minPrice", parseFloat(e.target.value) || 0)}
-                  className="w-full bg-invoice-input-field border border-border rounded px-2 py-1 text-center focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                 />
               </td>
-              <td className="px-3 py-2 border border-border/20 text-center font-bold text-primary">
-                {item.total.toFixed(2)}
+              <td className="px-4 py-3 border-b border-border/50 text-center">
+                <span className="font-bold text-lg gradient-text">{item.total.toFixed(2)}</span>
               </td>
-              <td className="px-3 py-2 border border-border/20">
+              <td className="px-4 py-3 border-b border-border/50">
                 <select
                   value={item.warehouse}
                   onChange={(e) => onUpdateItem(item.id, "warehouse", e.target.value)}
-                  className="w-full bg-invoice-input-field border border-border rounded px-2 py-1 focus:ring-2 focus:ring-primary focus:outline-none transition-all cursor-pointer"
+                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 focus:border-primary focus:outline-none transition-all cursor-pointer"
                 >
                   <option value="">اختر المخزن</option>
                   {warehouses.map((wh) => (
@@ -226,13 +226,13 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                   ))}
                 </select>
               </td>
-              <td className="px-3 py-2 border border-border/20 text-center">
+              <td className="px-4 py-3 border-b border-border/50 text-center">
                 <button
                   onClick={() => onDeleteItem(item.id)}
-                  className="text-destructive hover:text-destructive/80 hover:bg-destructive/10 p-1 rounded transition-all"
+                  className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-all hover:scale-110"
                   title="حذف الصنف"
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={20} />
                 </button>
               </td>
             </tr>

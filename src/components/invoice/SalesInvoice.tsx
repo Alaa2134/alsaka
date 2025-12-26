@@ -4,8 +4,8 @@ import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceFooter } from "./InvoiceFooter";
 import { InvoiceItem } from "@/types/invoice";
 import { toast } from "sonner";
-import { useProducts, useProductSearch } from "@/hooks/useProducts";
-import { useClients, useClientSearch } from "@/hooks/useClients";
+import { useProducts } from "@/hooks/useProducts";
+import { useClients } from "@/hooks/useClients";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { useCreateInvoice, useNextInvoiceNumber } from "@/hooks/useInvoices";
 
@@ -46,7 +46,6 @@ export const SalesInvoice = () => {
     return items.reduce((sum, item) => sum + item.total, 0);
   }, []);
 
-  // Auto-fill client when client number changes
   const handleClientNumberChange = (value: string) => {
     setClientNumber(value);
     const client = clients?.find(c => c.client_number === value);
@@ -66,7 +65,6 @@ export const SalesInvoice = () => {
 
           const updatedItem = { ...item, [field]: value };
 
-          // Auto-fill product data when item number is entered
           if (field === "itemNumber" && products) {
             const product = products.find(p => p.item_number === value);
             if (product) {
@@ -153,36 +151,38 @@ export const SalesInvoice = () => {
   }, []);
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="max-w-7xl mx-auto bg-card rounded-xl shadow-xl p-6 border border-border">
-        <InvoiceHeader
-          invoiceNumber={invoiceNumber}
-          clientNumber={clientNumber}
-          clientName={clientName}
-          date={date}
-          paymentMethod={paymentMethod}
-          onClientNumberChange={handleClientNumberChange}
-          onClientNameChange={setClientName}
-          onDateChange={setDate}
-          onPaymentMethodChange={setPaymentMethod}
-        />
+    <div className="p-6 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-card rounded-2xl shadow-soft p-8 border border-border">
+          <InvoiceHeader
+            invoiceNumber={invoiceNumber}
+            clientNumber={clientNumber}
+            clientName={clientName}
+            date={date}
+            paymentMethod={paymentMethod}
+            onClientNumberChange={handleClientNumberChange}
+            onClientNameChange={setClientName}
+            onDateChange={setDate}
+            onPaymentMethodChange={setPaymentMethod}
+          />
 
-        <InvoiceTable
-          items={items}
-          onUpdateItem={handleUpdateItem}
-          onDeleteItem={handleDeleteItem}
-        />
+          <InvoiceTable
+            items={items}
+            onUpdateItem={handleUpdateItem}
+            onDeleteItem={handleDeleteItem}
+          />
 
-        <InvoiceFooter
-          totalAmount={calculateTotal(items)}
-          onNewInvoice={handleNewInvoice}
-          onAddItem={handleAddItem}
-          onPrint={handlePrint}
-          onSave={handleSaveInvoice}
-          isSaving={createInvoice.isPending}
-          notes={notes}
-          onNotesChange={setNotes}
-        />
+          <InvoiceFooter
+            totalAmount={calculateTotal(items)}
+            onNewInvoice={handleNewInvoice}
+            onAddItem={handleAddItem}
+            onPrint={handlePrint}
+            onSave={handleSaveInvoice}
+            isSaving={createInvoice.isPending}
+            notes={notes}
+            onNotesChange={setNotes}
+          />
+        </div>
       </div>
     </div>
   );
