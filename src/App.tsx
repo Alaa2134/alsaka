@@ -13,6 +13,7 @@ import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
 import Warehouses from "./pages/Warehouses";
 import Returns from "./pages/Returns";
+import InvoiceDesigner from "./pages/InvoiceDesigner";
 import InvoicesAdmin from "./pages/InvoicesAdmin";
 import UsersAdmin from "./pages/UsersAdmin";
 import TenantsAdmin from "./pages/TenantsAdmin";
@@ -63,6 +64,11 @@ const App = () => (
               <Route path="/returns" element={
                 <ProtectedRoute requiredRoles={["admin", "manager", "cashier"]}>
                   <Returns />
+                </ProtectedRoute>
+              } />
+              <Route path="/invoice-designer" element={
+                <ProtectedRoute requiredRoles={["admin", "manager"]}>
+                  <InvoiceDesigner />
                 </ProtectedRoute>
               } />
               <Route path="/users" element={

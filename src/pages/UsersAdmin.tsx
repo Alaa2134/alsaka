@@ -40,8 +40,11 @@ const UsersAdmin = () => {
     tenant_id: currentTenant?.id || null as string | null,
   });
 
-  // Check if user has admin permission
-  if (!hasPermission(["admin"])) {
+  const isAdmin = hasPermission(["admin"]);
+  const isManager = hasPermission(["manager"]);
+
+  // Check if user has admin or manager permission
+  if (!isAdmin && !isManager) {
     return <Navigate to="/" replace />;
   }
 
@@ -328,17 +331,21 @@ const UsersAdmin = () => {
                     <Select
                       value={formData.role}
                       onValueChange={(value: AppRole) => setFormData({ ...formData, role: value })}
+                      disabled={isManager && !isAdmin}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الصلاحية" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="admin">مدير النظام</SelectItem>
-                        <SelectItem value="manager">مدير</SelectItem>
+                        {isAdmin && <SelectItem value="admin">مدير النظام</SelectItem>}
+                        {isAdmin && <SelectItem value="manager">مدير</SelectItem>}
                         <SelectItem value="cashier">كاشير</SelectItem>
                         <SelectItem value="viewer">مشاهد فقط</SelectItem>
                       </SelectContent>
                     </Select>
+                    {isManager && !isAdmin && (
+                      <p className="text-xs text-muted-foreground mt-1">يمكنك فقط تعيين كاشير أو مشاهد</p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between">
