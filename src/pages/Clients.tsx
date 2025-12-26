@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useClients, useCreateClient, useUpdateClient, useDeleteClient, Client } from "@/hooks/useClients";
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useNextClientNumber, Client } from "@/hooks/useClients";
 import { Plus, Pencil, Trash2, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Helmet } from "react-helmet-async";
 
 const Clients = () => {
   const { data: clients, isLoading } = useClients();
+  const { data: nextClientNumber } = useNextClientNumber();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
@@ -72,7 +73,7 @@ const Clients = () => {
   const resetForm = () => {
     setEditingClient(null);
     setFormData({
-      client_number: "",
+      client_number: nextClientNumber || "",
       name: "",
       phone: "",
       address: "",
@@ -80,6 +81,13 @@ const Clients = () => {
       notes: "",
     });
   };
+
+  // Set auto client number when available
+  useEffect(() => {
+    if (nextClientNumber && !editingClient) {
+      setFormData(prev => ({ ...prev, client_number: nextClientNumber }));
+    }
+  }, [nextClientNumber, editingClient]);
 
   return (
     <>
