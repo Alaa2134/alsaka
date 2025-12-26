@@ -286,6 +286,124 @@ export type Database = {
           },
         ]
       }
+      return_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          item_number: string
+          price: number
+          product_id: string | null
+          quantity: number
+          return_id: string
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          item_number: string
+          price?: number
+          product_id?: string | null
+          quantity?: number
+          return_id: string
+          total?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          item_number?: string
+          price?: number
+          product_id?: string | null
+          quantity?: number
+          return_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      returns: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          reason: string | null
+          return_date: string
+          return_number: string
+          status: string
+          tenant_id: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          reason?: string | null
+          return_date?: string
+          return_number: string
+          status?: string
+          tenant_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          reason?: string | null
+          return_date?: string
+          return_number?: string
+          status?: string
+          tenant_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "returns_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "returns_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "returns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string | null

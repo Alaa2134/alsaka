@@ -12,7 +12,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Sparkles,
-  Building2
+  Building2,
+  RotateCcw
 } from "lucide-react";
 import { useAuth, roleLabels, AppRole } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -20,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 const navItems: { path: string; label: string; icon: typeof FileText; roles: AppRole[] }[] = [
   { path: "/", label: "فاتورة البيع", icon: FileText, roles: ["admin", "manager", "cashier"] },
   { path: "/invoices", label: "إدارة الفواتير", icon: ClipboardList, roles: ["admin", "manager", "cashier"] },
+  { path: "/returns", label: "المرتجعات", icon: RotateCcw, roles: ["admin", "manager", "cashier"] },
   { path: "/products", label: "إدارة المنتجات", icon: Package, roles: ["admin", "manager"] },
   { path: "/clients", label: "إدارة العملاء", icon: Users, roles: ["admin", "manager"] },
   { path: "/warehouses", label: "المخازن", icon: Warehouse, roles: ["admin", "manager"] },
