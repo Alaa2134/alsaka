@@ -2,12 +2,15 @@ import { useState, useCallback, useEffect } from "react";
 import { InvoiceHeader } from "./InvoiceHeader";
 import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceFooter } from "./InvoiceFooter";
+import { InvoicePreviewModal } from "./InvoicePreviewModal";
 import { InvoiceItem } from "@/types/invoice";
 import { toast } from "sonner";
 import { useProducts } from "@/hooks/useProducts";
 import { useClients } from "@/hooks/useClients";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { useCreateInvoice, useNextInvoiceNumber } from "@/hooks/useInvoices";
+import { useAuth } from "@/contexts/AuthContext";
+import { TemplateType } from "./templates/types";
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -23,6 +26,7 @@ const createEmptyItem = (): InvoiceItem => ({
 });
 
 export const SalesInvoice = () => {
+  const { tenant } = useAuth();
   const { data: nextNumber } = useNextInvoiceNumber();
   const { data: products } = useProducts();
   const { data: clients } = useClients();
@@ -37,6 +41,8 @@ export const SalesInvoice = () => {
   const [paymentMethod, setPaymentMethod] = useState("نقدي");
   const [items, setItems] = useState<InvoiceItem[]>([createEmptyItem()]);
   const [notes, setNotes] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("classic");
 
   useEffect(() => {
     if (nextNumber) setInvoiceNumber(nextNumber);
@@ -147,8 +153,39 @@ export const SalesInvoice = () => {
   };
 
   const handlePrint = useCallback(() => {
-    window.print();
+    setShowPreview(true);
   }, []);
+
+  // Prepare invoice data for preview
+  const previewInvoice = {
+    id: "preview",
+    invoice_number: invoiceNumber,
+    invoice_date: date,
+    payment_method: paymentMethod,
+    total_amount: calculateTotal(items),
+    notes: notes || null,
+    clients: clientName ? { name: clientName } : null,
+  };
+
+  const previewItems = items
+    .filter(i => i.itemNumber && i.itemName)
+    .map(item => ({
+      id: item.id,
+      item_number: item.itemNumber,
+      item_name: item.itemName,
+      quantity: item.quantity,
+      price: item.price,
+      min_price: item.minPrice,
+      total: item.total,
+    }));
+
+  const tenantData = tenant ? {
+    id: tenant.id,
+    name: tenant.name,
+    logo_url: tenant.logo_url,
+    primary_color: tenant.primary_color,
+    secondary_color: tenant.secondary_color,
+  } : null;
 
   return (
     <div className="p-6 md:p-8">
@@ -184,6 +221,16 @@ export const SalesInvoice = () => {
           />
         </div>
       </div>
+
+      <InvoicePreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        invoice={previewInvoice}
+        items={previewItems}
+        tenant={tenantData}
+        selectedTemplate={selectedTemplate}
+        onSelectTemplate={setSelectedTemplate}
+      />
     </div>
   );
 };
