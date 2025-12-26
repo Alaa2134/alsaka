@@ -1,1 +1,4 @@
 project_id = "hxwyzwfsadsykitwaszs"
+
+[functions.parse-products]
+verify_jwt = false
