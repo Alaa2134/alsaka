@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useNextClientNumber, Client } from "@/hooks/useClients";
-import { Plus, Pencil, Trash2, Search, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Users, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Helmet } from "react-helmet-async";
 import { ClientImportExport } from "@/components/clients/ClientImportExport";
+import { ClientInvoicesModal } from "@/components/clients/ClientInvoicesModal";
 
 const Clients = () => {
   const { data: clients, isLoading } = useClients();
@@ -20,6 +21,8 @@ const Clients = () => {
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showInvoices, setShowInvoices] = useState(false);
   const [formData, setFormData] = useState({
     client_number: "",
     name: "",
@@ -69,6 +72,11 @@ const Clients = () => {
     if (confirm("هل أنت متأكد من حذف هذا العميل؟")) {
       await deleteClient.mutateAsync(id);
     }
+  };
+
+  const handleViewInvoices = (client: Client) => {
+    setSelectedClient(client);
+    setShowInvoices(true);
   };
 
   const resetForm = () => {
@@ -199,8 +207,8 @@ const Clients = () => {
           </div>
 
           {/* Clients Table */}
-          <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden">
-            <table className="w-full">
+          <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="bg-invoice-table-header text-invoice-table-header-foreground">
                   <th className="px-4 py-3 text-right font-bold">رقم العميل</th>
@@ -238,7 +246,14 @@ const Clients = () => {
                       <td className="px-4 py-3">{client.email || "-"}</td>
                       <td className="px-4 py-3">{client.address || "-"}</td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleViewInvoices(client)}
+                            className="p-2 text-accent hover:bg-accent/10 rounded transition-colors"
+                            title="فواتير العميل"
+                          >
+                            <FileText size={18} />
+                          </button>
                           <button
                             onClick={() => handleEdit(client)}
                             className="p-2 text-primary hover:bg-primary/10 rounded transition-colors"
@@ -263,6 +278,13 @@ const Clients = () => {
           </div>
         </div>
       </MainLayout>
+
+      {/* Client Invoices Modal */}
+      <ClientInvoicesModal
+        open={showInvoices}
+        onClose={() => setShowInvoices(false)}
+        client={selectedClient}
+      />
     </>
   );
 };

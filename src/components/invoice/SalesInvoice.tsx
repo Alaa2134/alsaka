@@ -7,7 +7,7 @@ import { InvoiceSearch } from "./InvoiceSearch";
 import { InvoiceItem } from "@/types/invoice";
 import { toast } from "sonner";
 import { useProducts } from "@/hooks/useProducts";
-import { useClients } from "@/hooks/useClients";
+import { useClients, useCreateClient, useNextClientNumber } from "@/hooks/useClients";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { useCreateInvoice, useNextInvoiceNumber } from "@/hooks/useInvoices";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,10 +46,14 @@ interface AutosaveData {
 export const SalesInvoice = () => {
   const { tenant } = useAuth();
   const { data: nextNumber } = useNextInvoiceNumber();
+  const { data: nextClientNum } = useNextClientNumber();
   const { data: products } = useProducts();
   const { data: clients } = useClients();
   const { data: warehouses } = useWarehouses();
   const createInvoice = useCreateInvoice();
+  const createClient = useCreateClient({ showToast: false });
+
+  const [clientPhone, setClientPhone] = useState("");
 
   const [invoiceNumber, setInvoiceNumber] = useState("1");
   const [clientNumber, setClientNumber] = useState("");
@@ -220,10 +224,30 @@ export const SalesInvoice = () => {
       return;
     }
 
+    let finalClientId = clientId;
+
+    // Auto-create client if name provided but no existing client
+    if (clientName && !clientId) {
+      try {
+        const newClient = await createClient.mutateAsync({
+          client_number: nextClientNum || String(Date.now()).slice(-6),
+          name: clientName,
+          phone: clientPhone || null,
+          address: null,
+          email: null,
+          notes: "تم إنشاؤه تلقائياً من الفاتورة",
+        });
+        finalClientId = newClient.id;
+        toast.info(`تم إنشاء عميل جديد: ${clientName}`);
+      } catch (e) {
+        console.error("Failed to auto-create client:", e);
+      }
+    }
+
     await createInvoice.mutateAsync({
       invoice: {
         invoice_number: invoiceNumber,
-        client_id: clientId,
+        client_id: finalClientId,
         invoice_date: date,
         payment_method: paymentMethod,
         total_amount: calculateTotal(validItems),
