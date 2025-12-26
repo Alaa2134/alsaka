@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useAuth, AppRole, roleLabels } from "@/contexts/AuthContext";
+import { useAuth, AppRole, roleLabels, Tenant } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Pencil, Trash2, Users, Shield, Key, UserCheck, UserX } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Shield, Key, UserCheck, UserX, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,11 +20,12 @@ interface AppUser {
   access_code: string;
   role: AppRole;
   is_active: boolean;
+  tenant_id: string | null;
   created_at: string;
 }
 
 const UsersAdmin = () => {
-  const { user: currentUser, hasPermission } = useAuth();
+  const { user: currentUser, tenant: currentTenant, hasPermission } = useAuth();
   const queryClient = useQueryClient();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -34,12 +35,27 @@ const UsersAdmin = () => {
     access_code: "",
     role: "cashier" as AppRole,
     is_active: true,
+    tenant_id: currentTenant?.id || null as string | null,
   });
 
   // Check if user has admin permission
   if (!hasPermission(["admin"])) {
     return <Navigate to="/" replace />;
   }
+
+  // Fetch tenants for dropdown
+  const { data: tenants } = useQuery({
+    queryKey: ["tenants"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("*")
+        .order("name");
+      
+      if (error) throw error;
+      return data as Tenant[];
+    },
+  });
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["app_users"],
@@ -141,6 +157,7 @@ const UsersAdmin = () => {
       access_code: user.access_code,
       role: user.role,
       is_active: user.is_active,
+      tenant_id: user.tenant_id,
     });
     setIsDialogOpen(true);
   };
@@ -173,6 +190,7 @@ const UsersAdmin = () => {
       access_code: "",
       role: "cashier",
       is_active: true,
+      tenant_id: currentTenant?.id || null,
     });
   };
 

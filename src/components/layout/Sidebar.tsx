@@ -11,7 +11,8 @@ import {
   LogOut,
   ChevronRight,
   ChevronLeft,
-  Sparkles
+  Sparkles,
+  Building2
 } from "lucide-react";
 import { useAuth, roleLabels, AppRole } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,6 +25,7 @@ const navItems: { path: string; label: string; icon: typeof FileText; roles: App
   { path: "/warehouses", label: "المخازن", icon: Warehouse, roles: ["admin", "manager"] },
   { path: "/reports", label: "التقارير", icon: BarChart3, roles: ["admin", "manager"] },
   { path: "/users", label: "إدارة المستخدمين", icon: Shield, roles: ["admin"] },
+  { path: "/tenants", label: "إدارة الشركات", icon: Building2, roles: ["admin"] },
 ];
 
 export const Sidebar = () => {
