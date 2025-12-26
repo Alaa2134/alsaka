@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { InvoiceHeader } from "./InvoiceHeader";
 import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceFooter } from "./InvoiceFooter";
@@ -11,6 +11,10 @@ import { useWarehouses } from "@/hooks/useWarehouses";
 import { useCreateInvoice, useNextInvoiceNumber } from "@/hooks/useInvoices";
 import { useAuth } from "@/contexts/AuthContext";
 import { TemplateType } from "./templates/types";
+import { Save } from "lucide-react";
+
+const AUTOSAVE_KEY = "invoice_autosave";
+const AUTOSAVE_INTERVAL = 3000; // 3 seconds
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -24,6 +28,18 @@ const createEmptyItem = (): InvoiceItem => ({
   total: 0,
   warehouse: "",
 });
+
+interface AutosaveData {
+  invoiceNumber: string;
+  clientNumber: string;
+  clientName: string;
+  clientId: string | null;
+  date: string;
+  paymentMethod: string;
+  items: InvoiceItem[];
+  notes: string;
+  savedAt: string;
+}
 
 export const SalesInvoice = () => {
   const { tenant } = useAuth();
@@ -43,10 +59,83 @@ export const SalesInvoice = () => {
   const [notes, setNotes] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("classic");
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasRestoredData, setHasRestoredData] = useState(false);
+  
+  const isInitialized = useRef(false);
 
+  // Load autosaved data on mount
   useEffect(() => {
-    if (nextNumber) setInvoiceNumber(nextNumber);
-  }, [nextNumber]);
+    if (isInitialized.current) return;
+    isInitialized.current = true;
+    
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        const data: AutosaveData = JSON.parse(saved);
+        const savedTime = new Date(data.savedAt);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60);
+        
+        // Only restore if saved within last 24 hours and has valid items
+        if (hoursDiff < 24 && data.items.some(i => i.itemNumber || i.itemName)) {
+          setInvoiceNumber(data.invoiceNumber);
+          setClientNumber(data.clientNumber);
+          setClientName(data.clientName);
+          setClientId(data.clientId);
+          setDate(data.date);
+          setPaymentMethod(data.paymentMethod);
+          setItems(data.items.length > 0 ? data.items : [createEmptyItem()]);
+          setNotes(data.notes);
+          setHasRestoredData(true);
+          
+          toast.success("تم استعادة الفاتورة المحفوظة تلقائياً", {
+            description: `آخر حفظ: ${savedTime.toLocaleTimeString("ar-EG")}`,
+            duration: 5000,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to restore autosave:", e);
+    }
+  }, []);
+
+  // Set invoice number from server
+  useEffect(() => {
+    if (nextNumber && !hasRestoredData) setInvoiceNumber(nextNumber);
+  }, [nextNumber, hasRestoredData]);
+
+  // Autosave effect
+  useEffect(() => {
+    const hasContent = items.some(i => i.itemNumber || i.itemName) || clientNumber || clientName || notes;
+    if (!hasContent) return;
+
+    const timer = setTimeout(() => {
+      const data: AutosaveData = {
+        invoiceNumber,
+        clientNumber,
+        clientName,
+        clientId,
+        date,
+        paymentMethod,
+        items,
+        notes,
+        savedAt: new Date().toISOString(),
+      };
+      
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
+      setLastSaved(new Date());
+    }, AUTOSAVE_INTERVAL);
+
+    return () => clearTimeout(timer);
+  }, [invoiceNumber, clientNumber, clientName, clientId, date, paymentMethod, items, notes]);
+
+  // Clear autosave when invoice is saved successfully
+  const clearAutosave = useCallback(() => {
+    localStorage.removeItem(AUTOSAVE_KEY);
+    setLastSaved(null);
+    setHasRestoredData(false);
+  }, []);
 
   const calculateTotal = useCallback((items: InvoiceItem[]) => {
     return items.reduce((sum, item) => sum + item.total, 0);
@@ -117,8 +206,9 @@ export const SalesInvoice = () => {
     setPaymentMethod("نقدي");
     setItems([createEmptyItem()]);
     setNotes("");
+    clearAutosave();
     toast.success("تم إنشاء فاتورة جديدة");
-  }, []);
+  }, [clearAutosave]);
 
   const handleSaveInvoice = async () => {
     const validItems = items.filter(i => i.itemNumber && i.itemName);
@@ -149,6 +239,7 @@ export const SalesInvoice = () => {
       })),
     });
 
+    clearAutosave();
     handleNewInvoice();
   };
 
@@ -190,6 +281,14 @@ export const SalesInvoice = () => {
   return (
     <div className="p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Autosave indicator */}
+        {lastSaved && (
+          <div className="flex items-center justify-end gap-2 mb-2 text-sm text-muted-foreground animate-fade-in">
+            <Save size={14} className="text-success" />
+            <span>حفظ تلقائي: {lastSaved.toLocaleTimeString("ar-EG")}</span>
+          </div>
+        )}
+        
         <div className="bg-card rounded-2xl shadow-soft p-8 border border-border">
           <InvoiceHeader
             invoiceNumber={invoiceNumber}
