@@ -57,7 +57,7 @@ const Login = () => {
                 <Sparkles className="w-10 h-10 text-primary-foreground" />
               </div>
               <h1 className="text-4xl font-bold gradient-text mb-2">نظام الفواتير</h1>
-              <p className="text-muted-foreground text-lg">مرحباً بك مجدداً</p>
+              <p className="text-muted-foreground text-lg">مرحباً بك</p>
             </div>
 
             {/* Login Form */}
@@ -118,19 +118,6 @@ const Login = () => {
               <div className="mt-6 pt-6 border-t border-border">
                 <p className="text-center text-sm text-muted-foreground">
                   للحصول على كود الدخول، تواصل مع مدير النظام
-                </p>
-              </div>
-            </div>
-
-            {/* Demo Info */}
-            <div className="mt-6">
-              <div className="bg-accent/10 rounded-xl p-4 border border-accent/20">
-                <p className="text-sm text-accent font-bold mb-2 flex items-center gap-2">
-                  <Sparkles size={16} />
-                  للتجربة:
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  كود الأدمن: <code className="bg-muted px-3 py-1.5 rounded-lg font-mono text-foreground">admin123</code>
                 </p>
               </div>
             </div>

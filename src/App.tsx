@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import Warehouses from "./pages/Warehouses";
 import InvoicesAdmin from "./pages/InvoicesAdmin";
 import UsersAdmin from "./pages/UsersAdmin";
+import TenantsAdmin from "./pages/TenantsAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,11 @@ const App = () => (
               <Route path="/users" element={
                 <ProtectedRoute requiredRoles={["admin"]}>
                   <UsersAdmin />
+                </ProtectedRoute>
+              } />
+              <Route path="/tenants" element={
+                <ProtectedRoute requiredRoles={["admin"]}>
+                  <TenantsAdmin />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
