@@ -3,6 +3,7 @@ import { InvoiceHeader } from "./InvoiceHeader";
 import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceFooter } from "./InvoiceFooter";
 import { InvoicePreviewModal } from "./InvoicePreviewModal";
+import { InvoiceSearch } from "./InvoiceSearch";
 import { InvoiceItem } from "@/types/invoice";
 import { toast } from "sonner";
 import { useProducts } from "@/hooks/useProducts";
@@ -11,7 +12,8 @@ import { useWarehouses } from "@/hooks/useWarehouses";
 import { useCreateInvoice, useNextInvoiceNumber } from "@/hooks/useInvoices";
 import { useAuth } from "@/contexts/AuthContext";
 import { TemplateType } from "./templates/types";
-import { Save } from "lucide-react";
+import { Save, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const AUTOSAVE_KEY = "invoice_autosave";
 const AUTOSAVE_INTERVAL = 3000; // 3 seconds
@@ -58,6 +60,7 @@ export const SalesInvoice = () => {
   const [items, setItems] = useState<InvoiceItem[]>([createEmptyItem()]);
   const [notes, setNotes] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("classic");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasRestoredData, setHasRestoredData] = useState(false);
@@ -281,13 +284,26 @@ export const SalesInvoice = () => {
   return (
     <div className="p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Autosave indicator */}
-        {lastSaved && (
-          <div className="flex items-center justify-end gap-2 mb-2 text-sm text-muted-foreground animate-fade-in">
-            <Save size={14} className="text-success" />
-            <span>حفظ تلقائي: {lastSaved.toLocaleTimeString("ar-EG")}</span>
-          </div>
-        )}
+        {/* Header with search button */}
+        <div className="flex items-center justify-between mb-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSearch(true)}
+            className="flex items-center gap-2"
+          >
+            <Search size={16} />
+            بحث عن فاتورة
+          </Button>
+          
+          {/* Autosave indicator */}
+          {lastSaved && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
+              <Save size={14} className="text-success" />
+              <span>حفظ تلقائي: {lastSaved.toLocaleTimeString("ar-EG")}</span>
+            </div>
+          )}
+        </div>
         
         <div className="bg-card rounded-2xl shadow-soft p-8 border border-border">
           <InvoiceHeader
@@ -330,6 +346,8 @@ export const SalesInvoice = () => {
         selectedTemplate={selectedTemplate}
         onSelectTemplate={setSelectedTemplate}
       />
+
+      <InvoiceSearch open={showSearch} onClose={() => setShowSearch(false)} />
     </div>
   );
 };

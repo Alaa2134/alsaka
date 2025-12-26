@@ -2,13 +2,15 @@ import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, Product } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { Plus, Pencil, Trash2, Search, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Helmet } from "react-helmet-async";
+import { ProductImportExport } from "@/components/products/ProductImportExport";
+import { BackupRestore } from "@/components/backup/BackupRestore";
 
 const Products = () => {
   const { data: products, isLoading } = useProducts();
@@ -19,6 +21,7 @@ const Products = () => {
   
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     item_number: "",
@@ -105,17 +108,33 @@ const Products = () => {
               <h1 className="text-2xl font-bold text-foreground">إدارة المنتجات</h1>
             </div>
             
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) resetForm();
-            }}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus size={20} />
-                  إضافة منتج
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
+            <div className="flex items-center gap-3">
+              {/* Import/Export */}
+              <ProductImportExport />
+              
+              {/* Backup Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBackup(true)}
+                className="flex items-center gap-2"
+              >
+                <Database size={16} />
+                نسخ احتياطي
+              </Button>
+              
+              {/* Add Product Dialog */}
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) resetForm();
+              }}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2">
+                    <Plus size={20} />
+                    إضافة منتج
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>
                     {editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
@@ -206,7 +225,11 @@ const Products = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
+          
+          {/* Backup Dialog */}
+          <BackupRestore open={showBackup} onClose={() => setShowBackup(false)} />
 
           {/* Search */}
           <div className="relative mb-6 max-w-md">

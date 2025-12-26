@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Calendar, User, Hash, CreditCard, Clock } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Calendar, User, Hash, CreditCard, Clock, Search } from "lucide-react";
+import { useClients } from "@/hooks/useClients";
 
 interface InvoiceHeaderProps {
   invoiceNumber: string;
@@ -11,6 +12,7 @@ interface InvoiceHeaderProps {
   onClientNameChange: (value: string) => void;
   onDateChange: (value: string) => void;
   onPaymentMethodChange: (value: string) => void;
+  onClientSelect?: (clientId: string | null) => void;
 }
 
 export const InvoiceHeader = ({
@@ -23,8 +25,12 @@ export const InvoiceHeader = ({
   onClientNameChange,
   onDateChange,
   onPaymentMethodChange,
+  onClientSelect,
 }: InvoiceHeaderProps) => {
+  const { data: clients } = useClients();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const [activeField, setActiveField] = useState<"number" | "name" | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -40,6 +46,47 @@ export const InvoiceHeader = ({
       second: "2-digit",
       hour12: true,
     });
+  };
+
+  // Filter clients based on input
+  const filteredClients = useMemo(() => {
+    if (!clients) return [];
+    const searchTerm = activeField === "number" ? clientNumber : clientName;
+    if (!searchTerm) return [];
+    
+    return clients.filter(c => 
+      c.client_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ).slice(0, 8);
+  }, [clients, clientNumber, clientName, activeField]);
+
+  const handleClientSelect = (client: { id: string; client_number: string; name: string }) => {
+    onClientNumberChange(client.client_number);
+    onClientNameChange(client.name);
+    onClientSelect?.(client.id);
+    setShowClientSuggestions(false);
+    setActiveField(null);
+  };
+
+  const handleClientNumberInput = (value: string) => {
+    onClientNumberChange(value);
+    setActiveField("number");
+    setShowClientSuggestions(true);
+    
+    // Auto-fill if exact match
+    const exactMatch = clients?.find(c => c.client_number === value);
+    if (exactMatch) {
+      onClientNameChange(exactMatch.name);
+      onClientSelect?.(exactMatch.id);
+    } else {
+      onClientSelect?.(null);
+    }
+  };
+
+  const handleClientNameInput = (value: string) => {
+    onClientNameChange(value);
+    setActiveField("name");
+    setShowClientSuggestions(true);
   };
 
   return (
@@ -73,8 +120,8 @@ export const InvoiceHeader = ({
           />
         </div>
 
-        {/* Client Number */}
-        <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+        {/* Client Number with Auto-suggest */}
+        <div className="bg-muted/50 rounded-xl p-4 space-y-2 relative">
           <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
             <Hash size={16} />
             رقم العميل
@@ -82,9 +129,36 @@ export const InvoiceHeader = ({
           <input
             type="text"
             value={clientNumber}
-            onChange={(e) => onClientNumberChange(e.target.value)}
+            onChange={(e) => handleClientNumberInput(e.target.value)}
+            onFocus={() => {
+              setActiveField("number");
+              setShowClientSuggestions(true);
+            }}
+            onBlur={() => setTimeout(() => setShowClientSuggestions(false), 200)}
             className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground text-center focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+            autoComplete="off"
           />
+          
+          {/* Client Suggestions Dropdown */}
+          {showClientSuggestions && activeField === "number" && filteredClients.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto animate-scale-in">
+              <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground">
+                <Search size={14} />
+                <span className="text-xs">اختر عميل</span>
+              </div>
+              {filteredClients.map((client) => (
+                <button
+                  key={client.id}
+                  type="button"
+                  onClick={() => handleClientSelect(client)}
+                  className="w-full px-4 py-3 text-right hover:bg-primary/10 transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0"
+                >
+                  <span className="font-semibold text-foreground truncate">{client.name}</span>
+                  <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">{client.client_number}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Date */}
@@ -101,8 +175,8 @@ export const InvoiceHeader = ({
           />
         </div>
 
-        {/* Client Name */}
-        <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+        {/* Client Name with Auto-suggest */}
+        <div className="bg-muted/50 rounded-xl p-4 space-y-2 relative">
           <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
             <User size={16} />
             اسم العميل
@@ -110,9 +184,36 @@ export const InvoiceHeader = ({
           <input
             type="text"
             value={clientName}
-            onChange={(e) => onClientNameChange(e.target.value)}
+            onChange={(e) => handleClientNameInput(e.target.value)}
+            onFocus={() => {
+              setActiveField("name");
+              setShowClientSuggestions(true);
+            }}
+            onBlur={() => setTimeout(() => setShowClientSuggestions(false), 200)}
             className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+            autoComplete="off"
           />
+          
+          {/* Client Suggestions Dropdown */}
+          {showClientSuggestions && activeField === "name" && filteredClients.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto animate-scale-in">
+              <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground">
+                <Search size={14} />
+                <span className="text-xs">اختر عميل</span>
+              </div>
+              {filteredClients.map((client) => (
+                <button
+                  key={client.id}
+                  type="button"
+                  onClick={() => handleClientSelect(client)}
+                  className="w-full px-4 py-3 text-right hover:bg-primary/10 transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0"
+                >
+                  <span className="font-semibold text-foreground truncate">{client.name}</span>
+                  <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">{client.client_number}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

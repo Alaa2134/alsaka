@@ -48,6 +48,28 @@ export const useClientSearch = (searchTerm: string) => {
   });
 };
 
+export const useNextClientNumber = () => {
+  return useQuery({
+    queryKey: ["clients", "nextNumber"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("client_number")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const lastNumber = parseInt(data[0].client_number) || 0;
+        return String(lastNumber + 1).padStart(4, "0");
+      }
+      
+      return "0001";
+    },
+  });
+};
+
 export const useCreateClient = () => {
   const queryClient = useQueryClient();
   
