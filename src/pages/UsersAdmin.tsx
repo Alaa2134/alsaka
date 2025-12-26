@@ -3,7 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth, AppRole, roleLabels, Tenant } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Pencil, Trash2, Users, Shield, Key, UserCheck, UserX, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Shield, Key, UserCheck, UserX, Building2, Smartphone, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -21,11 +21,13 @@ interface AppUser {
   role: AppRole;
   is_active: boolean;
   tenant_id: string | null;
+  device_id: string | null;
+  device_locked_at: string | null;
   created_at: string;
 }
 
 const UsersAdmin = () => {
-  const { user: currentUser, tenant: currentTenant, hasPermission } = useAuth();
+  const { user: currentUser, tenant: currentTenant, hasPermission, unlockDevice } = useAuth();
   const queryClient = useQueryClient();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -183,6 +185,21 @@ const UsersAdmin = () => {
     });
   };
 
+  const handleUnlockDevice = async (user: AppUser) => {
+    if (!user.device_id) {
+      toast.info("هذا المستخدم غير مقفل على جهاز");
+      return;
+    }
+    
+    const success = await unlockDevice(user.id);
+    if (success) {
+      queryClient.invalidateQueries({ queryKey: ["app_users"] });
+      toast.success(`تم فك قفل الجهاز للمستخدم "${user.name}"`);
+    } else {
+      toast.error("فشل في فك قفل الجهاز");
+    }
+  };
+
   const resetForm = () => {
     setEditingUser(null);
     setFormData({
@@ -214,6 +231,12 @@ const UsersAdmin = () => {
       case "viewer":
         return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const getTenantName = (tenantId: string | null) => {
+    if (!tenantId) return "-";
+    const tenant = tenants?.find(t => t.id === tenantId);
+    return tenant?.name || "-";
   };
 
   return (
@@ -281,6 +304,26 @@ const UsersAdmin = () => {
                   </div>
 
                   <div>
+                    <Label htmlFor="tenant_id">الشركة</Label>
+                    <Select
+                      value={formData.tenant_id || "none"}
+                      onValueChange={(value) => setFormData({ ...formData, tenant_id: value === "none" ? null : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر الشركة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون شركة</SelectItem>
+                        {tenants?.map((tenant) => (
+                          <SelectItem key={tenant.id} value={tenant.id}>
+                            {tenant.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
                     <Label htmlFor="role">الصلاحية</Label>
                     <Select
                       value={formData.role}
@@ -338,14 +381,28 @@ const UsersAdmin = () => {
             </div>
           </div>
 
+          {/* Device Lock Info */}
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <Smartphone size={20} />
+              <p className="font-semibold">قفل الجهاز:</p>
+            </div>
+            <p className="text-amber-700 dark:text-amber-300 text-sm mt-1">
+              كل كود دخول يعمل على جهاز واحد فقط. عند تسجيل الدخول لأول مرة، يتم قفل الكود على ذلك الجهاز.
+              يمكن للمدير فك القفل باستخدام زر "فك القفل".
+            </p>
+          </div>
+
           {/* Users Table */}
-          <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden">
-            <table className="w-full">
+          <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="bg-invoice-table-header text-invoice-table-header-foreground">
                   <th className="px-4 py-3 text-right font-bold">اسم المستخدم</th>
                   <th className="px-4 py-3 text-center font-bold">كود الدخول</th>
+                  <th className="px-4 py-3 text-center font-bold">الشركة</th>
                   <th className="px-4 py-3 text-center font-bold">الصلاحية</th>
+                  <th className="px-4 py-3 text-center font-bold">الجهاز</th>
                   <th className="px-4 py-3 text-center font-bold">الحالة</th>
                   <th className="px-4 py-3 text-center font-bold">الإجراءات</th>
                 </tr>
@@ -353,13 +410,13 @@ const UsersAdmin = () => {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={7} className="text-center py-8 text-muted-foreground">
                       جاري التحميل...
                     </td>
                   </tr>
                 ) : users?.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={7} className="text-center py-8 text-muted-foreground">
                       لا يوجد مستخدمين
                     </td>
                   </tr>
@@ -388,9 +445,34 @@ const UsersAdmin = () => {
                         </code>
                       </td>
                       <td className="px-4 py-3 text-center">
+                        <span className="text-sm flex items-center justify-center gap-1">
+                          <Building2 size={14} className="text-muted-foreground" />
+                          {getTenantName(user.tenant_id)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(user.role)}`}>
                           {roleLabels[user.role]}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {user.device_id ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                              <Smartphone size={12} />
+                              مقفل
+                            </span>
+                            <button
+                              onClick={() => handleUnlockDevice(user)}
+                              className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"
+                              title="فك قفل الجهاز"
+                            >
+                              <Unlock size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">غير مقفل</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button

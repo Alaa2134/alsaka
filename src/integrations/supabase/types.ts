@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           access_code: string
           created_at: string
+          device_id: string | null
+          device_locked_at: string | null
           id: string
           is_active: boolean
           name: string
@@ -28,6 +30,8 @@ export type Database = {
         Insert: {
           access_code: string
           created_at?: string
+          device_id?: string | null
+          device_locked_at?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -38,6 +42,8 @@ export type Database = {
         Update: {
           access_code?: string
           created_at?: string
+          device_id?: string | null
+          device_locked_at?: string | null
           id?: string
           is_active?: boolean
           name?: string

@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
+import { LogoUploader } from "@/components/shared/LogoUploader";
 
 const TenantsAdmin = () => {
   const { user, hasPermission } = useAuth();
@@ -172,7 +173,7 @@ const TenantsAdmin = () => {
                   إضافة شركة
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {editingTenant ? "تعديل الشركة" : "إضافة شركة جديدة"}
@@ -215,14 +216,13 @@ const TenantsAdmin = () => {
                     </p>
                   </div>
 
+                  {/* Logo Uploader */}
                   <div>
-                    <Label htmlFor="logo_url">رابط الشعار (اختياري)</Label>
-                    <Input
-                      id="logo_url"
-                      value={formData.logo_url}
-                      onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                      placeholder="https://example.com/logo.png"
-                      dir="ltr"
+                    <Label>شعار الشركة</Label>
+                    <LogoUploader
+                      currentLogo={formData.logo_url}
+                      onLogoChange={(url) => setFormData({ ...formData, logo_url: url })}
+                      tenantId={editingTenant?.id}
                     />
                   </div>
 
@@ -276,13 +276,16 @@ const TenantsAdmin = () => {
 
                   {/* Preview */}
                   <div className="border border-border rounded-xl p-4">
-                    <p className="text-xs text-muted-foreground mb-2">معاينة الألوان:</p>
+                    <p className="text-xs text-muted-foreground mb-2">معاينة:</p>
                     <div 
-                      className="h-12 rounded-lg flex items-center justify-center text-white font-bold"
+                      className="h-16 rounded-lg flex items-center justify-center gap-3 text-white font-bold"
                       style={{ 
                         background: `linear-gradient(135deg, ${formData.primary_color}, ${formData.secondary_color})` 
                       }}
                     >
+                      {formData.logo_url && (
+                        <img src={formData.logo_url} alt="Logo" className="h-10 w-auto bg-white/20 rounded p-1" />
+                      )}
                       {formData.name || "اسم الشركة"}
                     </div>
                   </div>
@@ -319,7 +322,7 @@ const TenantsAdmin = () => {
                     }}
                   >
                     {tenant.logo_url ? (
-                      <img src={tenant.logo_url} alt={tenant.name} className="h-12 w-auto" />
+                      <img src={tenant.logo_url} alt={tenant.name} className="h-12 w-auto bg-white/20 rounded p-1" />
                     ) : (
                       <Building2 className="w-12 h-12 text-white/80" />
                     )}

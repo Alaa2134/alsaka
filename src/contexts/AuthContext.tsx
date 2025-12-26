@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { generateDeviceId } from "@/utils/deviceId";
 
 export type AppRole = "admin" | "manager" | "cashier" | "viewer";
 
@@ -20,6 +21,8 @@ export interface AppUser {
   role: AppRole;
   is_active: boolean;
   tenant_id: string | null;
+  device_id: string | null;
+  device_locked_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +35,7 @@ interface AuthContextType {
   logout: () => void;
   hasPermission: (requiredRoles: AppRole[]) => boolean;
   updateTenantTheme: (colors: { primary_color?: string; secondary_color?: string }) => Promise<void>;
+  unlockDevice: (userId: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,6 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const verifyUser = async (userId: string, cachedTenant: Tenant | null) => {
     try {
+      const currentDeviceId = generateDeviceId();
+      
       const { data, error } = await supabase
         .from("app_users")
         .select("*")
@@ -90,6 +96,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setTenant(null);
       } else {
         const appUser = data as AppUser;
+        
+        // Check device lock
+        if (appUser.device_id && appUser.device_id !== currentDeviceId) {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(TENANT_KEY);
+          setUser(null);
+          setTenant(null);
+          setIsLoading(false);
+          return;
+        }
+        
         setUser(appUser);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
@@ -121,6 +138,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (code: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      const currentDeviceId = generateDeviceId();
+      
       const { data, error } = await supabase
         .from("app_users")
         .select("*")
@@ -138,6 +157,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const appUser = data as AppUser;
+      
+      // Check if already locked to another device
+      if (appUser.device_id && appUser.device_id !== currentDeviceId) {
+        return { 
+          success: false, 
+          error: "هذا الكود مستخدم على جهاز آخر. تواصل مع المدير لفك القفل." 
+        };
+      }
+      
+      // Lock to this device if not already locked
+      if (!appUser.device_id) {
+        const { error: updateError } = await supabase
+          .from("app_users")
+          .update({ 
+            device_id: currentDeviceId,
+            device_locked_at: new Date().toISOString()
+          })
+          .eq("id", appUser.id);
+        
+        if (updateError) {
+          console.error("Device lock error:", updateError);
+        } else {
+          appUser.device_id = currentDeviceId;
+          appUser.device_locked_at = new Date().toISOString();
+        }
+      }
+
       setUser(appUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appUser));
 
@@ -194,8 +240,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Admin function to unlock a device for a user
+  const unlockDevice = async (userId: string): Promise<boolean> => {
+    if (!user || user.role !== 'admin') return false;
+    
+    const { error } = await supabase
+      .from("app_users")
+      .update({ 
+        device_id: null,
+        device_locked_at: null
+      })
+      .eq("id", userId);
+    
+    return !error;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, tenant, isLoading, login, logout, hasPermission, updateTenantTheme }}>
+    <AuthContext.Provider value={{ user, tenant, isLoading, login, logout, hasPermission, updateTenantTheme, unlockDevice }}>
       {children}
     </AuthContext.Provider>
   );
