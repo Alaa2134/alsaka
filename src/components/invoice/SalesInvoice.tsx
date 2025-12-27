@@ -4,9 +4,10 @@ import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceFooter } from "./InvoiceFooter";
 import { InvoicePreviewModal } from "./InvoicePreviewModal";
 import { InvoiceSearch } from "./InvoiceSearch";
+import { BarcodeScanner } from "./BarcodeScanner";
 import { InvoiceItem } from "@/types/invoice";
 import { toast } from "sonner";
-import { useProducts } from "@/hooks/useProducts";
+import { useProducts, Product } from "@/hooks/useProducts";
 import { useClients, useCreateClient, useNextClientNumber } from "@/hooks/useClients";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { useCreateInvoice, useNextInvoiceNumber } from "@/hooks/useInvoices";
@@ -204,6 +205,51 @@ export const SalesInvoice = () => {
     setItems((prevItems) => [...prevItems, createEmptyItem()]);
   }, []);
 
+  // Handle barcode scan - add product to invoice
+  const handleBarcodeProduct = useCallback((product: Product) => {
+    setItems((prevItems) => {
+      // Check if product already exists in invoice
+      const existingIndex = prevItems.findIndex(
+        item => item.itemNumber === product.item_number
+      );
+
+      if (existingIndex >= 0) {
+        // Increase quantity if exists
+        return prevItems.map((item, index) => {
+          if (index === existingIndex) {
+            const newQty = item.quantity + 1;
+            return { ...item, quantity: newQty, total: newQty * item.price };
+          }
+          return item;
+        });
+      }
+
+      // Add new item
+      const wh = warehouses?.find(w => w.id === product.warehouse_id);
+      const newItem: InvoiceItem = {
+        id: generateId(),
+        itemNumber: product.item_number,
+        itemName: product.name,
+        quantity: 1,
+        price: product.price,
+        minPrice: product.min_price,
+        total: product.price,
+        warehouse: wh?.name || "",
+      };
+
+      // Replace empty item or add new
+      const hasEmptyItem = prevItems.some(i => !i.itemNumber && !i.itemName);
+      if (hasEmptyItem) {
+        const firstEmptyIndex = prevItems.findIndex(i => !i.itemNumber && !i.itemName);
+        return prevItems.map((item, index) => 
+          index === firstEmptyIndex ? newItem : item
+        );
+      }
+
+      return [...prevItems, newItem];
+    });
+  }, [warehouses]);
+
   const handleNewInvoice = useCallback(() => {
     setInvoiceNumber((prev) => String(parseInt(prev) + 1));
     setClientNumber("");
@@ -330,6 +376,11 @@ export const SalesInvoice = () => {
         </div>
         
         <div className="bg-card rounded-2xl shadow-soft p-8 border border-border">
+          {/* Barcode Scanner */}
+          <div className="mb-6">
+            <BarcodeScanner products={products} onProductFound={handleBarcodeProduct} />
+          </div>
+
           <InvoiceHeader
             invoiceNumber={invoiceNumber}
             clientNumber={clientNumber}

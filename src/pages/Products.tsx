@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useNextProductNumber, useProductCategories, Product } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import { Helmet } from "react-helmet-async";
 import { ProductImportExport } from "@/components/products/ProductImportExport";
 import { BackupRestore } from "@/components/backup/BackupRestore";
 import { StockAlerts } from "@/components/stock/StockAlerts";
+import { BarcodeGenerator } from "@/components/products/BarcodeGenerator";
 
 const Products = () => {
   const { data: products, isLoading } = useProducts();
@@ -27,6 +28,8 @@ const Products = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [barcodeProduct, setBarcodeProduct] = useState<Product | null>(null);
+  const [showBarcodeGenerator, setShowBarcodeGenerator] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [formData, setFormData] = useState({
     item_number: "",
@@ -101,6 +104,22 @@ const Products = () => {
     if (confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
       await deleteProduct.mutateAsync(id);
     }
+  };
+
+  const handleOpenBarcode = (product: Product) => {
+    setBarcodeProduct(product);
+    setShowBarcodeGenerator(true);
+  };
+
+  const handleBarcodeGenerated = async (barcode: string) => {
+    if (barcodeProduct) {
+      await updateProduct.mutateAsync({
+        id: barcodeProduct.id,
+        barcode: barcode,
+      });
+    }
+    setShowBarcodeGenerator(false);
+    setBarcodeProduct(null);
   };
 
   const resetForm = () => {
@@ -419,6 +438,13 @@ const Products = () => {
                             <Pencil size={18} />
                           </button>
                           <button
+                            onClick={() => handleOpenBarcode(product)}
+                            className="p-2 text-accent hover:bg-accent/10 rounded transition-colors"
+                            title="إنشاء/طباعة باركود"
+                          >
+                            <Printer size={18} />
+                          </button>
+                          <button
                             onClick={() => handleDelete(product.id)}
                             className="p-2 text-destructive hover:bg-destructive/10 rounded transition-colors"
                             title="حذف"
@@ -434,6 +460,17 @@ const Products = () => {
             </table>
           </div>
         </div>
+
+        {/* Barcode Generator Modal */}
+        <BarcodeGenerator
+          open={showBarcodeGenerator}
+          onClose={() => {
+            setShowBarcodeGenerator(false);
+            setBarcodeProduct(null);
+          }}
+          product={barcodeProduct}
+          onBarcodeGenerated={handleBarcodeGenerated}
+        />
       </MainLayout>
     </>
   );
