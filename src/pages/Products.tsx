@@ -299,14 +299,14 @@ const Products = () => {
             {/* Category Filter */}
             <div className="flex items-center gap-2">
               <Select
-                value={categoryFilter}
-                onValueChange={setCategoryFilter}
+                value={categoryFilter || "all"}
+                onValueChange={(value) => setCategoryFilter(value === "all" ? "" : value)}
               >
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="جميع التصنيفات" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع التصنيفات</SelectItem>
+                  <SelectItem value="all">جميع التصنيفات</SelectItem>
                   {allCategories.map((cat) => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
