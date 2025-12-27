@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useNextProductNumber, useProductCategories, Product } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -36,6 +36,7 @@ const Products = () => {
     stock_quantity: 0,
     warehouse_id: "",
     category: "",
+    barcode: "",
   });
 
   // Set auto product number when available
@@ -46,7 +47,9 @@ const Products = () => {
   }, [nextProductNumber, editingProduct, isDialogOpen]);
 
   const filteredProducts = products?.filter((p) => {
-    const matchesSearch = p.item_number.includes(search) || p.name.includes(search);
+    const matchesSearch = p.item_number.includes(search) || 
+      p.name.includes(search) || 
+      (p.barcode && p.barcode.includes(search));
     const matchesCategory = !categoryFilter || p.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -61,12 +64,14 @@ const Products = () => {
       await updateProduct.mutateAsync({
         id: editingProduct.id,
         ...formData,
+        barcode: formData.barcode || null,
         category: finalCategory || null,
         warehouse_id: formData.warehouse_id || null,
       });
     } else {
       await createProduct.mutateAsync({
         ...formData,
+        barcode: formData.barcode || null,
         category: finalCategory || null,
         warehouse_id: formData.warehouse_id || null,
       });
@@ -86,6 +91,7 @@ const Products = () => {
       stock_quantity: product.stock_quantity,
       warehouse_id: product.warehouse_id || "",
       category: product.category || "",
+      barcode: product.barcode || "",
     });
     setNewCategory("");
     setIsDialogOpen(true);
@@ -108,6 +114,7 @@ const Products = () => {
       stock_quantity: 0,
       warehouse_id: "",
       category: "",
+      barcode: "",
     });
   };
 
@@ -210,6 +217,19 @@ const Products = () => {
                     </div>
                   </div>
                   <div>
+                    <Label htmlFor="barcode">الباركود</Label>
+                    <div className="relative">
+                      <ScanBarcode size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="barcode"
+                        value={formData.barcode}
+                        onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                        placeholder="أدخل الباركود (اختياري)"
+                        className="pr-10"
+                      />
+                    </div>
+                  </div>
+                  <div>
                     <Label htmlFor="stock_quantity">الكمية المتاحة</Label>
                     <Input
                       id="stock_quantity"
@@ -289,7 +309,7 @@ const Products = () => {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
               <Input
-                placeholder="البحث برقم الصنف أو الاسم..."
+                placeholder="البحث برقم الصنف أو الاسم أو الباركود..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pr-10"
@@ -334,6 +354,7 @@ const Products = () => {
                 <tr className="bg-invoice-table-header text-invoice-table-header-foreground">
                   <th className="px-4 py-3 text-right font-bold">رقم الصنف</th>
                   <th className="px-4 py-3 text-right font-bold">اسم المنتج</th>
+                  <th className="px-4 py-3 text-center font-bold">الباركود</th>
                   <th className="px-4 py-3 text-center font-bold">السعر</th>
                   <th className="px-4 py-3 text-center font-bold">الحد الأدنى</th>
                   <th className="px-4 py-3 text-center font-bold">الكمية</th>
@@ -344,13 +365,13 @@ const Products = () => {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={8} className="text-center py-8 text-muted-foreground">
                       جاري التحميل...
                     </td>
                   </tr>
                 ) : filteredProducts?.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={8} className="text-center py-8 text-muted-foreground">
                       لا توجد منتجات
                     </td>
                   </tr>
@@ -367,6 +388,11 @@ const Products = () => {
                     >
                       <td className="px-4 py-3 font-semibold">{product.item_number}</td>
                       <td className="px-4 py-3">{product.name}</td>
+                      <td className="px-4 py-3 text-center font-mono text-sm">
+                        {product.barcode ? (
+                          <span className="bg-muted px-2 py-1 rounded">{product.barcode}</span>
+                        ) : "-"}
+                      </td>
                       <td className="px-4 py-3 text-center">{product.price.toFixed(2)}</td>
                       <td className="px-4 py-3 text-center">{product.min_price.toFixed(2)}</td>
                       <td className={`px-4 py-3 text-center font-bold ${
