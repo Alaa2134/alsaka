@@ -13,6 +13,7 @@ interface ParsedProduct {
   min_price: number;
   stock_quantity: number;
   category: string | null;
+  barcode: string | null;
 }
 
 export const ProductImportExport = () => {
@@ -32,7 +33,7 @@ export const ProductImportExport = () => {
       return;
     }
 
-    const headers = ["رقم الصنف", "اسم المنتج", "السعر", "الحد الأدنى", "الكمية", "التصنيف"];
+    const headers = ["رقم الصنف", "اسم المنتج", "السعر", "الحد الأدنى", "الكمية", "التصنيف", "الباركود"];
     const csvContent = [
       headers.join(","),
       ...products.map(p => [
@@ -41,7 +42,8 @@ export const ProductImportExport = () => {
         p.price,
         p.min_price,
         p.stock_quantity,
-        `"${p.category || ""}"`
+        `"${p.category || ""}"`,
+        `"${p.barcode || ""}"`
       ].join(","))
     ].join("\n");
 
@@ -73,6 +75,7 @@ export const ProductImportExport = () => {
         min_price: parseFloat(cleanValues[3]) || 0,
         stock_quantity: parseInt(cleanValues[4]) || 0,
         category: cleanValues[5] || null,
+        barcode: cleanValues[6] || null,
       };
     }).filter(p => p.item_number && p.name);
   };
@@ -96,6 +99,7 @@ export const ProductImportExport = () => {
           min_price: parseFloat(parts[3]) || 0,
           stock_quantity: parseInt(parts[4]) || 0,
           category: parts[5] || null,
+          barcode: parts[6] || null,
         });
       }
     }
@@ -174,6 +178,7 @@ export const ProductImportExport = () => {
         min_price: parseFloat(p.min_price) || parseFloat(p.price) || 0,
         stock_quantity: parseInt(p.stock_quantity) || 0,
         category: p.category || null,
+        barcode: p.barcode || null,
       }));
 
       setParsedProducts(normalizedProducts);
@@ -204,6 +209,7 @@ export const ProductImportExport = () => {
           min_price: product.min_price,
           stock_quantity: product.stock_quantity,
           category: product.category,
+          barcode: product.barcode,
           warehouse_id: null,
         });
         successCount++;

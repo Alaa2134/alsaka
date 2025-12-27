@@ -11,6 +11,7 @@ export interface Product {
   stock_quantity: number;
   warehouse_id: string | null;
   category: string | null;
+  barcode: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -79,13 +80,32 @@ export const useProductSearch = (searchTerm: string) => {
       const { data, error } = await supabase
         .from("products")
         .select("*")
-        .or(`item_number.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%`)
+        .or(`item_number.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%,barcode.ilike.%${searchTerm}%`)
         .limit(10);
       
       if (error) throw error;
       return data as Product[];
     },
     enabled: searchTerm.length > 0,
+  });
+};
+
+export const useProductByBarcode = (barcode: string) => {
+  return useQuery({
+    queryKey: ["products", "barcode", barcode],
+    queryFn: async () => {
+      if (!barcode) return null;
+      
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("barcode", barcode)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as Product | null;
+    },
+    enabled: barcode.length > 0,
   });
 };
 
