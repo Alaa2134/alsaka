@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScanBarcode, Plus } from "lucide-react";
+import { ScanBarcode, Plus, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/hooks/useProducts";
+import { CameraBarcodeScanner } from "./CameraBarcodeScanner";
 
 interface BarcodeScannerProps {
   products: Product[] | undefined;
@@ -13,6 +14,7 @@ interface BarcodeScannerProps {
 export const BarcodeScanner = ({ products, onProductFound }: BarcodeScannerProps) => {
   const [barcode, setBarcode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scanBuffer = useRef("");
   const scanTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -75,6 +77,11 @@ export const BarcodeScanner = ({ products, onProductFound }: BarcodeScannerProps
     handleBarcodeSubmit(barcode);
   };
 
+  const handleCameraBarcode = (code: string) => {
+    handleBarcodeSubmit(code);
+    setShowCameraScanner(false);
+  };
+
   const toggleScanning = () => {
     setIsScanning(!isScanning);
     if (!isScanning) {
@@ -84,33 +91,52 @@ export const BarcodeScanner = ({ products, onProductFound }: BarcodeScannerProps
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-dashed">
-      <ScanBarcode 
-        size={20} 
-        className={`${isScanning ? "text-primary animate-pulse" : "text-muted-foreground"}`} 
-      />
-      <form onSubmit={handleManualSubmit} className="flex-1 flex gap-2">
-        <Input
-          ref={inputRef}
-          value={barcode}
-          onChange={(e) => setBarcode(e.target.value)}
-          placeholder={isScanning ? "امسح الباركود أو أدخله يدوياً..." : "أدخل الباركود..."}
-          className="flex-1 font-mono"
-          onFocus={() => setIsScanning(true)}
+    <>
+      <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-dashed">
+        <ScanBarcode 
+          size={20} 
+          className={`${isScanning ? "text-primary animate-pulse" : "text-muted-foreground"}`} 
         />
-        <Button type="submit" size="sm" variant="secondary" disabled={!barcode}>
-          <Plus size={16} />
+        <form onSubmit={handleManualSubmit} className="flex-1 flex gap-2">
+          <Input
+            ref={inputRef}
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            placeholder={isScanning ? "امسح الباركود أو أدخله يدوياً..." : "أدخل الباركود..."}
+            className="flex-1 font-mono"
+            onFocus={() => setIsScanning(true)}
+          />
+          <Button type="submit" size="sm" variant="secondary" disabled={!barcode}>
+            <Plus size={16} />
+          </Button>
+        </form>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setShowCameraScanner(true)}
+          className="shrink-0"
+          title="مسح بالكاميرا"
+        >
+          <Camera size={16} />
         </Button>
-      </form>
-      <Button
-        type="button"
-        size="sm"
-        variant={isScanning ? "default" : "outline"}
-        onClick={toggleScanning}
-        className="shrink-0"
-      >
-        {isScanning ? "إيقاف" : "مسح"}
-      </Button>
-    </div>
+        <Button
+          type="button"
+          size="sm"
+          variant={isScanning ? "default" : "outline"}
+          onClick={toggleScanning}
+          className="shrink-0"
+        >
+          {isScanning ? "إيقاف" : "مسح"}
+        </Button>
+      </div>
+
+      {/* Camera Scanner Modal */}
+      <CameraBarcodeScanner
+        open={showCameraScanner}
+        onClose={() => setShowCameraScanner(false)}
+        onBarcodeScanned={handleCameraBarcode}
+      />
+    </>
   );
 };
