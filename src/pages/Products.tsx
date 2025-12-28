@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useNextProductNumber, useProductCategories, Product } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +13,8 @@ import { ProductImportExport } from "@/components/products/ProductImportExport";
 import { BackupRestore } from "@/components/backup/BackupRestore";
 import { StockAlerts } from "@/components/stock/StockAlerts";
 import { BarcodeGenerator } from "@/components/products/BarcodeGenerator";
+import { BatchBarcodesPrint } from "@/components/products/BatchBarcodesPrint";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Products = () => {
   const { data: products, isLoading } = useProducts();
@@ -30,6 +32,8 @@ const Products = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [barcodeProduct, setBarcodeProduct] = useState<Product | null>(null);
   const [showBarcodeGenerator, setShowBarcodeGenerator] = useState(false);
+  const [showBatchPrint, setShowBatchPrint] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [newCategory, setNewCategory] = useState("");
   const [formData, setFormData] = useState({
     item_number: "",
@@ -137,6 +141,29 @@ const Products = () => {
     });
   };
 
+  // Selection handlers
+  const toggleProductSelection = (productId: string) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (filteredProducts && selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else if (filteredProducts) {
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+    }
+  };
+
+  const getSelectedProductsData = (): Product[] => {
+    return products?.filter(p => selectedProducts.has(p.id)) || [];
+  };
+
   // Get unique categories for filter
   const allCategories = existingCategories || [];
 
@@ -160,6 +187,19 @@ const Products = () => {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Batch Print Button */}
+              {selectedProducts.size > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowBatchPrint(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Printer size={16} />
+                  طباعة ملصقات ({selectedProducts.size})
+                </Button>
+              )}
+              
               {/* Import/Export */}
               <ProductImportExport />
               
@@ -371,6 +411,13 @@ const Products = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-invoice-table-header text-invoice-table-header-foreground">
+                  <th className="px-4 py-3 text-center w-12">
+                    <Checkbox
+                      checked={filteredProducts && filteredProducts.length > 0 && selectedProducts.size === filteredProducts.length}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="تحديد الكل"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-right font-bold">رقم الصنف</th>
                   <th className="px-4 py-3 text-right font-bold">اسم المنتج</th>
                   <th className="px-4 py-3 text-center font-bold">الباركود</th>
@@ -384,13 +431,13 @@ const Products = () => {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={9} className="text-center py-8 text-muted-foreground">
                       جاري التحميل...
                     </td>
                   </tr>
                 ) : filteredProducts?.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={9} className="text-center py-8 text-muted-foreground">
                       لا توجد منتجات
                     </td>
                   </tr>
@@ -403,8 +450,15 @@ const Products = () => {
                       } hover:bg-muted/50 transition-colors ${
                         product.stock_quantity === 0 ? "bg-destructive/10" : 
                         product.stock_quantity <= 10 ? "bg-warning/10" : ""
-                      }`}
+                      } ${selectedProducts.has(product.id) ? "bg-primary/5" : ""}`}
                     >
+                      <td className="px-4 py-3 text-center">
+                        <Checkbox
+                          checked={selectedProducts.has(product.id)}
+                          onCheckedChange={() => toggleProductSelection(product.id)}
+                          aria-label={`تحديد ${product.name}`}
+                        />
+                      </td>
                       <td className="px-4 py-3 font-semibold">{product.item_number}</td>
                       <td className="px-4 py-3">{product.name}</td>
                       <td className="px-4 py-3 text-center font-mono text-sm">
@@ -470,6 +524,13 @@ const Products = () => {
           }}
           product={barcodeProduct}
           onBarcodeGenerated={handleBarcodeGenerated}
+        />
+
+        {/* Batch Print Modal */}
+        <BatchBarcodesPrint
+          open={showBatchPrint}
+          onClose={() => setShowBatchPrint(false)}
+          products={getSelectedProductsData()}
         />
       </MainLayout>
     </>
