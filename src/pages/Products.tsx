@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useNextProductNumber, useProductCategories, Product } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer, CheckSquare, Square } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,6 +15,8 @@ import { StockAlerts } from "@/components/stock/StockAlerts";
 import { BarcodeGenerator } from "@/components/products/BarcodeGenerator";
 import { BatchBarcodesPrint } from "@/components/products/BatchBarcodesPrint";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { generateProductBarcode } from "@/utils/barcodeGenerator";
 
 const Products = () => {
   const { data: products, isLoading } = useProducts();
@@ -35,6 +37,7 @@ const Products = () => {
   const [showBatchPrint, setShowBatchPrint] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [newCategory, setNewCategory] = useState("");
+  const [autoGenerateBarcode, setAutoGenerateBarcode] = useState(true);
   const [formData, setFormData] = useState({
     item_number: "",
     name: "",
@@ -45,6 +48,14 @@ const Products = () => {
     category: "",
     barcode: "",
   });
+
+  // Auto-generate barcode when item number changes (for new products)
+  useEffect(() => {
+    if (autoGenerateBarcode && !editingProduct && formData.item_number && !formData.barcode) {
+      const generatedBarcode = generateProductBarcode(formData.item_number);
+      setFormData(prev => ({ ...prev, barcode: generatedBarcode }));
+    }
+  }, [formData.item_number, autoGenerateBarcode, editingProduct]);
 
   // Set auto product number when available
   useEffect(() => {
@@ -276,16 +287,43 @@ const Products = () => {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="barcode">الباركود</Label>
-                    <div className="relative">
-                      <ScanBarcode size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="barcode"
-                        value={formData.barcode}
-                        onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                        placeholder="أدخل الباركود (اختياري)"
-                        className="pr-10"
-                      />
+                    <div className="flex items-center justify-between mb-1">
+                      <Label htmlFor="barcode">الباركود</Label>
+                      {!editingProduct && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">تلقائي</span>
+                          <Switch
+                            checked={autoGenerateBarcode}
+                            onCheckedChange={setAutoGenerateBarcode}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <ScanBarcode size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="barcode"
+                          value={formData.barcode}
+                          onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                          placeholder={autoGenerateBarcode ? "سيتم التوليد تلقائياً" : "أدخل الباركود"}
+                          className="pr-10 font-mono"
+                        />
+                      </div>
+                      {!editingProduct && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            const newBarcode = generateProductBarcode(formData.item_number || Date.now().toString());
+                            setFormData({ ...formData, barcode: newBarcode });
+                          }}
+                          title="توليد باركود جديد"
+                        >
+                          <RefreshCw size={16} />
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div>

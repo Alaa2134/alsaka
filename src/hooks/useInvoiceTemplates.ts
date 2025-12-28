@@ -2,6 +2,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export interface ElementPosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface TemplateSettings {
   companyName: string;
   companyAddress: string;
@@ -20,6 +27,9 @@ export interface TemplateSettings {
   fontSize: "small" | "medium" | "large";
   paperSize: "a4" | "a5" | "thermal";
   elementsOrder: string[];
+  // New: Element positions for drag-drop layout
+  elementPositions?: Record<string, ElementPosition>;
+  useCustomLayout?: boolean;
 }
 
 export interface InvoiceTemplate {
@@ -31,6 +41,16 @@ export interface InvoiceTemplate {
   created_at: string;
   updated_at: string;
 }
+
+export const defaultElementPositions: Record<string, ElementPosition> = {
+  header: { x: 0, y: 0, width: 100, height: 12 },
+  invoiceInfo: { x: 0, y: 14, width: 100, height: 10 },
+  itemsTable: { x: 0, y: 26, width: 100, height: 35 },
+  totals: { x: 60, y: 63, width: 40, height: 8 },
+  notes: { x: 0, y: 73, width: 100, height: 8 },
+  signatures: { x: 0, y: 83, width: 100, height: 8 },
+  footer: { x: 0, y: 93, width: 100, height: 5 },
+};
 
 export const defaultTemplateSettings: TemplateSettings = {
   companyName: "شركة السقا للأدوات المنزلية",
@@ -58,6 +78,8 @@ export const defaultTemplateSettings: TemplateSettings = {
     "signatures",
     "footer"
   ],
+  elementPositions: defaultElementPositions,
+  useCustomLayout: false,
 };
 
 export const useInvoiceTemplates = () => {
