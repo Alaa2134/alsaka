@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
-import Barcode from "react-barcode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Printer } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Printer, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/hooks/useProducts";
 
@@ -14,12 +15,57 @@ interface BatchBarcodesPrintProps {
   products: Product[];
 }
 
+interface LabelSettings {
+  labelWidth: number;
+  labelHeight: number;
+  fontSize: number;
+  barcodeHeight: number;
+  barcodeWidth: number;
+  showProductName: boolean;
+  showProductNumber: boolean;
+  showPrice: boolean;
+  showBarcodeText: boolean;
+  columns: number;
+  gap: number;
+}
+
+const defaultSettings: LabelSettings = {
+  labelWidth: 50,
+  labelHeight: 30,
+  fontSize: 10,
+  barcodeHeight: 40,
+  barcodeWidth: 1.5,
+  showProductName: true,
+  showProductNumber: true,
+  showPrice: false,
+  showBarcodeText: true,
+  columns: 4,
+  gap: 5,
+};
+
+const presetTemplates = {
+  small: { labelWidth: 40, labelHeight: 25, fontSize: 8, barcodeHeight: 30, columns: 5 },
+  medium: { labelWidth: 50, labelHeight: 30, fontSize: 10, barcodeHeight: 40, columns: 4 },
+  large: { labelWidth: 70, labelHeight: 40, fontSize: 12, barcodeHeight: 50, columns: 3 },
+  thermal: { labelWidth: 58, labelHeight: 40, fontSize: 11, barcodeHeight: 45, columns: 1 },
+};
+
 export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPrintProps) => {
   const [copiesPerProduct, setCopiesPerProduct] = useState(1);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<LabelSettings>(defaultSettings);
   const previewRef = useRef<HTMLDivElement>(null);
 
+  const updateSetting = <K extends keyof LabelSettings>(key: K, value: LabelSettings[K]) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const applyPreset = (preset: keyof typeof presetTemplates) => {
+    setSettings(prev => ({ ...prev, ...presetTemplates[preset] }));
+  };
+
   const handlePrint = () => {
-    if (!previewRef.current || products.length === 0) return;
+    if (products.length === 0) return;
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -27,38 +73,37 @@ export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPri
       return;
     }
 
+    const productsWithBarcode = products.filter(p => p.barcode);
+    
     // Generate barcode HTML for all products
-    const barcodesHtml = products
-      .filter(p => p.barcode)
-      .map(product => {
-        const barcodeItems = Array(copiesPerProduct)
-          .fill(null)
-          .map(() => `
-            <div class="barcode-item">
-              <div class="product-name">${product.name}</div>
-              <div class="product-number">${product.item_number}</div>
-              <div class="barcode-container">
-                <svg id="barcode-${product.id}"></svg>
-              </div>
-              <div class="barcode-text">${product.barcode}</div>
+    const barcodesHtml = productsWithBarcode
+      .flatMap((product, idx) => 
+        Array(copiesPerProduct).fill(null).map((_, copyIdx) => `
+          <div class="barcode-item" style="width: ${settings.labelWidth}mm; height: ${settings.labelHeight}mm;">
+            ${settings.showProductName ? `<div class="product-name" style="font-size: ${settings.fontSize}px;">${product.name}</div>` : ''}
+            ${settings.showProductNumber ? `<div class="product-number" style="font-size: ${settings.fontSize - 2}px;">${product.item_number}</div>` : ''}
+            ${settings.showPrice ? `<div class="product-price" style="font-size: ${settings.fontSize}px;">${product.price.toFixed(2)}</div>` : ''}
+            <div class="barcode-container">
+              <svg id="barcode-${idx}-${copyIdx}"></svg>
             </div>
-          `)
-          .join("");
-        return barcodeItems;
-      })
+            ${settings.showBarcodeText ? `<div class="barcode-text" style="font-size: ${settings.fontSize - 2}px;">${product.barcode}</div>` : ''}
+          </div>
+        `)
+      )
       .join("");
 
-    const barcodeScripts = products
-      .filter(p => p.barcode)
-      .map(product => `
-        JsBarcode("#barcode-${product.id}", "${product.barcode}", {
-          format: "CODE128",
-          width: 1.5,
-          height: 40,
-          displayValue: false,
-          margin: 5
-        });
-      `)
+    const barcodeScripts = productsWithBarcode
+      .flatMap((product, idx) =>
+        Array(copiesPerProduct).fill(null).map((_, copyIdx) => `
+          JsBarcode("#barcode-${idx}-${copyIdx}", "${product.barcode}", {
+            format: "CODE128",
+            width: ${settings.barcodeWidth},
+            height: ${settings.barcodeHeight},
+            displayValue: false,
+            margin: 2
+          });
+        `)
+      )
       .join("");
 
     printWindow.document.write(`
@@ -69,47 +114,50 @@ export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPri
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          @page { margin: 5mm; }
+          @page { margin: 3mm; }
           body { 
             font-family: Arial, sans-serif;
             display: flex;
             flex-wrap: wrap;
             justify-content: flex-start;
-            gap: 8px;
-            padding: 10px;
+            gap: ${settings.gap}mm;
+            padding: 5mm;
           }
           .barcode-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 8px;
+            justify-content: center;
+            padding: 2mm;
             border: 1px dashed #ccc;
             page-break-inside: avoid;
-            width: 180px;
+            overflow: hidden;
           }
           .product-name {
-            font-size: 10px;
             font-weight: bold;
-            margin-bottom: 2px;
             text-align: center;
-            max-width: 160px;
+            max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            margin-bottom: 1px;
           }
           .product-number {
-            font-size: 9px;
             color: #666;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+          }
+          .product-price {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 2px;
           }
           .barcode-container svg {
-            max-width: 160px;
+            max-width: 100%;
             height: auto;
           }
           .barcode-text {
-            font-size: 10px;
             font-family: monospace;
-            margin-top: 2px;
+            margin-top: 1px;
           }
           @media print {
             .barcode-item { border: none; }
@@ -137,21 +185,167 @@ export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPri
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Printer size={20} />
-            طباعة ملصقات الباركود ({products.length} منتج)
+          <DialogTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Printer size={20} />
+              طباعة ملصقات الباركود ({products.length} منتج)
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <Settings size={16} className="ml-1" />
+              {showSettings ? "إخفاء" : "إعدادات"}
+            </Button>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Stats */}
-          <div className="bg-muted p-3 rounded-lg text-sm">
-            <p>المنتجات المحددة: <strong>{products.length}</strong></p>
-            <p>المنتجات بباركود: <strong>{productsWithBarcode.length}</strong></p>
-            <p>المنتجات بدون باركود: <strong className="text-warning">{products.length - productsWithBarcode.length}</strong></p>
+          <div className="bg-muted p-3 rounded-lg text-sm grid grid-cols-3 gap-2">
+            <p>المحددة: <strong>{products.length}</strong></p>
+            <p>بباركود: <strong className="text-primary">{productsWithBarcode.length}</strong></p>
+            <p>بدون: <strong className="text-warning">{products.length - productsWithBarcode.length}</strong></p>
           </div>
+
+          {/* Settings Panel */}
+          {showSettings && (
+            <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+              {/* Presets */}
+              <div>
+                <Label className="text-sm mb-2 block">قوالب جاهزة</Label>
+                <div className="flex gap-2 flex-wrap">
+                  {Object.keys(presetTemplates).map(preset => (
+                    <Button
+                      key={preset}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => applyPreset(preset as keyof typeof presetTemplates)}
+                    >
+                      {preset === 'small' && 'صغير'}
+                      {preset === 'medium' && 'متوسط'}
+                      {preset === 'large' && 'كبير'}
+                      {preset === 'thermal' && 'حراري'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size Settings */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-xs">عرض الملصق (مم)</Label>
+                  <Input
+                    type="number"
+                    min={20}
+                    max={100}
+                    value={settings.labelWidth}
+                    onChange={(e) => updateSetting("labelWidth", parseInt(e.target.value) || 50)}
+                    className="h-8"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">ارتفاع الملصق (مم)</Label>
+                  <Input
+                    type="number"
+                    min={15}
+                    max={80}
+                    value={settings.labelHeight}
+                    onChange={(e) => updateSetting("labelHeight", parseInt(e.target.value) || 30)}
+                    className="h-8"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">حجم الخط</Label>
+                  <Input
+                    type="number"
+                    min={6}
+                    max={16}
+                    value={settings.fontSize}
+                    onChange={(e) => updateSetting("fontSize", parseInt(e.target.value) || 10)}
+                    className="h-8"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">ارتفاع الباركود</Label>
+                  <Input
+                    type="number"
+                    min={20}
+                    max={80}
+                    value={settings.barcodeHeight}
+                    onChange={(e) => updateSetting("barcodeHeight", parseInt(e.target.value) || 40)}
+                    className="h-8"
+                  />
+                </div>
+              </div>
+
+              {/* Display Options */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="flex items-center justify-between bg-background rounded p-2">
+                  <Label className="text-xs">اسم المنتج</Label>
+                  <Switch
+                    checked={settings.showProductName}
+                    onCheckedChange={(checked) => updateSetting("showProductName", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between bg-background rounded p-2">
+                  <Label className="text-xs">رقم الصنف</Label>
+                  <Switch
+                    checked={settings.showProductNumber}
+                    onCheckedChange={(checked) => updateSetting("showProductNumber", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between bg-background rounded p-2">
+                  <Label className="text-xs">السعر</Label>
+                  <Switch
+                    checked={settings.showPrice}
+                    onCheckedChange={(checked) => updateSetting("showPrice", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between bg-background rounded p-2">
+                  <Label className="text-xs">رقم الباركود</Label>
+                  <Switch
+                    checked={settings.showBarcodeText}
+                    onCheckedChange={(checked) => updateSetting("showBarcodeText", checked)}
+                  />
+                </div>
+              </div>
+
+              {/* Layout Settings */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">عدد الأعمدة</Label>
+                  <Select
+                    value={String(settings.columns)}
+                    onValueChange={(v) => updateSetting("columns", parseInt(v))}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 6].map(n => (
+                        <SelectItem key={n} value={String(n)}>{n} أعمدة</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">المسافة بين الملصقات (مم)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={settings.gap}
+                    onChange={(e) => updateSetting("gap", parseInt(e.target.value) || 5)}
+                    className="h-8"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Copies per product */}
           <div>
@@ -166,17 +360,45 @@ export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPri
           </div>
 
           {/* Preview */}
-          <div ref={previewRef} className="max-h-48 overflow-y-auto border rounded p-2 bg-white">
-            <div className="flex flex-wrap gap-2 justify-center">
-              {productsWithBarcode.slice(0, 6).map(product => (
-                <div key={product.id} className="text-center p-2 border rounded text-xs">
-                  <div className="font-bold truncate max-w-[100px]">{product.name}</div>
-                  <div className="text-muted-foreground">{product.barcode}</div>
+          <div ref={previewRef} className="max-h-40 overflow-y-auto border rounded p-2 bg-white">
+            <div 
+              className="flex flex-wrap justify-center"
+              style={{ gap: `${settings.gap}mm` }}
+            >
+              {productsWithBarcode.slice(0, 4).map(product => (
+                <div 
+                  key={product.id} 
+                  className="text-center p-2 border rounded bg-gray-50"
+                  style={{ 
+                    width: `${settings.labelWidth}mm`,
+                    minHeight: `${settings.labelHeight}mm`,
+                    fontSize: `${settings.fontSize}px`
+                  }}
+                >
+                  {settings.showProductName && (
+                    <div className="font-bold truncate">{product.name}</div>
+                  )}
+                  {settings.showProductNumber && (
+                    <div className="text-gray-500" style={{ fontSize: `${settings.fontSize - 2}px` }}>
+                      {product.item_number}
+                    </div>
+                  )}
+                  {settings.showPrice && (
+                    <div className="font-semibold">{product.price.toFixed(2)}</div>
+                  )}
+                  <div className="bg-gray-200 h-6 my-1 flex items-center justify-center text-xs text-gray-400">
+                    [باركود]
+                  </div>
+                  {settings.showBarcodeText && (
+                    <div className="font-mono" style={{ fontSize: `${settings.fontSize - 2}px` }}>
+                      {product.barcode}
+                    </div>
+                  )}
                 </div>
               ))}
-              {productsWithBarcode.length > 6 && (
+              {productsWithBarcode.length > 4 && (
                 <div className="flex items-center text-muted-foreground text-sm">
-                  +{productsWithBarcode.length - 6} المزيد
+                  +{productsWithBarcode.length - 4} المزيد
                 </div>
               )}
             </div>
@@ -185,6 +407,8 @@ export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPri
           {/* Total labels */}
           <div className="text-center text-sm text-muted-foreground">
             إجمالي الملصقات: <strong>{productsWithBarcode.length * copiesPerProduct}</strong>
+            {" | "}
+            الحجم: <strong>{settings.labelWidth}×{settings.labelHeight} مم</strong>
           </div>
 
           {/* Actions */}

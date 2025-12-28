@@ -10,6 +10,8 @@ import {
   defaultTemplateSettings,
   TemplateSettings,
   InvoiceTemplate,
+  ElementPosition,
+  defaultElementPositions,
 } from "@/hooks/useInvoiceTemplates";
 import {
   FileText,
@@ -21,6 +23,8 @@ import {
   GripVertical,
   Palette,
   Settings2,
+  Move,
+  LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,9 +44,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
+import { DraggableInvoiceCanvas } from "@/components/invoice/DraggableInvoiceCanvas";
 
 const elementLabels: Record<string, string> = {
   header: "ترويسة الشركة",
@@ -67,6 +73,7 @@ const InvoiceDesigner = () => {
   const [templateName, setTemplateName] = useState("قالب جديد");
   const [showPreview, setShowPreview] = useState(false);
   const [draggedElement, setDraggedElement] = useState<string | null>(null);
+  const [designMode, setDesignMode] = useState<"settings" | "canvas">("settings");
 
   // Check permissions
   if (!hasPermission(["admin", "manager"])) {
@@ -142,6 +149,14 @@ const InvoiceDesigner = () => {
     setSettings({ ...settings, [key]: value });
   };
 
+  const handlePositionChange = (positions: Record<string, ElementPosition>) => {
+    setSettings(prev => ({
+      ...prev,
+      elementPositions: positions,
+      useCustomLayout: true,
+    }));
+  };
+
   return (
     <>
       <Helmet>
@@ -208,11 +223,38 @@ const InvoiceDesigner = () => {
 
             {/* Settings Panel - Middle Column */}
             <div className="xl:col-span-5 bg-card rounded-lg p-3 lg:p-4 shadow-lg border border-border overflow-y-auto max-h-[calc(100vh-180px)]">
-              <h2 className="font-bold mb-3 flex items-center gap-2 text-sm lg:text-base">
-                <Settings2 size={18} />
-                إعدادات القالب
-              </h2>
+              <Tabs value={designMode} onValueChange={(v) => setDesignMode(v as "settings" | "canvas")}>
+                <TabsList className="grid w-full grid-cols-2 mb-3">
+                  <TabsTrigger value="settings" className="flex items-center gap-1">
+                    <Settings2 size={14} />
+                    الإعدادات
+                  </TabsTrigger>
+                  <TabsTrigger value="canvas" className="flex items-center gap-1">
+                    <Move size={14} />
+                    التصميم الحر
+                  </TabsTrigger>
+                </TabsList>
 
+                <TabsContent value="canvas" className="mt-0">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-sm">تخصيص مواقع العناصر</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">تفعيل التصميم المخصص</span>
+                        <Switch
+                          checked={settings.useCustomLayout || false}
+                          onCheckedChange={(checked) => updateSetting("useCustomLayout", checked)}
+                        />
+                      </div>
+                    </div>
+                    <DraggableInvoiceCanvas
+                      settings={settings}
+                      onPositionChange={handlePositionChange}
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="settings" className="mt-0">
               <div className="space-y-3">
                 {/* Template Name */}
                 <div>
@@ -408,6 +450,8 @@ const InvoiceDesigner = () => {
                   </div>
                 )}
               </div>
+                </TabsContent>
+              </Tabs>
             </div>
 
             {/* Live Preview - Right Column */}
