@@ -1,18 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Lock, LogIn, Eye, EyeOff, Sparkles, FileText, Shield, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Helmet } from "react-helmet-async";
+import { supabase } from "@/integrations/supabase/client";
+
+interface TenantInfo {
+  name: string;
+  logo_url: string | null;
+}
 
 const Login = () => {
   const [code, setCode] = useState("");
   const [showCode, setShowCode] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [tenantInfo, setTenantInfo] = useState<TenantInfo | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Fetch first tenant info for branding
+  useEffect(() => {
+    const fetchTenantInfo = async () => {
+      const { data } = await supabase
+        .from("tenants")
+        .select("name, logo_url")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+      
+      if (data) {
+        setTenantInfo(data);
+      }
+    };
+    fetchTenantInfo();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,11 +64,13 @@ const Login = () => {
     { icon: BarChart3, title: "تقارير شاملة", desc: "تحليلات ورؤى للمبيعات" },
   ];
 
+  const companyName = tenantInfo?.name || "نظام الفواتير";
+
   return (
     <>
       <Helmet>
-        <title>تسجيل الدخول | نظام الفواتير</title>
-        <meta name="description" content="تسجيل الدخول إلى نظام الفواتير" />
+        <title>تسجيل الدخول | {companyName}</title>
+        <meta name="description" content={`تسجيل الدخول إلى ${companyName}`} />
       </Helmet>
 
       <div className="min-h-screen flex">
@@ -53,10 +79,18 @@ const Login = () => {
           <div className="w-full max-w-md animate-fade-in">
             {/* Logo */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 gradient-primary rounded-2xl mb-6 shadow-glow animate-pulse-slow">
-                <Sparkles className="w-10 h-10 text-primary-foreground" />
-              </div>
-              <h1 className="text-4xl font-bold gradient-text mb-2">نظام الفواتير</h1>
+              {tenantInfo?.logo_url ? (
+                <img 
+                  src={tenantInfo.logo_url} 
+                  alt={companyName}
+                  className="w-20 h-20 mx-auto mb-6 rounded-2xl object-contain shadow-glow"
+                />
+              ) : (
+                <div className="inline-flex items-center justify-center w-20 h-20 gradient-primary rounded-2xl mb-6 shadow-glow animate-pulse-slow">
+                  <Sparkles className="w-10 h-10 text-primary-foreground" />
+                </div>
+              )}
+              <h1 className="text-4xl font-bold gradient-text mb-2">{companyName}</h1>
               <p className="text-muted-foreground text-lg">مرحباً بك</p>
             </div>
 
