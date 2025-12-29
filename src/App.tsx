@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AIAssistant } from "@/components/shared/AIAssistant";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Products from "./pages/Products";
@@ -85,6 +86,7 @@ const App = () => (
                 } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <AIAssistant />
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
