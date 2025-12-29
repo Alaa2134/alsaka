@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useSalesReport } from "@/hooks/useInvoices";
-import { BarChart3, Calendar, TrendingUp, FileText, DollarSign, Download, ArrowUp, ArrowDown } from "lucide-react";
+import { useCreditReport } from "@/hooks/useCreditReport";
+import { BarChart3, Calendar, TrendingUp, FileText, DollarSign, Download, ArrowUp, ArrowDown, Users, CreditCard, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ const Reports = () => {
   const [reportType, setReportType] = useState<"daily" | "monthly" | "yearly">("daily");
   
   const { data: invoices, isLoading } = useSalesReport(startDate, endDate);
+  const { data: creditReport, isLoading: isCreditLoading } = useCreditReport();
 
   const stats = useMemo(() => {
     if (!invoices) return { total: 0, count: 0, average: 0, maxDay: 0, minDay: 0 };
@@ -296,11 +298,15 @@ const Reports = () => {
 
           {/* Charts Tabs */}
           <Tabs defaultValue="sales" className="space-y-4">
-            <TabsList className="grid grid-cols-4 w-full max-w-md">
+            <TabsList className="grid grid-cols-5 w-full max-w-xl">
               <TabsTrigger value="sales">المبيعات</TabsTrigger>
               <TabsTrigger value="trends">الاتجاهات</TabsTrigger>
               <TabsTrigger value="payment">طرق الدفع</TabsTrigger>
               <TabsTrigger value="products">المنتجات</TabsTrigger>
+              <TabsTrigger value="credit" className="flex items-center gap-1">
+                <CreditCard size={14} />
+                الآجل
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="sales" className="space-y-4">
@@ -507,6 +513,95 @@ const Reports = () => {
                     </table>
                   </div>
                 )}
+              </div>
+            </TabsContent>
+
+            {/* Credit/Deferred Payment Report */}
+            <TabsContent value="credit">
+              <div className="space-y-6">
+                {/* Credit Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-card rounded-lg p-4 shadow-lg border border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-500/10 rounded-lg">
+                        <AlertCircle className="w-5 h-5 text-red-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">إجمالي المستحقات</p>
+                        <p className="text-xl font-bold text-red-500">{(creditReport?.total_balance_due || 0).toFixed(2)} ج.م</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-card rounded-lg p-4 shadow-lg border border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <Users className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">عملاء لديهم مستحقات</p>
+                        <p className="text-xl font-bold text-foreground">{creditReport?.total_clients_with_balance || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-card rounded-lg p-4 shadow-lg border border-border">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <DollarSign className="w-5 h-5 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">إجمالي المبيعات الآجلة</p>
+                        <p className="text-xl font-bold text-foreground">{(creditReport?.total_sales || 0).toFixed(2)} ج.م</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Client Balances Table */}
+                <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
+                  <h3 className="text-lg font-bold text-foreground mb-4">حسابات العملاء الآجلة</h3>
+                  {isCreditLoading ? (
+                    <div className="h-40 flex items-center justify-center text-muted-foreground">
+                      جاري التحميل...
+                    </div>
+                  ) : !creditReport?.clients?.length ? (
+                    <div className="h-40 flex items-center justify-center text-muted-foreground">
+                      لا توجد مستحقات آجلة
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-right py-3 px-4 font-bold">رقم العميل</th>
+                            <th className="text-right py-3 px-4 font-bold">اسم العميل</th>
+                            <th className="text-right py-3 px-4 font-bold">الهاتف</th>
+                            <th className="text-center py-3 px-4 font-bold">عدد الفواتير</th>
+                            <th className="text-left py-3 px-4 font-bold">إجمالي المبيعات</th>
+                            <th className="text-left py-3 px-4 font-bold">المستحق</th>
+                            <th className="text-left py-3 px-4 font-bold">آخر فاتورة</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {creditReport.clients.map((client) => (
+                            <tr key={client.client_id} className="border-b hover:bg-muted/50">
+                              <td className="py-3 px-4 font-mono">{client.client_number}</td>
+                              <td className="py-3 px-4 font-medium">{client.client_name}</td>
+                              <td className="py-3 px-4 text-muted-foreground">{client.client_phone || "-"}</td>
+                              <td className="py-3 px-4 text-center">{client.invoice_count}</td>
+                              <td className="py-3 px-4 text-left">{client.total_sales.toFixed(2)} ج.م</td>
+                              <td className={`py-3 px-4 text-left font-bold ${client.balance_due > 0 ? "text-red-500" : "text-green-500"}`}>
+                                {client.balance_due.toFixed(2)} ج.م
+                              </td>
+                              <td className="py-3 px-4 text-left text-muted-foreground">
+                                {client.last_invoice_date ? new Date(client.last_invoice_date).toLocaleDateString("ar-EG") : "-"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>

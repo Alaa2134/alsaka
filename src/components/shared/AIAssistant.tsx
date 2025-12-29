@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, X, Loader2, Package, Users, MessageSquare } from "lucide-react";
+import { Bot, Send, X, Loader2, Package, Users, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,14 +17,14 @@ interface Message {
 }
 
 export const AIAssistant = () => {
-  const { tenant } = useAuth();
+  const { tenant, user } = useAuth();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "مرحباً! أنا مساعدك الذكي. يمكنني مساعدتك في:\n• إضافة منتجات جديدة\n• إضافة عملاء جدد\n• البحث عن بيانات\n\nجرب: \"أضف منتج قميص بسعر 150\"",
+      content: "مرحباً! أنا مساعدك الذكي. يمكنني:\n• إضافة منتجات وعملاء\n• تحديث البيانات الموجودة\n• البحث والاستفسار\n\nجرب: \"أضف منتج لابتوب بسعر 5000\"",
     },
   ]);
   const [input, setInput] = useState("");
@@ -37,6 +37,9 @@ export const AIAssistant = () => {
     }
   }, [messages]);
 
+  // Don't show if not logged in
+  if (!user) return null;
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -47,16 +50,21 @@ export const AIAssistant = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input.trim();
     setInput("");
     setIsLoading(true);
 
     try {
+      console.log('Sending to AI:', { prompt: currentInput, tenantId: tenant?.id });
+      
       const { data, error } = await supabase.functions.invoke("ai-assistant", {
         body: {
-          prompt: input.trim(),
-          tenantId: tenant?.id,
+          prompt: currentInput,
+          tenantId: tenant?.id || null,
         },
       });
+
+      console.log('AI Response:', data, error);
 
       if (error) {
         throw error;
@@ -65,35 +73,36 @@ export const AIAssistant = () => {
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.message || "تم تنفيذ الطلب",
-        action: data.action,
-        success: data.success,
+        content: data?.message || "تم تنفيذ الطلب",
+        action: data?.action,
+        success: data?.success,
       };
 
       setMessages((prev) => [...prev, aiResponse]);
 
-      // Refresh data if something was added
-      if (data.action === "add_product" && data.success) {
+      // Refresh data if something was added or updated
+      if ((data?.action === "add_product" || data?.action === "update_product") && data?.success) {
         queryClient.invalidateQueries({ queryKey: ["products"] });
-        toast.success("تم إضافة المنتج بنجاح", {
-          description: data.insertedData?.name,
+        toast.success(data.action === "add_product" ? "تم إضافة المنتج" : "تم تحديث المنتج", {
+          description: data.insertedData?.name || data.updatedData?.name,
         });
-      } else if (data.action === "add_client" && data.success) {
+      } else if ((data?.action === "add_client" || data?.action === "update_client") && data?.success) {
         queryClient.invalidateQueries({ queryKey: ["clients"] });
-        toast.success("تم إضافة العميل بنجاح", {
-          description: data.insertedData?.name,
+        toast.success(data.action === "add_client" ? "تم إضافة العميل" : "تم تحديث العميل", {
+          description: data.insertedData?.name || data.updatedData?.name,
         });
-      } else if (data.action === "error") {
+      } else if (data?.action === "error") {
         toast.error(data.message);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI Assistant error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "حدث خطأ في الاتصال. حاول مرة أخرى.",
+        content: `حدث خطأ: ${error?.message || "حاول مرة أخرى"}`,
       };
       setMessages((prev) => [...prev, errorMessage]);
+      toast.error("خطأ في الاتصال بالمساعد الذكي");
     } finally {
       setIsLoading(false);
     }
@@ -106,12 +115,15 @@ export const AIAssistant = () => {
     }
   };
 
-  const getActionIcon = (action?: string) => {
+  const getActionIcon = (action?: string, success?: boolean) => {
+    if (!success) return null;
     switch (action) {
       case "add_product":
-        return <Package className="w-4 h-4 text-success" />;
+      case "update_product":
+        return <Package className="w-4 h-4 text-green-500" />;
       case "add_client":
-        return <Users className="w-4 h-4 text-success" />;
+      case "update_client":
+        return <Users className="w-4 h-4 text-green-500" />;
       default:
         return null;
     }
@@ -123,6 +135,7 @@ export const AIAssistant = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full gradient-primary shadow-glow flex items-center justify-center hover:scale-110 transition-transform"
+        aria-label="المساعد الذكي"
       >
         {isOpen ? (
           <X className="w-6 h-6 text-primary-foreground" />
@@ -139,9 +152,11 @@ export const AIAssistant = () => {
             <div className="w-10 h-10 bg-background/20 rounded-full flex items-center justify-center">
               <Bot className="w-5 h-5 text-primary-foreground" />
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="font-bold text-primary-foreground">المساعد الذكي</h3>
-              <p className="text-xs text-primary-foreground/70">جاهز للمساعدة</p>
+              <p className="text-xs text-primary-foreground/70">
+                {tenant?.name || "جاهز للمساعدة"}
+              </p>
             </div>
           </div>
 
@@ -160,10 +175,12 @@ export const AIAssistant = () => {
                         : "bg-muted text-foreground rounded-tl-none"
                     }`}
                   >
-                    {msg.action && msg.success && (
-                      <div className="flex items-center gap-2 mb-2 text-sm opacity-80">
-                        {getActionIcon(msg.action)}
-                        <span>تم التنفيذ</span>
+                    {msg.action && msg.success !== undefined && (
+                      <div className="flex items-center gap-2 mb-2 text-sm">
+                        {getActionIcon(msg.action, msg.success)}
+                        <span className={msg.success ? "text-green-600" : "text-red-500"}>
+                          {msg.success ? "تم بنجاح" : "فشل"}
+                        </span>
                       </div>
                     )}
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -173,8 +190,9 @@ export const AIAssistant = () => {
 
               {isLoading && (
                 <div className="flex justify-end">
-                  <div className="bg-muted rounded-2xl rounded-tl-none px-4 py-3">
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                  <div className="bg-muted rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">جاري المعالجة...</span>
                   </div>
                 </div>
               )}
@@ -201,9 +219,26 @@ export const AIAssistant = () => {
                 <Send className="w-4 h-4" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              مثال: "أضف عميل محمد رقم 055" أو "أضف منتج لابتوب بسعر 3000"
-            </p>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              <button 
+                className="text-xs bg-muted px-2 py-1 rounded hover:bg-muted/80"
+                onClick={() => setInput("أضف منتج جديد اسمه ")}
+              >
+                + منتج
+              </button>
+              <button 
+                className="text-xs bg-muted px-2 py-1 rounded hover:bg-muted/80"
+                onClick={() => setInput("أضف عميل جديد اسمه ")}
+              >
+                + عميل
+              </button>
+              <button 
+                className="text-xs bg-muted px-2 py-1 rounded hover:bg-muted/80"
+                onClick={() => setInput("اعرض المنتجات")}
+              >
+                🔍 بحث
+              </button>
+            </div>
           </div>
         </div>
       )}

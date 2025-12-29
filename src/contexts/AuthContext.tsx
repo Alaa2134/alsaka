@@ -58,6 +58,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [tenant]);
 
+  // Auto logout on browser/tab close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Use sessionStorage to track if this is a page reload vs close
+      sessionStorage.setItem('isReloading', 'true');
+    };
+
+    const handleLoad = () => {
+      const isReloading = sessionStorage.getItem('isReloading');
+      if (!isReloading) {
+        // Browser was closed and reopened - logout
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TENANT_KEY);
+      }
+      sessionStorage.removeItem('isReloading');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('load', handleLoad);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('load', handleLoad);
+    };
+  }, []);
+
   // Check for existing session on mount
   useEffect(() => {
     const storedSession = localStorage.getItem(STORAGE_KEY);
