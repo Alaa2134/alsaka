@@ -1,14 +1,15 @@
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useSalesReport } from "@/hooks/useInvoices";
-import { useCreditReport } from "@/hooks/useCreditReport";
-import { BarChart3, Calendar, TrendingUp, FileText, DollarSign, Download, ArrowUp, ArrowDown, Users, CreditCard, AlertCircle } from "lucide-react";
+import { useCreditReport, ClientBalance } from "@/hooks/useCreditReport";
+import { BarChart3, Calendar, TrendingUp, FileText, DollarSign, Download, ArrowUp, ArrowDown, Users, CreditCard, AlertCircle, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet-async";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
+import { PaymentModal } from "@/components/clients/PaymentModal";
 
 const Reports = () => {
   const today = new Date();
@@ -18,6 +19,7 @@ const Reports = () => {
   const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState(today.toISOString().split("T")[0]);
   const [reportType, setReportType] = useState<"daily" | "monthly" | "yearly">("daily");
+  const [selectedClient, setSelectedClient] = useState<ClientBalance | null>(null);
   
   const { data: invoices, isLoading } = useSalesReport(startDate, endDate);
   const { data: creditReport, isLoading: isCreditLoading } = useCreditReport();
@@ -579,6 +581,7 @@ const Reports = () => {
                             <th className="text-left py-3 px-4 font-bold">إجمالي المبيعات</th>
                             <th className="text-left py-3 px-4 font-bold">المستحق</th>
                             <th className="text-left py-3 px-4 font-bold">آخر فاتورة</th>
+                            <th className="text-center py-3 px-4 font-bold">إجراء</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -595,6 +598,19 @@ const Reports = () => {
                               <td className="py-3 px-4 text-left text-muted-foreground">
                                 {client.last_invoice_date ? new Date(client.last_invoice_date).toLocaleDateString("ar-EG") : "-"}
                               </td>
+                              <td className="py-3 px-4 text-center">
+                                {client.balance_due > 0 && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setSelectedClient(client)}
+                                    className="gap-1"
+                                  >
+                                    <Wallet size={14} />
+                                    تسديد
+                                  </Button>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -606,6 +622,17 @@ const Reports = () => {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Payment Modal */}
+        {selectedClient && (
+          <PaymentModal
+            open={!!selectedClient}
+            onClose={() => setSelectedClient(null)}
+            clientId={selectedClient.client_id}
+            clientName={selectedClient.client_name}
+            balanceDue={selectedClient.balance_due}
+          />
+        )}
       </MainLayout>
     </>
   );
