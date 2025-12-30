@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useNextProductNumber, useProductCategories, Product } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Helmet } from "react-helmet-async";
@@ -14,6 +15,7 @@ import { BackupRestore } from "@/components/backup/BackupRestore";
 import { StockAlerts } from "@/components/stock/StockAlerts";
 import { BarcodeGenerator } from "@/components/products/BarcodeGenerator";
 import { BatchBarcodesPrint } from "@/components/products/BatchBarcodesPrint";
+import { SmartProductParser } from "@/components/products/SmartProductParser";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { generateProductBarcode } from "@/utils/barcodeGenerator";
@@ -38,6 +40,8 @@ const Products = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [newCategory, setNewCategory] = useState("");
   const [autoGenerateBarcode, setAutoGenerateBarcode] = useState(true);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState<string>("");
   const [formData, setFormData] = useState({
     item_number: "",
     name: "",
@@ -115,9 +119,16 @@ const Products = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
-      await deleteProduct.mutateAsync(id);
+  const handleDelete = (id: string, name: string) => {
+    setDeleteConfirmId(id);
+    setDeleteConfirmName(name);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirmId) {
+      await deleteProduct.mutateAsync(deleteConfirmId);
+      setDeleteConfirmId(null);
+      setDeleteConfirmName("");
     }
   };
 
@@ -213,7 +224,9 @@ const Products = () => {
               
               {/* Import/Export */}
               <ProductImportExport />
-              
+
+              {/* Smart Product Parser */}
+              <SmartProductParser />
               {/* Backup Button */}
               <Button
                 variant="outline"
@@ -537,7 +550,7 @@ const Products = () => {
                             <Printer size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(product.id)}
+                            onClick={() => handleDelete(product.id, product.name)}
                             className="p-2 text-destructive hover:bg-destructive/10 rounded transition-colors"
                             title="حذف"
                           >
@@ -570,6 +583,32 @@ const Products = () => {
           onClose={() => setShowBatchPrint(false)}
           products={getSelectedProductsData()}
         />
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="text-destructive" />
+                تأكيد حذف المنتج
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                هل أنت متأكد من حذف المنتج "{deleteConfirmName}"؟
+                <br />
+                لا يمكن التراجع عن هذا الإجراء.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2">
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                حذف
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </MainLayout>
     </>
   );

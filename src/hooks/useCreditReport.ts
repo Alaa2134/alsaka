@@ -50,6 +50,18 @@ export const useCreditReport = () => {
       
       const { data: invoices, error: invoicesError } = await invoicesQuery;
       if (invoicesError) throw invoicesError;
+
+      // Fetch all payments
+      let paymentsQuery = supabase
+        .from("payments")
+        .select("client_id, amount");
+      
+      if (tenant?.id) {
+        paymentsQuery = paymentsQuery.eq("tenant_id", tenant.id);
+      }
+      
+      const { data: payments, error: paymentsError } = await paymentsQuery;
+      if (paymentsError) throw paymentsError;
       
       // Calculate balances per client
       const clientBalances: ClientBalance[] = (clients || []).map(client => {
@@ -60,10 +72,17 @@ export const useCreditReport = () => {
         
         // For credit tracking, we consider "آجل" (credit) invoices as unpaid
         const creditInvoices = clientInvoices.filter(inv => inv.payment_method === "آجل");
-        const balanceDue = creditInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+        const creditAmount = creditInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
         
-        // Total paid = total sales - balance due
-        const totalPaid = totalSales - balanceDue;
+        // Calculate total payments for this client
+        const clientPayments = (payments || []).filter(p => p.client_id === client.id);
+        const totalPayments = clientPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+        
+        // Balance due = credit invoices - payments made
+        const balanceDue = Math.max(0, creditAmount - totalPayments);
+        
+        // Total paid = payments + non-credit invoices value
+        const totalPaid = totalPayments + (totalSales - creditAmount);
         
         // Last invoice date
         const sortedInvoices = [...clientInvoices].sort((a, b) => 
