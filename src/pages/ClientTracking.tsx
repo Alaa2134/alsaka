@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Phone, Search, FileText, CreditCard, Package, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ interface PaymentData {
 }
 
 export default function ClientTracking() {
+  const [searchParams] = useSearchParams();
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [client, setClient] = useState<ClientData | null>(null);
@@ -40,8 +42,20 @@ export default function ClientTracking() {
   const [totalInvoices, setTotalInvoices] = useState(0);
   const [totalPaid, setTotalPaid] = useState(0);
 
-  const handleSearch = async () => {
-    if (!phone.trim()) {
+  // Auto-search if phone is provided in URL
+  useEffect(() => {
+    const phoneFromUrl = searchParams.get("phone");
+    if (phoneFromUrl) {
+      setPhone(phoneFromUrl);
+      // Trigger search after setting phone
+      setTimeout(() => {
+        searchByPhone(phoneFromUrl);
+      }, 100);
+    }
+  }, [searchParams]);
+
+  const searchByPhone = async (phoneNumber: string) => {
+    if (!phoneNumber.trim()) {
       toast.error("أدخل رقم الهاتف");
       return;
     }
@@ -52,7 +66,7 @@ export default function ClientTracking() {
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .select("id, name, phone, client_number")
-        .eq("phone", phone.trim())
+        .eq("phone", phoneNumber.trim())
         .maybeSingle();
 
       if (clientError) throw clientError;
@@ -104,6 +118,10 @@ export default function ClientTracking() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = () => {
+    searchByPhone(phone);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
