@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Lock, LogIn, Eye, EyeOff, Sparkles, FileText, Shield, BarChart3 } from "lucide-react";
+import { Lock, LogIn, Eye, EyeOff, Sparkles, FileText, Shield, BarChart3, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Helmet } from "react-helmet-async";
@@ -149,10 +149,19 @@ const Login = () => {
                 </Button>
               </form>
 
-              <div className="mt-6 pt-6 border-t border-border">
+              <div className="mt-6 pt-6 border-t border-border space-y-4">
                 <p className="text-center text-sm text-muted-foreground">
                   للحصول على كود الدخول، تواصل مع مدير النظام
                 </p>
+                
+                {/* Client Tracking Link */}
+                <Link
+                  to="/tracking"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-semibold transition-all"
+                >
+                  <Phone size={18} />
+                  متابعة حسابك كعميل
+                </Link>
               </div>
             </div>
           </div>

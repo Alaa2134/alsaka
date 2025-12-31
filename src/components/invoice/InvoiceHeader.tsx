@@ -226,12 +226,13 @@ export const InvoiceHeader = ({
         <select
           value={paymentMethod}
           onChange={(e) => onPaymentMethodChange(e.target.value)}
-          className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
+          className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer appearance-none"
+          style={{ WebkitAppearance: 'menulist', MozAppearance: 'menulist' }}
         >
-          <option value="نقدي">نقدي</option>
-          <option value="آجل">آجل</option>
-          <option value="شيك">شيك</option>
-          <option value="تحويل بنكي">تحويل بنكي</option>
+          <option value="نقدي" className="bg-card text-foreground py-2">نقدي</option>
+          <option value="آجل" className="bg-card text-foreground py-2">آجل</option>
+          <option value="شيك" className="bg-card text-foreground py-2">شيك</option>
+          <option value="تحويل بنكي" className="bg-card text-foreground py-2">تحويل بنكي</option>
         </select>
       </div>
     </div>
