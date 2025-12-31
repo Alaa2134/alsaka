@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { InvoiceItem } from "@/types/invoice";
-import { Trash2, Search } from "lucide-react";
+import { Trash2, Search, AlertCircle } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
 
@@ -24,9 +24,20 @@ interface SuggestionDropdownProps {
   onSelect: (product: Product) => void;
   onClose: () => void;
   visible: boolean;
+  selectedIndex: number;
+  notFound: boolean;
+  searchTerm: string;
 }
 
-const SuggestionDropdown = ({ suggestions, onSelect, onClose, visible }: SuggestionDropdownProps) => {
+const SuggestionDropdown = ({ 
+  suggestions, 
+  onSelect, 
+  onClose, 
+  visible, 
+  selectedIndex,
+  notFound,
+  searchTerm
+}: SuggestionDropdownProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,28 +50,43 @@ const SuggestionDropdown = ({ suggestions, onSelect, onClose, visible }: Suggest
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  if (!visible || suggestions.length === 0) return null;
+  if (!visible || (!suggestions.length && !notFound)) return null;
 
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-soft z-50 max-h-52 overflow-y-auto animate-scale-in"
+      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto"
+      style={{ backgroundColor: 'hsl(var(--card))' }}
     >
       <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground">
         <Search size={14} />
         <span className="text-xs">اختر منتج</span>
       </div>
-      {suggestions.map((product) => (
-        <button
-          key={product.id}
-          type="button"
-          onClick={() => onSelect(product)}
-          className="w-full px-4 py-3 text-right hover:bg-primary/10 transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0"
-        >
-          <span className="font-semibold text-foreground truncate">{product.name}</span>
-          <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">{product.item_number}</span>
-        </button>
-      ))}
+      
+      {notFound && searchTerm.length >= 2 ? (
+        <div className="px-4 py-3 flex items-center gap-2 text-destructive">
+          <AlertCircle size={16} />
+          <span className="text-sm">الصنف غير موجود</span>
+        </div>
+      ) : (
+        suggestions.map((product, index) => (
+          <button
+            key={product.id}
+            type="button"
+            onClick={() => onSelect(product)}
+            className={`w-full px-4 py-3 text-right transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0 ${
+              index === selectedIndex 
+                ? "bg-primary/20 text-primary" 
+                : "hover:bg-primary/10"
+            }`}
+          >
+            <span className="font-semibold text-foreground truncate">{product.name}</span>
+            <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">
+              {product.item_number}
+            </span>
+          </button>
+        ))
+      )}
     </div>
   );
 };
@@ -70,6 +96,10 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
   const { data: warehousesList } = useWarehouses();
   const [activeInput, setActiveInput] = useState<{ id: string; field: "itemNumber" | "itemName" } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+  
+  // Refs for inputs to handle Enter navigation
+  const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
   const warehouses = warehousesList?.map(w => w.name) || [];
 
@@ -78,11 +108,27 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
     const term = searchTerm.toLowerCase();
     return products
       .filter(p => 
+        p.name.toLowerCase().startsWith(term) || 
+        p.item_number.toLowerCase().startsWith(term) ||
         p.name.toLowerCase().includes(term) || 
         p.item_number.toLowerCase().includes(term)
       )
+      .sort((a, b) => {
+        // Prioritize items that start with the search term
+        const aStartsWithName = a.name.toLowerCase().startsWith(term);
+        const bStartsWithName = b.name.toLowerCase().startsWith(term);
+        const aStartsWithNumber = a.item_number.toLowerCase().startsWith(term);
+        const bStartsWithNumber = b.item_number.toLowerCase().startsWith(term);
+        
+        if ((aStartsWithName || aStartsWithNumber) && !(bStartsWithName || bStartsWithNumber)) return -1;
+        if (!(aStartsWithName || aStartsWithNumber) && (bStartsWithName || bStartsWithNumber)) return 1;
+        return 0;
+      })
       .slice(0, 8);
   };
+
+  const suggestions = getSuggestions();
+  const notFound = searchTerm.length >= 2 && suggestions.length === 0;
 
   const handleSelectProduct = (itemId: string, product: Product) => {
     onUpdateItem(itemId, "itemNumber", product.item_number);
@@ -93,19 +139,70 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
     if (wh) onUpdateItem(itemId, "warehouse", wh.name);
     setActiveInput(null);
     setSearchTerm("");
+    setSelectedSuggestionIndex(0);
+    
+    // Move focus to quantity field
+    setTimeout(() => {
+      const quantityInput = inputRefs.current.get(`${itemId}-quantity`);
+      quantityInput?.focus();
+      quantityInput?.select();
+    }, 50);
   };
 
   const handleInputChange = (itemId: string, field: "itemNumber" | "itemName", value: string) => {
     onUpdateItem(itemId, field, value);
     setActiveInput({ id: itemId, field });
     setSearchTerm(value);
+    setSelectedSuggestionIndex(0);
   };
 
   const handleInputBlur = () => {
     setTimeout(() => {
       setActiveInput(null);
       setSearchTerm("");
+      setSelectedSuggestionIndex(0);
     }, 200);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, itemId: string, field: string) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => 
+        prev < suggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : 0);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      
+      // If suggestions visible and one is selected, select it
+      if (suggestions.length > 0 && activeInput) {
+        handleSelectProduct(itemId, suggestions[selectedSuggestionIndex]);
+        return;
+      }
+      
+      // Otherwise, move to next field
+      const fieldOrder = ["itemNumber", "itemName", "quantity", "price"];
+      const currentIndex = fieldOrder.indexOf(field);
+      if (currentIndex < fieldOrder.length - 1) {
+        const nextField = fieldOrder[currentIndex + 1];
+        const nextInput = inputRefs.current.get(`${itemId}-${nextField}`);
+        nextInput?.focus();
+        nextInput?.select();
+      }
+    } else if (e.key === "Escape") {
+      setActiveInput(null);
+      setSearchTerm("");
+    }
+  };
+
+  const setInputRef = (key: string, el: HTMLInputElement | null) => {
+    if (el) {
+      inputRefs.current.set(key, el);
+    } else {
+      inputRefs.current.delete(key);
+    }
   };
 
   return (
@@ -137,6 +234,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
               </td>
               <td className="px-4 py-3 border-b border-border/50 relative">
                 <input
+                  ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
                   type="text"
                   value={item.itemNumber}
                   onChange={(e) => handleInputChange(item.id, "itemNumber", e.target.value)}
@@ -145,20 +243,25 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                     setSearchTerm(item.itemNumber);
                   }}
                   onBlur={handleInputBlur}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
                   className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                   autoComplete="off"
                 />
                 {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
                   <SuggestionDropdown
-                    suggestions={getSuggestions()}
+                    suggestions={suggestions}
                     onSelect={(p) => handleSelectProduct(item.id, p)}
                     onClose={() => setActiveInput(null)}
                     visible={true}
+                    selectedIndex={selectedSuggestionIndex}
+                    notFound={notFound}
+                    searchTerm={searchTerm}
                   />
                 )}
               </td>
               <td className="px-4 py-3 border-b border-border/50 relative">
                 <input
+                  ref={(el) => setInputRef(`${item.id}-itemName`, el)}
                   type="text"
                   value={item.itemName}
                   onChange={(e) => handleInputChange(item.id, "itemName", e.target.value)}
@@ -167,35 +270,43 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                     setSearchTerm(item.itemName);
                   }}
                   onBlur={handleInputBlur}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemName")}
                   className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 focus:border-primary focus:outline-none transition-all"
                   placeholder="اسم الصنف..."
                   autoComplete="off"
                 />
                 {activeInput?.id === item.id && activeInput?.field === "itemName" && (
                   <SuggestionDropdown
-                    suggestions={getSuggestions()}
+                    suggestions={suggestions}
                     onSelect={(p) => handleSelectProduct(item.id, p)}
                     onClose={() => setActiveInput(null)}
                     visible={true}
+                    selectedIndex={selectedSuggestionIndex}
+                    notFound={notFound}
+                    searchTerm={searchTerm}
                   />
                 )}
               </td>
               <td className="px-4 py-3 border-b border-border/50">
                 <input
+                  ref={(el) => setInputRef(`${item.id}-quantity`, el)}
                   type="number"
                   min="1"
                   value={item.quantity}
                   onChange={(e) => onUpdateItem(item.id, "quantity", parseInt(e.target.value) || 0)}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "quantity")}
                   className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                 />
               </td>
               <td className="px-4 py-3 border-b border-border/50">
                 <input
+                  ref={(el) => setInputRef(`${item.id}-price`, el)}
                   type="number"
                   min="0"
                   step="0.5"
                   value={item.price}
                   onChange={(e) => onUpdateItem(item.id, "price", parseFloat(e.target.value) || 0)}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "price")}
                   className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                 />
               </td>
