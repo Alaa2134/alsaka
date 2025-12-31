@@ -15,7 +15,8 @@ import { BackupRestore } from "@/components/backup/BackupRestore";
 import { StockAlerts } from "@/components/stock/StockAlerts";
 import { BarcodeGenerator } from "@/components/products/BarcodeGenerator";
 import { BatchBarcodesPrint } from "@/components/products/BatchBarcodesPrint";
-import { SmartProductParser } from "@/components/products/SmartProductParser";
+import { SmartProductOrganizer } from "@/components/products/SmartProductOrganizer";
+import { DeleteAllProducts } from "@/components/products/DeleteAllProducts";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { generateProductBarcode } from "@/utils/barcodeGenerator";
@@ -225,8 +226,11 @@ const Products = () => {
               {/* Import/Export */}
               <ProductImportExport />
 
-              {/* Smart Product Parser */}
-              <SmartProductParser />
+              {/* Smart Product Organizer */}
+              <SmartProductOrganizer />
+
+              {/* Delete All Products */}
+              <DeleteAllProducts />
               {/* Backup Button */}
               <Button
                 variant="outline"
