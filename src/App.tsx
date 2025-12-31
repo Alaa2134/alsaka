@@ -19,6 +19,7 @@ import InvoiceDesigner from "./pages/InvoiceDesigner";
 import InvoicesAdmin from "./pages/InvoicesAdmin";
 import UsersAdmin from "./pages/UsersAdmin";
 import TenantsAdmin from "./pages/TenantsAdmin";
+import ClientTracking from "./pages/ClientTracking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/tracking" element={<ClientTracking />} />
                 <Route path="/" element={
                   <ProtectedRoute requiredRoles={["admin", "manager", "cashier"]}>
                     <Index />
