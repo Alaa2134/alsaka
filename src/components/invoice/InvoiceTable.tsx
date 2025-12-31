@@ -17,6 +17,7 @@ interface Product {
   price: number;
   min_price: number;
   warehouse_id: string | null;
+  category: string | null;
 }
 
 interface SuggestionDropdownProps {
@@ -27,6 +28,9 @@ interface SuggestionDropdownProps {
   selectedIndex: number;
   notFound: boolean;
   searchTerm: string;
+  categories: string[];
+  selectedCategory: string;
+  onCategoryChange: (category: string) => void;
 }
 
 const SuggestionDropdown = ({ 
@@ -36,7 +40,10 @@ const SuggestionDropdown = ({
   visible, 
   selectedIndex,
   notFound,
-  searchTerm
+  searchTerm,
+  categories,
+  selectedCategory,
+  onCategoryChange
 }: SuggestionDropdownProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -56,39 +63,77 @@ const SuggestionDropdown = ({
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto"
+      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-64 overflow-hidden"
       style={{ backgroundColor: 'hsl(var(--card))' }}
     >
-      <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground bg-muted/50">
+      {/* Category Filter */}
+      {categories.length > 0 && (
+        <div className="p-2 border-b border-border bg-muted/50 flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onCategoryChange(""); }}
+            className={`px-2 py-1 text-xs rounded-md transition-colors ${
+              selectedCategory === "" 
+                ? "bg-primary text-primary-foreground" 
+                : "bg-background hover:bg-muted text-foreground"
+            }`}
+          >
+            الكل
+          </button>
+          {categories.slice(0, 5).map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onCategoryChange(cat); }}
+              className={`px-2 py-1 text-xs rounded-md transition-colors truncate max-w-[100px] ${
+                selectedCategory === cat 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-background hover:bg-muted text-foreground"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+      
+      <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground bg-muted/30">
         <Search size={14} />
-        <span className="text-xs">اختر منتج</span>
+        <span className="text-xs">اختر منتج {selectedCategory && `(${selectedCategory})`}</span>
       </div>
       
-      {notFound && searchTerm.length >= 2 ? (
-        <div className="px-4 py-3 flex items-center gap-2 text-destructive bg-destructive/10">
-          <AlertCircle size={16} />
-          <span className="text-sm font-medium">الصنف غير موجود</span>
-        </div>
-      ) : (
-        suggestions.map((product, index) => (
-          <button
-            key={product.id}
-            type="button"
-            onClick={() => onSelect(product)}
-            className={`w-full px-4 py-3 text-right transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0 ${
-              index === selectedIndex 
-                ? "bg-primary/20 text-primary" 
-                : "hover:bg-primary/10"
-            }`}
-            style={{ backgroundColor: index === selectedIndex ? 'hsl(var(--primary) / 0.2)' : undefined }}
-          >
-            <span className="font-semibold text-foreground truncate">{product.name}</span>
-            <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">
-              {product.item_number}
-            </span>
-          </button>
-        ))
-      )}
+      <div className="max-h-44 overflow-y-auto">
+        {notFound && searchTerm.length >= 2 ? (
+          <div className="px-4 py-3 flex items-center gap-2 text-destructive bg-destructive/10">
+            <AlertCircle size={16} />
+            <span className="text-sm font-medium">الصنف غير موجود</span>
+          </div>
+        ) : (
+          suggestions.map((product, index) => (
+            <button
+              key={product.id}
+              type="button"
+              onClick={() => onSelect(product)}
+              className={`w-full px-4 py-3 text-right transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0 ${
+                index === selectedIndex 
+                  ? "bg-primary/20 text-primary" 
+                  : "hover:bg-primary/10"
+              }`}
+              style={{ backgroundColor: index === selectedIndex ? 'hsl(var(--primary) / 0.2)' : undefined }}
+            >
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-semibold text-foreground truncate">{product.name}</span>
+                {product.category && (
+                  <span className="text-[10px] text-muted-foreground">{product.category}</span>
+                )}
+              </div>
+              <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">
+                {product.item_number}
+              </span>
+            </button>
+          ))
+        )}
+      </div>
     </div>
   );
 };
@@ -99,23 +144,41 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
   const [activeInput, setActiveInput] = useState<{ id: string; field: "itemNumber" | "itemName" } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState("");
   
   // Refs for inputs to handle Enter navigation
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
   const warehouses = warehousesList?.map(w => w.name) || [];
 
+  // Get unique categories from products
+  const categories = Array.from(new Set(products?.map(p => p.category).filter(Boolean) as string[]));
+
   const getSuggestions = (): Product[] => {
-    if (!products || !searchTerm || searchTerm.length < 1) return [];
-    const term = searchTerm.toLowerCase();
-    return products
-      .filter(p => 
+    if (!products) return [];
+    
+    let filtered = products;
+    
+    // Filter by category if selected
+    if (selectedCategory) {
+      filtered = filtered.filter(p => p.category === selectedCategory);
+    }
+    
+    // Filter by search term
+    if (searchTerm && searchTerm.length >= 1) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(p => 
         p.name.toLowerCase().startsWith(term) || 
         p.item_number.toLowerCase().startsWith(term) ||
         p.name.toLowerCase().includes(term) || 
         p.item_number.toLowerCase().includes(term)
-      )
+      );
+    }
+    
+    return filtered
       .sort((a, b) => {
+        if (!searchTerm) return 0;
+        const term = searchTerm.toLowerCase();
         // Prioritize items that start with the search term
         const aStartsWithName = a.name.toLowerCase().startsWith(term);
         const bStartsWithName = b.name.toLowerCase().startsWith(term);
@@ -126,7 +189,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
         if (!(aStartsWithName || aStartsWithNumber) && (bStartsWithName || bStartsWithNumber)) return 1;
         return 0;
       })
-      .slice(0, 8);
+      .slice(0, 10);
   };
 
   const suggestions = getSuggestions();
@@ -260,6 +323,9 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                     selectedIndex={selectedSuggestionIndex}
                     notFound={notFound}
                     searchTerm={searchTerm}
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
                   />
                 )}
               </td>
@@ -288,6 +354,9 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                     selectedIndex={selectedSuggestionIndex}
                     notFound={notFound}
                     searchTerm={searchTerm}
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
                   />
                 )}
               </td>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useNextClientNumber, Client } from "@/hooks/useClients";
-import { Plus, Pencil, Trash2, Search, Users, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Users, FileText, Link2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Helmet } from "react-helmet-async";
 import { ClientImportExport } from "@/components/clients/ClientImportExport";
 import { ClientInvoicesModal } from "@/components/clients/ClientInvoicesModal";
+import { toast } from "sonner";
 
 const Clients = () => {
   const { data: clients, isLoading } = useClients();
@@ -23,6 +24,7 @@ const Clients = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showInvoices, setShowInvoices] = useState(false);
+  const [copiedClientId, setCopiedClientId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     client_number: "",
     name: "",
@@ -77,6 +79,32 @@ const Clients = () => {
   const handleViewInvoices = (client: Client) => {
     setSelectedClient(client);
     setShowInvoices(true);
+  };
+
+  const handleCopyTrackingLink = async (client: Client) => {
+    const baseUrl = window.location.origin;
+    const trackingUrl = `${baseUrl}/tracking?phone=${encodeURIComponent(client.phone || "")}`;
+    
+    try {
+      await navigator.clipboard.writeText(trackingUrl);
+      setCopiedClientId(client.id);
+      toast.success("تم نسخ رابط المتابعة", {
+        description: `رابط متابعة العميل: ${client.name}`,
+      });
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => setCopiedClientId(null), 2000);
+    } catch (err) {
+      toast.error("فشل نسخ الرابط");
+    }
+  };
+
+  const handleShareViaWhatsApp = (client: Client) => {
+    const baseUrl = window.location.origin;
+    const trackingUrl = `${baseUrl}/tracking?phone=${encodeURIComponent(client.phone || "")}`;
+    const message = `مرحباً ${client.name}، يمكنك متابعة حسابك من خلال الرابط التالي:\n${trackingUrl}`;
+    const whatsappUrl = `https://wa.me/${client.phone?.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   const resetForm = () => {
@@ -247,6 +275,22 @@ const Clients = () => {
                       <td className="px-4 py-3">{client.address || "-"}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleCopyTrackingLink(client)}
+                            className="p-2 text-success hover:bg-success/10 rounded transition-colors"
+                            title="نسخ رابط المتابعة"
+                          >
+                            {copiedClientId === client.id ? <Check size={18} /> : <Copy size={18} />}
+                          </button>
+                          {client.phone && (
+                            <button
+                              onClick={() => handleShareViaWhatsApp(client)}
+                              className="p-2 text-green-600 hover:bg-green-600/10 rounded transition-colors"
+                              title="إرسال عبر واتساب"
+                            >
+                              <Link2 size={18} />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleViewInvoices(client)}
                             className="p-2 text-accent hover:bg-accent/10 rounded transition-colors"
