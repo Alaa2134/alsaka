@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, KeyboardEvent, forwardRef } from "react";
 import { InvoiceItem } from "@/types/invoice";
 import { Trash2, Search, AlertCircle } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
@@ -38,11 +38,11 @@ const SuggestionDropdown = ({
   notFound,
   searchTerm
 }: SuggestionDropdownProps) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
@@ -50,23 +50,24 @@ const SuggestionDropdown = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  if (!visible || (!suggestions.length && !notFound)) return null;
+  if (!visible) return null;
+  if (suggestions.length === 0 && !notFound) return null;
 
   return (
     <div
-      ref={ref}
+      ref={dropdownRef}
       className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto"
       style={{ backgroundColor: 'hsl(var(--card))' }}
     >
-      <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground">
+      <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground bg-muted/50">
         <Search size={14} />
         <span className="text-xs">اختر منتج</span>
       </div>
       
       {notFound && searchTerm.length >= 2 ? (
-        <div className="px-4 py-3 flex items-center gap-2 text-destructive">
+        <div className="px-4 py-3 flex items-center gap-2 text-destructive bg-destructive/10">
           <AlertCircle size={16} />
-          <span className="text-sm">الصنف غير موجود</span>
+          <span className="text-sm font-medium">الصنف غير موجود</span>
         </div>
       ) : (
         suggestions.map((product, index) => (
@@ -79,6 +80,7 @@ const SuggestionDropdown = ({
                 ? "bg-primary/20 text-primary" 
                 : "hover:bg-primary/10"
             }`}
+            style={{ backgroundColor: index === selectedIndex ? 'hsl(var(--primary) / 0.2)' : undefined }}
           >
             <span className="font-semibold text-foreground truncate">{product.name}</span>
             <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">
@@ -165,10 +167,12 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, itemId: string, field: string) => {
+    const currentSuggestions = getSuggestions();
+    
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setSelectedSuggestionIndex(prev => 
-        prev < suggestions.length - 1 ? prev + 1 : prev
+        prev < currentSuggestions.length - 1 ? prev + 1 : prev
       );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
@@ -177,8 +181,8 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
       e.preventDefault();
       
       // If suggestions visible and one is selected, select it
-      if (suggestions.length > 0 && activeInput) {
-        handleSelectProduct(itemId, suggestions[selectedSuggestionIndex]);
+      if (currentSuggestions.length > 0 && activeInput) {
+        handleSelectProduct(itemId, currentSuggestions[selectedSuggestionIndex]);
         return;
       }
       
