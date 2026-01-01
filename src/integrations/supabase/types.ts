@@ -973,6 +973,36 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action_type: string
+          attempt_count: number | null
+          blocked_until: string | null
+          first_attempt_at: string | null
+          id: string
+          identifier: string
+          last_attempt_at: string | null
+        }
+        Insert: {
+          action_type: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          identifier: string
+          last_attempt_at?: string | null
+        }
+        Update: {
+          action_type?: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          identifier?: string
+          last_attempt_at?: string | null
+        }
+        Relationships: []
+      }
       return_items: {
         Row: {
           created_at: string
@@ -1553,6 +1583,16 @@ export type Database = {
       auth_is_admin: { Args: never; Returns: boolean }
       auth_is_system_manager: { Args: never; Returns: boolean }
       auth_user_tenant_id: { Args: never; Returns: string }
+      check_rate_limit: {
+        Args: {
+          _action_type: string
+          _block_minutes?: number
+          _identifier: string
+          _max_attempts?: number
+          _window_minutes?: number
+        }
+        Returns: boolean
+      }
       decrypt_sensitive_data: {
         Args: { encrypted_text: string; encryption_key: string }
         Returns: string
@@ -1583,6 +1623,10 @@ export type Database = {
       is_admin_user: { Args: never; Returns: boolean }
       is_authenticated_user: { Args: never; Returns: boolean }
       is_system_manager: { Args: { _access_code: string }; Returns: boolean }
+      log_security_event: {
+        Args: { _action: string; _details?: Json }
+        Returns: undefined
+      }
       user_has_role: {
         Args: {
           _access_code: string
