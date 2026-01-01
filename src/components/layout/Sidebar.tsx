@@ -16,7 +16,8 @@ import {
   RotateCcw,
   Moon,
   Sun,
-  Phone
+  Phone,
+  Link2
 } from "lucide-react";
 import { useAuth, roleLabels, AppRole } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -32,6 +33,7 @@ const navItems: { path: string; label: string; icon: typeof FileText; roles: App
   { path: "/tracking", label: "متابعة العملاء", icon: Phone, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/warehouses", label: "المخازن", icon: Warehouse, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/store-orders", label: "طلبات المتجر", icon: Package, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/links", label: "إدارة الروابط", icon: Link2, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/accounting", label: "المحاسبة", icon: BarChart3, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/reports", label: "التقارير", icon: BarChart3, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/invoice-designer", label: "تصميم الفاتورة", icon: Sparkles, roles: ["system_manager", "company_admin", "admin", "manager"] },

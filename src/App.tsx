@@ -24,6 +24,7 @@ import SystemDashboard from "./pages/SystemDashboard";
 import Accounting from "./pages/Accounting";
 import StoreOrders from "./pages/StoreOrders";
 import CompanySettings from "./pages/CompanySettings";
+import LinksAdmin from "./pages/LinksAdmin";
 import NotFound from "./pages/NotFound";
 import { StoreLayout } from "./pages/store/StoreLayout";
 import { StoreHome } from "./pages/store/StoreHome";
@@ -31,6 +32,7 @@ import { StoreProducts } from "./pages/store/StoreProducts";
 import { StoreProductDetail } from "./pages/store/StoreProductDetail";
 import { StoreCart } from "./pages/store/StoreCart";
 import { StoreCheckout } from "./pages/store/StoreCheckout";
+import { StoreLinkPage } from "./pages/store/StoreLinkPage";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +103,11 @@ const App = () => (
                     <StoreOrders />
                   </ProtectedRoute>
                 } />
+                <Route path="/links" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                    <LinksAdmin />
+                  </ProtectedRoute>
+                } />
                 <Route path="/company-settings" element={
                   <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
                     <CompanySettings />
@@ -124,6 +131,7 @@ const App = () => (
                   <Route path="product/:productId" element={<StoreProductDetail />} />
                   <Route path="cart" element={<StoreCart />} />
                   <Route path="checkout" element={<StoreCheckout />} />
+                  <Route path="link/:linkCode" element={<StoreLinkPage />} />
                 </Route>
                 
                 <Route path="*" element={<NotFound />} />
