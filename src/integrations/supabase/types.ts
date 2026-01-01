@@ -72,6 +72,7 @@ export type Database = {
         Row: {
           access_code: string
           access_code_hash: string | null
+          auth_id: string | null
           created_at: string
           device_id: string | null
           device_locked_at: string | null
@@ -85,6 +86,7 @@ export type Database = {
         Insert: {
           access_code: string
           access_code_hash?: string | null
+          auth_id?: string | null
           created_at?: string
           device_id?: string | null
           device_locked_at?: string | null
@@ -98,6 +100,7 @@ export type Database = {
         Update: {
           access_code?: string
           access_code_hash?: string | null
+          auth_id?: string | null
           created_at?: string
           device_id?: string | null
           device_locked_at?: string | null
@@ -1542,6 +1545,14 @@ export type Database = {
       }
     }
     Functions: {
+      auth_has_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: boolean
+      }
+      auth_in_tenant: { Args: { _tenant_id: string }; Returns: boolean }
+      auth_is_admin: { Args: never; Returns: boolean }
+      auth_is_system_manager: { Args: never; Returns: boolean }
+      auth_user_tenant_id: { Args: never; Returns: string }
       decrypt_sensitive_data: {
         Args: { encrypted_text: string; encryption_key: string }
         Returns: string
@@ -1549,6 +1560,15 @@ export type Database = {
       encrypt_sensitive_data: {
         Args: { encryption_key: string; plain_text: string }
         Returns: string
+      }
+      get_app_user_from_auth: {
+        Args: never
+        Returns: {
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+        }[]
       }
       get_next_journal_entry_number: {
         Args: { _tenant_id: string }
