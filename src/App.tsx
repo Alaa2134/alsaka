@@ -26,6 +26,7 @@ import Accounting from "./pages/Accounting";
 import StoreOrders from "./pages/StoreOrders";
 import CompanySettings from "./pages/CompanySettings";
 import LinksAdmin from "./pages/LinksAdmin";
+import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 import { StoreLayout } from "./pages/store/StoreLayout";
 import { StoreHome } from "./pages/store/StoreHome";
@@ -107,6 +108,11 @@ const App = () => (
                 <Route path="/store-orders" element={
                   <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
                     <StoreOrders />
+                  </ProtectedRoute>
+                } />
+                <Route path="/subscription" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                    <Subscription />
                   </ProtectedRoute>
                 } />
                 <Route path="/links" element={
