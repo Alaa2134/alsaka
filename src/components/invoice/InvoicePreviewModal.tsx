@@ -3,8 +3,8 @@ import { InvoiceTemplateSelector } from "./InvoiceTemplateSelector";
 import { ClassicTemplate, ModernTemplate, MinimalTemplate, ThermalTemplate } from "./templates";
 import { TemplateType, InvoiceData, InvoiceItemData, TenantData } from "./templates/types";
 import { Printer, X, FileText } from "lucide-react";
-import { useRef, useState, useEffect, forwardRef } from "react";
-import { useDefaultTemplate, useInvoiceTemplates, TemplateSettings, defaultTemplateSettings, InvoiceTemplate } from "@/hooks/useInvoiceTemplates";
+import { useRef, useState, useEffect } from "react";
+import { useDefaultTemplate, useInvoiceTemplates, TemplateSettings, defaultTemplateSettings } from "@/hooks/useInvoiceTemplates";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
@@ -19,7 +19,7 @@ interface InvoicePreviewModalProps {
   onSelectTemplate: (template: TemplateType) => void;
 }
 
-export const InvoicePreviewModal = forwardRef<HTMLDivElement, InvoicePreviewModalProps>(({
+export function InvoicePreviewModal({
   open,
   onClose,
   invoice,
@@ -27,7 +27,7 @@ export const InvoicePreviewModal = forwardRef<HTMLDivElement, InvoicePreviewModa
   tenant,
   selectedTemplate,
   onSelectTemplate,
-}, ref) => {
+}: InvoicePreviewModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { data: defaultTemplate } = useDefaultTemplate();
   const { data: allTemplates } = useInvoiceTemplates();
@@ -207,9 +207,7 @@ export const InvoicePreviewModal = forwardRef<HTMLDivElement, InvoicePreviewModa
       </DialogContent>
     </Dialog>
   );
-});
-
-InvoicePreviewModal.displayName = "InvoicePreviewModal";
+}
 
 // Custom Template Renderer
 const CustomTemplateRenderer = ({
