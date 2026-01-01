@@ -12,7 +12,30 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, tenantId } = await req.json();
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ 
+        action: 'error',
+        message: 'غير مصرح - يجب تسجيل الدخول' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { prompt, tenantId, accessCode } = await req.json();
+
+    // Validate access code exists and is active
+    if (!accessCode) {
+      return new Response(JSON.stringify({ 
+        action: 'error',
+        message: 'غير مصرح - رمز الوصول مطلوب' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     console.log('AI Assistant request:', { prompt, tenantId });
     
@@ -25,22 +48,56 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch existing products and clients for context
+    // Verify access code is valid
+    const { data: userData, error: userError } = await supabase
+      .from('app_users')
+      .select('id, tenant_id, role, is_active')
+      .eq('access_code', accessCode)
+      .eq('is_active', true)
+      .single();
+
+    if (userError || !userData) {
+      return new Response(JSON.stringify({ 
+        action: 'error',
+        message: 'غير مصرح - رمز الوصول غير صالح' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Verify tenant matches
+    if (tenantId && userData.tenant_id !== tenantId) {
+      return new Response(JSON.stringify({ 
+        action: 'error',
+        message: 'غير مصرح - لا يمكنك الوصول لبيانات شركة أخرى' 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if user has permission to use AI assistant (admin, manager only)
+    if (!['admin', 'manager', 'company_admin', 'system_manager'].includes(userData.role)) {
+      return new Response(JSON.stringify({ 
+        action: 'error',
+        message: 'غير مصرح - لا تملك صلاحية استخدام المساعد الذكي' 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userTenantId = userData.tenant_id;
+
+    // Fetch existing products and clients for context - always use verified tenant
     let existingProducts: any[] = [];
     let existingClients: any[] = [];
     
-    if (tenantId) {
+    if (userTenantId) {
       const [productsResult, clientsResult] = await Promise.all([
-        supabase.from('products').select('id, item_number, name, price, min_price, stock_quantity, category, barcode').eq('tenant_id', tenantId).limit(50),
-        supabase.from('clients').select('id, client_number, name, phone, address').eq('tenant_id', tenantId).limit(50)
-      ]);
-      existingProducts = productsResult.data || [];
-      existingClients = clientsResult.data || [];
-    } else {
-      // Fallback without tenant filter
-      const [productsResult, clientsResult] = await Promise.all([
-        supabase.from('products').select('id, item_number, name, price, min_price, stock_quantity, category, barcode').limit(50),
-        supabase.from('clients').select('id, client_number, name, phone, address').limit(50)
+        supabase.from('products').select('id, item_number, name, price, min_price, stock_quantity, category, barcode').eq('tenant_id', userTenantId).limit(50),
+        supabase.from('clients').select('id, client_number, name, phone, address').eq('tenant_id', userTenantId).limit(50)
       ]);
       existingProducts = productsResult.data || [];
       existingClients = clientsResult.data || [];
@@ -155,8 +212,9 @@ ${JSON.stringify(existingClients.slice(0, 10), null, 2)}
         category: result.data.category || null,
       };
       
-      if (tenantId) {
-        productData.tenant_id = tenantId;
+      // Always use verified tenant from user
+      if (userTenantId) {
+        productData.tenant_id = userTenantId;
       }
       
       console.log('Inserting product:', productData);
@@ -187,8 +245,9 @@ ${JSON.stringify(existingClients.slice(0, 10), null, 2)}
         address: result.data.address || null,
       };
       
-      if (tenantId) {
-        clientData.tenant_id = tenantId;
+      // Always use verified tenant from user
+      if (userTenantId) {
+        clientData.tenant_id = userTenantId;
       }
       
       console.log('Inserting client:', clientData);
