@@ -39,9 +39,9 @@ export const InvoiceFooter = ({
         {/* Add Item Button */}
         <button
           onClick={onAddItem}
-          className="flex items-center gap-1 bg-primary text-primary-foreground px-3 py-1.5 rounded font-medium hover:bg-primary/90 transition-all text-xs"
+          className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all text-sm"
         >
-          <Plus size={14} />
+          <Plus size={18} />
           صنف
         </button>
       </div>
@@ -60,26 +60,26 @@ export const InvoiceFooter = ({
         />
       </div>
 
-      {/* Action Buttons - Very Compact */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
+      {/* Action Buttons - Larger */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border">
         {/* Primary Actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {onSave && (
             <button
               onClick={onSave}
               disabled={isSaving}
-              className={`flex items-center gap-1 ${isEditing ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} text-white px-2.5 py-1.5 rounded font-medium transition-all text-xs disabled:opacity-50`}
+              className={`flex items-center gap-1.5 ${isEditing ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2.5 rounded-lg font-medium transition-all text-sm disabled:opacity-50`}
             >
-              {isEditing ? <Edit size={12} /> : <Save size={12} />}
+              {isEditing ? <Edit size={16} /> : <Save size={16} />}
               {isSaving ? "..." : isEditing ? "تحديث" : "حفظ"}
             </button>
           )}
 
           <button
             onClick={onNewInvoice}
-            className="flex items-center gap-1 bg-primary text-primary-foreground px-2.5 py-1.5 rounded font-medium hover:bg-primary/90 transition-all text-xs"
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-all text-sm"
           >
-            <FileText size={12} />
+            <FileText size={16} />
             جديدة
           </button>
         </div>
@@ -87,9 +87,9 @@ export const InvoiceFooter = ({
         {/* Print Button */}
         <button
           onClick={onPrint}
-          className="flex items-center gap-1 bg-secondary text-secondary-foreground px-2.5 py-1.5 rounded font-medium hover:bg-secondary/80 transition-all text-xs"
+          className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-secondary/80 transition-all text-sm"
         >
-          <Printer size={12} />
+          <Printer size={16} />
           طباعة
         </button>
       </div>
