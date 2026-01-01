@@ -89,6 +89,7 @@ const Returns = () => {
   const [reportEndDate, setReportEndDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [reportSearchQuery, setReportSearchQuery] = useState("");
   const { data: reportData } = useReturnsReport(reportStartDate, reportEndDate);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -325,8 +326,17 @@ const Returns = () => {
     }
   };
 
-  // Calculate report totals
-  const reportTotals = reportData?.reduce((acc, ret) => ({
+  // Calculate report totals with search filter
+  const filteredReportData = reportData?.filter(ret => {
+    if (!reportSearchQuery.trim()) return true;
+    const query = reportSearchQuery.toLowerCase();
+    return (
+      ret.return_number.toLowerCase().includes(query) ||
+      ret.clients?.name?.toLowerCase().includes(query)
+    );
+  });
+
+  const reportTotals = filteredReportData?.reduce((acc, ret) => ({
     count: acc.count + 1,
     total: acc.total + Number(ret.total_amount),
     itemsCount: acc.itemsCount + (ret.return_items?.length || 0),
@@ -674,7 +684,7 @@ const Returns = () => {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+          <div className="flex flex-wrap items-center gap-4 p-4 bg-muted rounded-lg">
             <div className="flex items-center gap-2">
               <Calendar size={18} />
               <Label>من:</Label>
@@ -692,6 +702,15 @@ const Returns = () => {
                 value={reportEndDate}
                 onChange={(e) => setReportEndDate(e.target.value)}
                 className="w-40"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-1">
+              <Search size={18} />
+              <Input
+                value={reportSearchQuery}
+                onChange={(e) => setReportSearchQuery(e.target.value)}
+                placeholder="بحث بالرقم أو اسم العميل..."
+                className="max-w-xs"
               />
             </div>
             <Button onClick={handlePrintReport}>
@@ -739,7 +758,7 @@ const Returns = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {reportData?.map((ret: any, index: number) => (
+                  {filteredReportData?.map((ret: any, index: number) => (
                     <tr key={ret.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                       <td className="border p-2">{index + 1}</td>
                       <td className="border p-2">{ret.return_number}</td>
