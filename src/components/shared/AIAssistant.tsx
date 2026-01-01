@@ -61,6 +61,7 @@ export const AIAssistant = () => {
         body: {
           prompt: currentInput,
           tenantId: tenant?.id || null,
+          accessCode: user?.access_code || null,
         },
       });
 
