@@ -222,6 +222,7 @@ export type Database = {
       company_settings: {
         Row: {
           accounting_enabled: boolean | null
+          allowed_link_types: string[] | null
           animation_speed: string | null
           bank_account_name: string | null
           bank_account_number: string | null
@@ -235,6 +236,9 @@ export type Database = {
           enable_particles: boolean | null
           id: string
           inventory_enabled: boolean | null
+          link_default_expiry_days: number | null
+          links_enabled: boolean | null
+          max_links_per_month: number | null
           payment_bank_enabled: boolean | null
           payment_cod_enabled: boolean | null
           payment_stripe_enabled: boolean | null
@@ -249,6 +253,7 @@ export type Database = {
         }
         Insert: {
           accounting_enabled?: boolean | null
+          allowed_link_types?: string[] | null
           animation_speed?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
@@ -262,6 +267,9 @@ export type Database = {
           enable_particles?: boolean | null
           id?: string
           inventory_enabled?: boolean | null
+          link_default_expiry_days?: number | null
+          links_enabled?: boolean | null
+          max_links_per_month?: number | null
           payment_bank_enabled?: boolean | null
           payment_cod_enabled?: boolean | null
           payment_stripe_enabled?: boolean | null
@@ -276,6 +284,7 @@ export type Database = {
         }
         Update: {
           accounting_enabled?: boolean | null
+          allowed_link_types?: string[] | null
           animation_speed?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
@@ -289,6 +298,9 @@ export type Database = {
           enable_particles?: boolean | null
           id?: string
           inventory_enabled?: boolean | null
+          link_default_expiry_days?: number | null
+          links_enabled?: boolean | null
+          max_links_per_month?: number | null
           payment_bank_enabled?: boolean | null
           payment_cod_enabled?: boolean | null
           payment_stripe_enabled?: boolean | null
@@ -623,6 +635,61 @@ export type Database = {
           },
         ]
       }
+      link_access_logs: {
+        Row: {
+          accessed_at: string
+          converted: boolean | null
+          id: string
+          ip_address: string | null
+          link_id: string
+          order_id: string | null
+          tenant_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          converted?: boolean | null
+          id?: string
+          ip_address?: string | null
+          link_id: string
+          order_id?: string | null
+          tenant_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          converted?: boolean | null
+          id?: string
+          ip_address?: string | null
+          link_id?: string
+          order_id?: string | null
+          tenant_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_access_logs_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "store_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_access_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_access_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -899,6 +966,78 @@ export type Database = {
           },
           {
             foreignKeyName: "returns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          description: string | null
+          discount_type: string | null
+          discount_value: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          link_code: string
+          link_data: Json
+          link_type: Database["public"]["Enums"]["store_link_type"]
+          max_uses: number | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          link_code: string
+          link_data?: Json
+          link_type: Database["public"]["Enums"]["store_link_type"]
+          max_uses?: number | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          link_code?: string
+          link_data?: Json
+          link_type?: Database["public"]["Enums"]["store_link_type"]
+          max_uses?: number | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_links_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1203,6 +1342,7 @@ export type Database = {
         | "viewer"
         | "system_manager"
         | "company_admin"
+      store_link_type: "product" | "cart" | "invoice" | "payment" | "offer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1338,6 +1478,7 @@ export const Constants = {
         "system_manager",
         "company_admin",
       ],
+      store_link_type: ["product", "cart", "invoice", "payment", "offer"],
     },
   },
 } as const
