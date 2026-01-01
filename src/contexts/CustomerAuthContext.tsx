@@ -38,16 +38,42 @@ export const CustomerAuthProvider = ({ children, tenantId }: CustomerAuthProvide
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved customer session
-    const savedCustomer = localStorage.getItem(`customer_session_${tenantId}`);
-    if (savedCustomer) {
-      try {
-        setCustomer(JSON.parse(savedCustomer));
-      } catch {
-        localStorage.removeItem(`customer_session_${tenantId}`);
+    // Check for saved customer session and validate it
+    const validateSession = async () => {
+      const savedCustomer = localStorage.getItem(`customer_session_${tenantId}`);
+      if (savedCustomer) {
+        try {
+          const parsed = JSON.parse(savedCustomer);
+          
+          // Verify the customer still exists in the database
+          if (parsed.id && parsed.tenant_id) {
+            const { data, error } = await supabase
+              .from("clients")
+              .select("id, name, phone, email, client_number, address, tenant_id")
+              .eq("id", parsed.id)
+              .eq("tenant_id", parsed.tenant_id)
+              .maybeSingle();
+            
+            if (data && !error) {
+              // Update with fresh data from database
+              setCustomer(data);
+              localStorage.setItem(`customer_session_${tenantId}`, JSON.stringify(data));
+            } else {
+              // Invalid session, clear it
+              localStorage.removeItem(`customer_session_${tenantId}`);
+              setCustomer(null);
+            }
+          } else {
+            localStorage.removeItem(`customer_session_${tenantId}`);
+          }
+        } catch {
+          localStorage.removeItem(`customer_session_${tenantId}`);
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    validateSession();
   }, [tenantId]);
 
   const login = async (phone: string, clientNumber: string, tenantId: string): Promise<{ success: boolean; error?: string }> => {

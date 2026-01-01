@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useOutletContext, Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
+import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,20 +19,23 @@ import {
   Phone,
   Loader2,
   CheckCircle2,
-  ShoppingCart
+  ShoppingCart,
+  User
 } from "lucide-react";
 import type { StoreContextData } from "./StoreLayout";
 
 export const StoreCheckout = () => {
   const { tenant, settings } = useOutletContext<StoreContextData>();
   const { items, totalPrice, clearCart, tenantId } = useCart();
+  const { customer } = useCustomerAuth();
   const navigate = useNavigate();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
+  const [newClientNumber, setNewClientNumber] = useState<string | null>(null);
 
-  // Form state
+  // Form state - pre-fill if customer is logged in
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -40,6 +44,19 @@ export const StoreCheckout = () => {
     notes: "",
     paymentMethod: "cod",
   });
+
+  // Pre-fill form with customer data if logged in
+  useEffect(() => {
+    if (customer) {
+      setFormData(prev => ({
+        ...prev,
+        name: customer.name || prev.name,
+        phone: customer.phone || prev.phone,
+        email: customer.email || prev.email,
+        address: customer.address || prev.address,
+      }));
+    }
+  }, [customer]);
 
   const taxAmount = settings?.tax_percentage 
     ? totalPrice * (settings.tax_percentage / 100) 
@@ -128,6 +145,55 @@ export const StoreCheckout = () => {
         data: { order_id: order.id, order_number: newOrderNumber, amount: grandTotal },
       });
 
+      // Auto-register customer if not already registered
+      if (!customer) {
+        // Check if client already exists with this phone
+        const normalizedPhone = formData.phone.replace(/[\s\-()]/g, '');
+        const { data: existingClient } = await supabase
+          .from("clients")
+          .select("id, client_number")
+          .eq("tenant_id", tenant.id)
+          .eq("phone", normalizedPhone)
+          .maybeSingle();
+
+        if (!existingClient) {
+          // Generate new client number
+          const { data: lastClient } = await supabase
+            .from("clients")
+            .select("client_number")
+            .eq("tenant_id", tenant.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          let clientNum = 1;
+          if (lastClient?.client_number) {
+            const match = lastClient.client_number.match(/\d+/);
+            if (match) {
+              clientNum = parseInt(match[0], 10) + 1;
+            }
+          }
+          const generatedClientNumber = `C${clientNum.toString().padStart(5, '0')}`;
+
+          // Create new client
+          const { error: clientError } = await supabase
+            .from("clients")
+            .insert({
+              tenant_id: tenant.id,
+              name: formData.name,
+              phone: normalizedPhone,
+              email: formData.email || null,
+              address: formData.address,
+              client_number: generatedClientNumber,
+              notes: `عميل مسجل تلقائياً من الطلب #${newOrderNumber}`,
+            });
+
+          if (!clientError) {
+            setNewClientNumber(generatedClientNumber);
+          }
+        }
+      }
+
       // Update product stock
       for (const item of items) {
         const { data: product } = await supabase
@@ -181,16 +247,37 @@ export const StoreCheckout = () => {
         <p className="text-muted-foreground mb-4">
           رقم الطلب: <span className="font-bold text-foreground">{orderNumber}</span>
         </p>
+        
+        {newClientNumber && (
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4">
+            <p className="text-sm text-muted-foreground mb-1">تم تسجيلك كعميل جديد!</p>
+            <p className="font-bold text-lg">
+              رقم العميل: <span className="text-primary">{newClientNumber}</span>
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              احتفظ برقم العميل لتسجيل الدخول وتتبع طلباتك
+            </p>
+          </div>
+        )}
+        
         <p className="text-muted-foreground mb-8">
           سيتم التواصل معك قريباً لتأكيد الطلب
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-4 justify-center flex-wrap">
           <Link to={`/store/${tenant.slug}`}>
             <Button variant="outline">العودة للرئيسية</Button>
           </Link>
           <Link to={`/store/${tenant.slug}/products`}>
             <Button>متابعة التسوق</Button>
           </Link>
+          {newClientNumber && (
+            <Link to={`/store/${tenant.slug}/login`}>
+              <Button variant="secondary">
+                <User className="h-4 w-4 ml-2" />
+                تسجيل الدخول
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     );
