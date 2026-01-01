@@ -4,9 +4,10 @@ import { ClassicTemplate, ModernTemplate, MinimalTemplate, ThermalTemplate } fro
 import { TemplateType, InvoiceData, InvoiceItemData, TenantData } from "./templates/types";
 import { Printer, X, FileText } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
-import { useDefaultTemplate, TemplateSettings, defaultTemplateSettings } from "@/hooks/useInvoiceTemplates";
+import { useDefaultTemplate, useInvoiceTemplates, TemplateSettings, defaultTemplateSettings, InvoiceTemplate } from "@/hooks/useInvoiceTemplates";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Star } from "lucide-react";
 
 interface InvoicePreviewModalProps {
   open: boolean;
@@ -29,6 +30,10 @@ export const InvoicePreviewModal = ({
 }: InvoicePreviewModalProps) => {
   const printRef = useRef<HTMLDivElement>(null);
   const { data: defaultTemplate } = useDefaultTemplate();
+  const { data: allTemplates } = useInvoiceTemplates();
+  
+  // Selected custom template ID
+  const [selectedCustomTemplateId, setSelectedCustomTemplateId] = useState<string | null>(null);
   
   // Automatically use custom template if there's a default template saved
   const [useCustomTemplate, setUseCustomTemplate] = useState(true);
@@ -37,10 +42,13 @@ export const InvoicePreviewModal = ({
   useEffect(() => {
     if (defaultTemplate) {
       setUseCustomTemplate(true);
+      setSelectedCustomTemplateId(defaultTemplate.id);
     }
   }, [defaultTemplate]);
 
-  const templateSettings: TemplateSettings = defaultTemplate?.settings || defaultTemplateSettings;
+  // Get the currently selected template settings
+  const selectedCustomTemplate = allTemplates?.find(t => t.id === selectedCustomTemplateId) || defaultTemplate;
+  const templateSettings: TemplateSettings = selectedCustomTemplate?.settings || defaultTemplateSettings;
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -131,12 +139,12 @@ export const InvoicePreviewModal = ({
         </DialogHeader>
 
         <div className="space-y-4 flex-shrink-0">
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <Select
               value={useCustomTemplate ? "custom" : "preset"}
               onValueChange={(v) => setUseCustomTemplate(v === "custom")}
             >
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-40">
                 <SelectValue placeholder="نوع القالب" />
               </SelectTrigger>
               <SelectContent>
@@ -144,7 +152,7 @@ export const InvoicePreviewModal = ({
                 <SelectItem value="custom">
                   <span className="flex items-center gap-2">
                     <FileText size={14} />
-                    القالب المخصص
+                    قوالب مخصصة
                   </span>
                 </SelectItem>
               </SelectContent>
@@ -157,9 +165,30 @@ export const InvoicePreviewModal = ({
               />
             )}
             
-            {useCustomTemplate && defaultTemplate && (
+            {useCustomTemplate && allTemplates && allTemplates.length > 0 && (
+              <Select
+                value={selectedCustomTemplateId || ""}
+                onValueChange={(v) => setSelectedCustomTemplateId(v)}
+              >
+                <SelectTrigger className="w-56">
+                  <SelectValue placeholder="اختر القالب" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allTemplates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      <span className="flex items-center gap-2">
+                        {template.name}
+                        {template.is_default && <Star size={12} className="fill-yellow-500 text-yellow-500" />}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
+            {useCustomTemplate && (!allTemplates || allTemplates.length === 0) && (
               <span className="text-sm text-muted-foreground">
-                القالب: {defaultTemplate.name}
+                لا توجد قوالب مخصصة - أنشئ قالب من صفحة تصميم الفاتورة
               </span>
             )}
           </div>
