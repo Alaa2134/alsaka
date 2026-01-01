@@ -71,6 +71,7 @@ export type Database = {
       app_users: {
         Row: {
           access_code: string
+          access_code_hash: string | null
           created_at: string
           device_id: string | null
           device_locked_at: string | null
@@ -83,6 +84,7 @@ export type Database = {
         }
         Insert: {
           access_code: string
+          access_code_hash?: string | null
           created_at?: string
           device_id?: string | null
           device_locked_at?: string | null
@@ -95,6 +97,7 @@ export type Database = {
         }
         Update: {
           access_code?: string
+          access_code_hash?: string | null
           created_at?: string
           device_id?: string | null
           device_locked_at?: string | null
@@ -226,6 +229,7 @@ export type Database = {
           animation_speed: string | null
           bank_account_name: string | null
           bank_account_number: string | null
+          bank_account_number_encrypted: string | null
           bank_name: string | null
           created_at: string
           currency: string | null
@@ -247,6 +251,7 @@ export type Database = {
           store_access_blocked: boolean | null
           store_enabled: boolean | null
           stripe_account_id: string | null
+          stripe_account_id_encrypted: string | null
           subdomain: string | null
           subscription_expires_at: string | null
           subscription_type: string | null
@@ -254,6 +259,7 @@ export type Database = {
           tenant_id: string
           updated_at: string
           vodafone_number: string | null
+          vodafone_number_encrypted: string | null
         }
         Insert: {
           accounting_enabled?: boolean | null
@@ -261,6 +267,7 @@ export type Database = {
           animation_speed?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
+          bank_account_number_encrypted?: string | null
           bank_name?: string | null
           created_at?: string
           currency?: string | null
@@ -282,6 +289,7 @@ export type Database = {
           store_access_blocked?: boolean | null
           store_enabled?: boolean | null
           stripe_account_id?: string | null
+          stripe_account_id_encrypted?: string | null
           subdomain?: string | null
           subscription_expires_at?: string | null
           subscription_type?: string | null
@@ -289,6 +297,7 @@ export type Database = {
           tenant_id: string
           updated_at?: string
           vodafone_number?: string | null
+          vodafone_number_encrypted?: string | null
         }
         Update: {
           accounting_enabled?: boolean | null
@@ -296,6 +305,7 @@ export type Database = {
           animation_speed?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
+          bank_account_number_encrypted?: string | null
           bank_name?: string | null
           created_at?: string
           currency?: string | null
@@ -317,6 +327,7 @@ export type Database = {
           store_access_blocked?: boolean | null
           store_enabled?: boolean | null
           stripe_account_id?: string | null
+          stripe_account_id_encrypted?: string | null
           subdomain?: string | null
           subscription_expires_at?: string | null
           subscription_type?: string | null
@@ -324,6 +335,7 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           vodafone_number?: string | null
+          vodafone_number_encrypted?: string | null
         }
         Relationships: [
           {
@@ -1427,9 +1439,117 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_store_settings: {
+        Row: {
+          accounting_enabled: boolean | null
+          allowed_link_types: string[] | null
+          animation_speed: string | null
+          created_at: string | null
+          currency: string | null
+          custom_domain: string | null
+          depth_intensity: number | null
+          enable_3d_effects: boolean | null
+          enable_glassmorphism: boolean | null
+          enable_particles: boolean | null
+          inventory_enabled: boolean | null
+          link_default_expiry_days: number | null
+          links_enabled: boolean | null
+          max_links_per_month: number | null
+          payment_bank_enabled: boolean | null
+          payment_cod_enabled: boolean | null
+          payment_stripe_enabled: boolean | null
+          payment_vodafone_enabled: boolean | null
+          sound_alerts_enabled: boolean | null
+          store_access_blocked: boolean | null
+          store_enabled: boolean | null
+          subdomain: string | null
+          subscription_active: boolean | null
+          subscription_expires_at: string | null
+          subscription_type: string | null
+          tax_percentage: number | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accounting_enabled?: boolean | null
+          allowed_link_types?: string[] | null
+          animation_speed?: string | null
+          created_at?: string | null
+          currency?: string | null
+          custom_domain?: string | null
+          depth_intensity?: number | null
+          enable_3d_effects?: boolean | null
+          enable_glassmorphism?: boolean | null
+          enable_particles?: boolean | null
+          inventory_enabled?: boolean | null
+          link_default_expiry_days?: number | null
+          links_enabled?: boolean | null
+          max_links_per_month?: number | null
+          payment_bank_enabled?: boolean | null
+          payment_cod_enabled?: boolean | null
+          payment_stripe_enabled?: boolean | null
+          payment_vodafone_enabled?: boolean | null
+          sound_alerts_enabled?: boolean | null
+          store_access_blocked?: boolean | null
+          store_enabled?: boolean | null
+          subdomain?: string | null
+          subscription_active?: never
+          subscription_expires_at?: string | null
+          subscription_type?: string | null
+          tax_percentage?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accounting_enabled?: boolean | null
+          allowed_link_types?: string[] | null
+          animation_speed?: string | null
+          created_at?: string | null
+          currency?: string | null
+          custom_domain?: string | null
+          depth_intensity?: number | null
+          enable_3d_effects?: boolean | null
+          enable_glassmorphism?: boolean | null
+          enable_particles?: boolean | null
+          inventory_enabled?: boolean | null
+          link_default_expiry_days?: number | null
+          links_enabled?: boolean | null
+          max_links_per_month?: number | null
+          payment_bank_enabled?: boolean | null
+          payment_cod_enabled?: boolean | null
+          payment_stripe_enabled?: boolean | null
+          payment_vodafone_enabled?: boolean | null
+          sound_alerts_enabled?: boolean | null
+          store_access_blocked?: boolean | null
+          store_enabled?: boolean | null
+          subdomain?: string | null
+          subscription_active?: never
+          subscription_expires_at?: string | null
+          subscription_type?: string | null
+          tax_percentage?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      decrypt_sensitive_data: {
+        Args: { encrypted_text: string; encryption_key: string }
+        Returns: string
+      }
+      encrypt_sensitive_data: {
+        Args: { encryption_key: string; plain_text: string }
+        Returns: string
+      }
       get_next_journal_entry_number: {
         Args: { _tenant_id: string }
         Returns: string
@@ -1439,6 +1559,9 @@ export type Database = {
         Args: { user_access_code: string }
         Returns: string
       }
+      hash_access_code: { Args: { plain_code: string }; Returns: string }
+      is_admin_user: { Args: never; Returns: boolean }
+      is_authenticated_user: { Args: never; Returns: boolean }
       is_system_manager: { Args: { _access_code: string }; Returns: boolean }
       user_has_role: {
         Args: {
@@ -1449,6 +1572,10 @@ export type Database = {
       }
       user_in_tenant: {
         Args: { _access_code: string; _tenant_id: string }
+        Returns: boolean
+      }
+      verify_access_code: {
+        Args: { hashed_code: string; plain_code: string }
         Returns: boolean
       }
     }

@@ -8,6 +8,7 @@ import { useDefaultTemplate, useInvoiceTemplates, TemplateSettings, defaultTempl
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
+import { createSafePrintWindow } from "@/utils/sanitizeHtml";
 
 interface InvoicePreviewModalProps {
   open: boolean;
@@ -52,44 +53,17 @@ export function InvoicePreviewModal({
 
   const handlePrint = () => {
     if (printRef.current) {
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        const paperWidth = useCustomTemplate ? {
-          a4: "210mm",
-          a5: "148mm",
-          thermal: "80mm",
-        }[templateSettings.paperSize] : (selectedTemplate === "thermal" ? "80mm" : "210mm");
-        
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html dir="rtl" lang="ar">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>فاتورة رقم ${invoice.invoice_number}</title>
-            <script src="https://cdn.tailwindcss.com"></script>
-            <style>
-              @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
-              body { font-family: 'Cairo', sans-serif; }
-              @page { size: ${paperWidth} auto; margin: 10mm; }
-              @media print {
-                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              }
-            </style>
-          </head>
-          <body>
-            ${printRef.current.innerHTML}
-            <script>
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 500);
-            </script>
-          </body>
-          </html>
-        `);
-        printWindow.document.close();
-      }
+      const paperWidth = useCustomTemplate ? {
+        a4: "210mm",
+        a5: "148mm",
+        thermal: "80mm",
+      }[templateSettings.paperSize] : (selectedTemplate === "thermal" ? "80mm" : "210mm");
+      
+      createSafePrintWindow(
+        printRef.current.innerHTML,
+        `فاتورة رقم ${invoice.invoice_number}`,
+        { direction: 'rtl', paperWidth }
+      );
     }
   };
 

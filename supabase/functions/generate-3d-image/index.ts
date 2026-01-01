@@ -12,16 +12,114 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, productName } = await req.json();
+    // ============ AUTHENTICATION CHECK ============
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(JSON.stringify({ 
+        error: 'غير مصرح - يجب تسجيل الدخول',
+        success: false 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { imageUrl, productName, accessCode, tenantId } = await req.json();
     
+    // Validate access code
+    if (!accessCode) {
+      console.error('No access code provided');
+      return new Response(JSON.stringify({ 
+        error: 'غير مصرح - رمز الوصول مطلوب',
+        success: false 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Verify user with Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify access code and get user
+    const { data: userData, error: userError } = await supabase
+      .from('app_users')
+      .select('id, tenant_id, role, is_active, name')
+      .eq('access_code', accessCode)
+      .eq('is_active', true)
+      .single();
+
+    if (userError || !userData) {
+      console.error('Invalid access code:', userError);
+      return new Response(JSON.stringify({ 
+        error: 'رمز الوصول غير صالح',
+        success: false 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check role permissions
+    const allowedRoles = ['admin', 'manager', 'company_admin', 'system_manager'];
+    if (!allowedRoles.includes(userData.role)) {
+      console.error('User role not allowed:', userData.role);
+      return new Response(JSON.stringify({ 
+        error: 'لا تملك صلاحية لاستخدام هذه الميزة',
+        success: false 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Verify tenant membership
+    if (tenantId && userData.role !== 'system_manager' && userData.tenant_id !== tenantId) {
+      console.error('Tenant mismatch');
+      return new Response(JSON.stringify({ 
+        error: 'غير مصرح للوصول لهذه الشركة',
+        success: false 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ============ INPUT VALIDATION ============
+    if (!imageUrl) {
+      return new Response(JSON.stringify({ 
+        error: 'رابط الصورة مطلوب',
+        success: false 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate image URL format
+    try {
+      new URL(imageUrl);
+    } catch {
+      return new Response(JSON.stringify({ 
+        error: 'رابط الصورة غير صالح',
+        success: false 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`User ${userData.name} generating 3D image for: ${productName}`);
+
+    // ============ AI PROCESSING ============
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    console.log(`Generating 3D-style image for product: ${productName}`);
-
-    // Use Gemini to generate a 3D-style version of the product image
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -89,11 +187,6 @@ Keep the product exactly the same but make it look 3D rendered.`
     }
 
     // Upload the generated 3D image to Supabase storage
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Convert base64 to blob
     const base64Data = generatedImage.replace(/^data:image\/\w+;base64,/, '');
     const imageBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
     
@@ -108,7 +201,6 @@ Keep the product exactly the same but make it look 3D rendered.`
 
     if (uploadError) {
       console.error('Upload error:', uploadError);
-      // Return the base64 image if upload fails
       return new Response(JSON.stringify({ 
         success: true,
         image3dUrl: generatedImage,
@@ -121,6 +213,17 @@ Keep the product exactly the same but make it look 3D rendered.`
     const { data: publicUrl } = supabase.storage
       .from('product-images')
       .getPublicUrl(fileName);
+
+    // Log audit
+    await supabase.from('audit_logs').insert({
+      user_id: userData.id,
+      tenant_id: userData.tenant_id,
+      action: 'generate_3d_image',
+      table_name: 'products',
+      new_data: { product_name: productName, image_url: publicUrl.publicUrl }
+    });
+
+    console.log(`Successfully generated 3D image for ${productName}`);
 
     return new Response(JSON.stringify({ 
       success: true,

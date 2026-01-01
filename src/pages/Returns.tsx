@@ -34,6 +34,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDefaultTemplate, TemplateSettings, defaultTemplateSettings } from "@/hooks/useInvoiceTemplates";
 import { useAuth } from "@/contexts/AuthContext";
+import { createSafePrintWindow } from "@/utils/sanitizeHtml";
 
 interface LocalReturnItem {
   id: string;
@@ -255,37 +256,11 @@ const Returns = () => {
       thermal: "80mm",
     }[templateSettings.paperSize] || "210mm";
     
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html dir="rtl" lang="ar">
-        <head>
-          <meta charset="UTF-8">
-          <title>مرتجع رقم ${selectedReturn.return_number}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
-            body { font-family: 'Cairo', sans-serif; }
-            @page { size: ${paperWidth} auto; margin: 10mm; }
-            @media print {
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            }
-          </style>
-        </head>
-        <body>
-          ${printRef.current.innerHTML}
-          <script>
-            setTimeout(() => {
-              window.print();
-              window.close();
-            }, 500);
-          </script>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-    }
+    createSafePrintWindow(
+      printRef.current.innerHTML,
+      `مرتجع رقم ${selectedReturn.return_number}`,
+      { direction: 'rtl', paperWidth }
+    );
     setShowPrintPreview(false);
   };
 
@@ -293,37 +268,11 @@ const Returns = () => {
   const handlePrintReport = () => {
     if (!reportRef.current) return;
     
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html dir="rtl" lang="ar">
-        <head>
-          <meta charset="UTF-8">
-          <title>تقرير المرتجعات</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
-            body { font-family: 'Cairo', sans-serif; }
-            @page { size: A4; margin: 10mm; }
-            @media print {
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            }
-          </style>
-        </head>
-        <body>
-          ${reportRef.current.innerHTML}
-          <script>
-            setTimeout(() => {
-              window.print();
-              window.close();
-            }, 500);
-          </script>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-    }
+    createSafePrintWindow(
+      reportRef.current.innerHTML,
+      'تقرير المرتجعات',
+      { direction: 'rtl', paperWidth: '210mm' }
+    );
   };
 
   // Calculate report totals with search filter
