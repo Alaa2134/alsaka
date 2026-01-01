@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Outlet, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { CartProvider, useCart } from "@/contexts/CartContext";
+import { NotificationsContainer } from "@/components/store/3d/Notification3D";
 import { Helmet } from "react-helmet-async";
 import { Loader2 } from "lucide-react";
 
@@ -28,11 +30,24 @@ interface CompanySettings {
   bank_account_name: string | null;
   bank_account_number: string | null;
   vodafone_number: string | null;
+  // 3D Settings
+  enable_3d_effects: boolean;
+  animation_speed: string;
+  enable_particles: boolean;
+  enable_glassmorphism: boolean;
+  depth_intensity: number;
 }
 
 export interface StoreContextData {
   tenant: TenantData;
   settings: CompanySettings;
+}
+
+interface Notification {
+  id: string;
+  type: "order_new" | "order_confirmed" | "payment_success" | "payment_failed" | "shipping" | "info";
+  title: string;
+  message: string;
 }
 
 const StoreLayoutInner = () => {
@@ -41,7 +56,12 @@ const StoreLayoutInner = () => {
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const { setTenantId } = useCart();
+
+  const removeNotification = useCallback((id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }, []);
 
   useEffect(() => {
     const fetchTenantData = async () => {
@@ -98,6 +118,11 @@ const StoreLayoutInner = () => {
           bank_account_name: null,
           bank_account_number: null,
           vodafone_number: null,
+          enable_3d_effects: true,
+          animation_speed: "normal",
+          enable_particles: true,
+          enable_glassmorphism: true,
+          depth_intensity: 15,
         });
       } catch (err) {
         console.error("Error fetching store data:", err);
@@ -112,8 +137,21 @@ const StoreLayoutInner = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 className="h-12 w-12 text-primary" />
+        </motion.div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-muted-foreground"
+        >
+          جاري تحميل المتجر...
+        </motion.p>
       </div>
     );
   }
@@ -121,7 +159,13 @@ const StoreLayoutInner = () => {
   if (error || !tenant) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
-        <h1 className="text-2xl font-bold text-destructive">{error || "المتجر غير متاح"}</h1>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring" }}
+        >
+          <h1 className="text-2xl font-bold text-destructive">{error || "المتجر غير متاح"}</h1>
+        </motion.div>
         <p className="text-muted-foreground">يرجى التحقق من الرابط والمحاولة مرة أخرى</p>
       </div>
     );
@@ -147,13 +191,23 @@ const StoreLayoutInner = () => {
         </main>
 
         {/* Footer */}
-        <footer className="bg-muted/50 border-t py-8 mt-auto">
+        <motion.footer 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-muted/50 border-t py-8 mt-auto"
+        >
           <div className="container mx-auto px-4 text-center">
             <p className="text-muted-foreground text-sm">
               © {new Date().getFullYear()} {tenant.name}. جميع الحقوق محفوظة
             </p>
           </div>
-        </footer>
+        </motion.footer>
+
+        {/* Notifications */}
+        <NotificationsContainer
+          notifications={notifications}
+          onClose={removeNotification}
+        />
       </div>
     </>
   );

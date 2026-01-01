@@ -222,12 +222,17 @@ export type Database = {
       company_settings: {
         Row: {
           accounting_enabled: boolean | null
+          animation_speed: string | null
           bank_account_name: string | null
           bank_account_number: string | null
           bank_name: string | null
           created_at: string
           currency: string | null
           custom_domain: string | null
+          depth_intensity: number | null
+          enable_3d_effects: boolean | null
+          enable_glassmorphism: boolean | null
+          enable_particles: boolean | null
           id: string
           inventory_enabled: boolean | null
           payment_bank_enabled: boolean | null
@@ -244,12 +249,17 @@ export type Database = {
         }
         Insert: {
           accounting_enabled?: boolean | null
+          animation_speed?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_name?: string | null
           created_at?: string
           currency?: string | null
           custom_domain?: string | null
+          depth_intensity?: number | null
+          enable_3d_effects?: boolean | null
+          enable_glassmorphism?: boolean | null
+          enable_particles?: boolean | null
           id?: string
           inventory_enabled?: boolean | null
           payment_bank_enabled?: boolean | null
@@ -266,12 +276,17 @@ export type Database = {
         }
         Update: {
           accounting_enabled?: boolean | null
+          animation_speed?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_name?: string | null
           created_at?: string
           currency?: string | null
           custom_domain?: string | null
+          depth_intensity?: number | null
+          enable_3d_effects?: boolean | null
+          enable_glassmorphism?: boolean | null
+          enable_particles?: boolean | null
           id?: string
           inventory_enabled?: boolean | null
           payment_bank_enabled?: boolean | null
