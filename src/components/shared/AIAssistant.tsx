@@ -134,7 +134,7 @@ export const AIAssistant = () => {
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full gradient-primary shadow-glow flex items-center justify-center hover:scale-110 transition-transform"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full gradient-primary shadow-glow flex items-center justify-center hover:scale-110 transition-transform print:hidden"
         aria-label="المساعد الذكي"
       >
         {isOpen ? (
@@ -146,7 +146,7 @@ export const AIAssistant = () => {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 left-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-card rounded-2xl shadow-2xl border border-border animate-scale-in overflow-hidden">
+        <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] bg-card rounded-2xl shadow-2xl border border-border animate-scale-in overflow-hidden print:hidden">
           {/* Header */}
           <div className="gradient-primary p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-background/20 rounded-full flex items-center justify-center">
