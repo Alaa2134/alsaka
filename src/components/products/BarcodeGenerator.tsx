@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, RefreshCw, Copy, Check, Settings2 } from "lucide-react";
+import { Printer, RefreshCw, Copy, Check, Settings2, Maximize2, ZoomIn, ZoomOut, X, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/hooks/useProducts";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sanitizeForPrint } from "@/utils/sanitizeHtml";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BarcodeGeneratorProps {
   open: boolean;
@@ -105,6 +106,11 @@ export const BarcodeGenerator = ({
   const [printQuantity, setPrintQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
   const barcodeRef = useRef<HTMLDivElement>(null);
+  
+  // Fullscreen and print preview states
+  const [showFullscreen, setShowFullscreen] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   
   // Barcode style settings - load from saved
   const [barcodeWidth, setBarcodeWidth] = useState(savedSettings.barcodeWidth);
@@ -237,7 +243,138 @@ export const BarcodeGenerator = ({
     onClose();
   };
 
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+  const resetZoom = () => setZoomLevel(1);
+
+  // Fullscreen Preview Component
+  const FullscreenPreview = () => (
+    <Dialog open={showFullscreen} onOpenChange={setShowFullscreen}>
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="flex items-center justify-between">
+            <span>معاينة الباركود - {product?.name}</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handleZoomOut} disabled={zoomLevel <= 0.5}>
+                <ZoomOut size={16} />
+              </Button>
+              <span className="text-sm min-w-[60px] text-center">{Math.round(zoomLevel * 100)}%</span>
+              <Button variant="outline" size="icon" onClick={handleZoomIn} disabled={zoomLevel >= 3}>
+                <ZoomIn size={16} />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={resetZoom}>إعادة</Button>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 flex items-center justify-center overflow-auto bg-muted/30 rounded-lg p-8">
+          <div 
+            className="transition-transform duration-200 p-8 rounded-lg shadow-lg"
+            style={{ 
+              transform: `scale(${zoomLevel})`,
+              backgroundColor: barcodeBackground 
+            }}
+          >
+            {barcode && (
+              <div className="flex flex-col items-center gap-4">
+                {product?.name && (
+                  <div className="text-lg font-bold" style={{ color: barcodeLineColor }}>
+                    {product.name}
+                  </div>
+                )}
+                <Barcode
+                  value={barcode}
+                  format={barcodeType}
+                  width={barcodeWidth}
+                  height={barcodeHeight}
+                  fontSize={barcodeFontSize}
+                  margin={barcodeMargin}
+                  displayValue={showValue}
+                  background={barcodeBackground}
+                  lineColor={barcodeLineColor}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2 pt-4 flex-shrink-0">
+          <Button onClick={handlePrint} className="flex-1 gap-2">
+            <Printer size={16} />
+            طباعة
+          </Button>
+          <Button variant="outline" onClick={() => setShowFullscreen(false)}>
+            إغلاق
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Print Preview Component
+  const PrintPreview = () => (
+    <Dialog open={showPrintPreview} onOpenChange={setShowPrintPreview}>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="flex items-center justify-between">
+            <span>معاينة الطباعة - {printQuantity} نسخة</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handleZoomOut} disabled={zoomLevel <= 0.5}>
+                <ZoomOut size={16} />
+              </Button>
+              <span className="text-sm min-w-[60px] text-center">{Math.round(zoomLevel * 100)}%</span>
+              <Button variant="outline" size="icon" onClick={handleZoomIn} disabled={zoomLevel >= 3}>
+                <ZoomIn size={16} />
+              </Button>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="flex-1 border rounded-lg bg-white p-4">
+          <div 
+            className="flex flex-wrap gap-4 justify-center transition-transform duration-200 origin-top-left"
+            style={{ transform: `scale(${zoomLevel})` }}
+          >
+            {Array.from({ length: printQuantity }).map((_, index) => (
+              <div 
+                key={index}
+                className="flex flex-col items-center p-3 border border-dashed border-gray-300 rounded"
+                style={{ backgroundColor: barcodeBackground }}
+              >
+                {product?.name && (
+                  <div className="text-xs font-bold mb-1 text-center max-w-[150px] truncate">
+                    {product.name}
+                  </div>
+                )}
+                <Barcode
+                  value={barcode}
+                  format={barcodeType}
+                  width={barcodeWidth * 0.7}
+                  height={barcodeHeight * 0.7}
+                  fontSize={barcodeFontSize * 0.8}
+                  margin={barcodeMargin * 0.5}
+                  displayValue={showValue}
+                  background={barcodeBackground}
+                  lineColor={barcodeLineColor}
+                />
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+        <div className="flex gap-2 pt-4 flex-shrink-0">
+          <Button onClick={handlePrint} className="flex-1 gap-2">
+            <Printer size={16} />
+            طباعة الآن
+          </Button>
+          <Button variant="outline" onClick={() => setShowPrintPreview(false)}>
+            إغلاق
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
+    <>
+      <FullscreenPreview />
+      <PrintPreview />
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -425,7 +562,7 @@ export const BarcodeGenerator = ({
         {/* Barcode Preview */}
         {barcode && (
           <div 
-            className="flex flex-col items-center p-4 rounded-lg border"
+            className="flex flex-col items-center p-4 rounded-lg border relative group"
             style={{ backgroundColor: barcodeBackground }}
           >
             <div ref={barcodeRef}>
@@ -441,6 +578,16 @@ export const BarcodeGenerator = ({
                 lineColor={barcodeLineColor}
               />
             </div>
+            {/* Fullscreen button overlay */}
+            <Button
+              variant="secondary"
+              size="icon"
+              className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => setShowFullscreen(true)}
+              title="ملء الشاشة"
+            >
+              <Maximize2 size={16} />
+            </Button>
           </div>
         )}
 
@@ -448,6 +595,16 @@ export const BarcodeGenerator = ({
         <div className="flex gap-2 pt-2">
           <Button onClick={handleSave} className="flex-1" disabled={!barcode}>
             حفظ الباركود
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowPrintPreview(true)} 
+            disabled={!barcode}
+            className="flex items-center gap-2"
+            title="معاينة الطباعة"
+          >
+            <Eye size={16} />
+            معاينة
           </Button>
           <Button 
             variant="outline" 
@@ -461,5 +618,6 @@ export const BarcodeGenerator = ({
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
