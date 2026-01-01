@@ -15,17 +15,32 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "placeholder.svg"],
+      includeAssets: ["favicon.ico", "placeholder.svg", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "نظام إدارة الفواتير",
         short_name: "الفواتير",
-        description: "نظام متكامل لإدارة الفواتير والمبيعات",
+        description: "نظام متكامل لإدارة الفواتير والمبيعات - يعمل بدون إنترنت",
         theme_color: "#3b82f6",
         background_color: "#0f172a",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
         scope: "/",
+        categories: ["business", "productivity", "finance"],
+        shortcuts: [
+          {
+            name: "فاتورة جديدة",
+            short_name: "فاتورة",
+            url: "/invoice",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          },
+          {
+            name: "المنتجات",
+            short_name: "منتجات",
+            url: "/products",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          }
+        ],
         icons: [
           {
             src: "/pwa-192x192.png",
@@ -46,24 +61,69 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,ttf}"],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api/],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/hxwyzwfsadsykitwaszs\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/hxwyzwfsadsykitwaszs\.supabase\.co\/rest\/v1\/.*/i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "supabase-cache",
+              cacheName: "supabase-api-cache",
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          {
+            urlPattern: /^https:\/\/hxwyzwfsadsykitwaszs\.supabase\.co\/storage\/v1\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "supabase-storage-cache",
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
               cacheableResponse: {
                 statuses: [0, 200],
               },
             },
           },
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-webfonts",
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
         ],
+      },
+      devOptions: {
+        enabled: false,
       },
     }),
   ].filter(Boolean),

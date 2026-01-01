@@ -8,16 +8,13 @@ import {
   Users, 
   FileText, 
   Package, 
-  DollarSign, 
-  TrendingUp,
   ShoppingCart,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
   Activity,
   Globe,
   Link2,
-  Crown
+  Crown,
+  Database,
+  Shield
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +22,9 @@ import { Helmet } from "react-helmet-async";
 import { Navigate } from "react-router-dom";
 import { SystemLinkSettings } from "@/components/links/SystemLinkSettings";
 import { SubscriptionManager } from "@/components/system/SubscriptionManager";
+import { DatabaseManager } from "@/components/system/DatabaseManager";
+import { TenantManager } from "@/components/system/TenantManager";
+import { UserManager } from "@/components/system/UserManager";
 
 const SystemDashboard = () => {
   const { user, isSystemManager } = useAuth();
@@ -123,10 +123,22 @@ const SystemDashboard = () => {
 
           {/* Tabs for different sections */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList>
+            <TabsList className="flex-wrap">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 نظرة عامة
+              </TabsTrigger>
+              <TabsTrigger value="tenants" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                الشركات
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                المستخدمين
+              </TabsTrigger>
+              <TabsTrigger value="database" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                قاعدة البيانات
               </TabsTrigger>
               <TabsTrigger value="subscriptions" className="flex items-center gap-2">
                 <Crown className="h-4 w-4" />
@@ -134,7 +146,7 @@ const SystemDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="links" className="flex items-center gap-2">
                 <Link2 className="h-4 w-4" />
-                إعدادات الروابط
+                الروابط
               </TabsTrigger>
             </TabsList>
 
@@ -204,6 +216,18 @@ const SystemDashboard = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="tenants">
+              <TenantManager />
+            </TabsContent>
+
+            <TabsContent value="users">
+              <UserManager />
+            </TabsContent>
+
+            <TabsContent value="database">
+              <DatabaseManager />
             </TabsContent>
 
             <TabsContent value="subscriptions">
