@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, KeyboardEvent, forwardRef } from "react";
+import { useState, useRef, useEffect, KeyboardEvent, forwardRef, useCallback } from "react";
 import { InvoiceItem } from "@/types/invoice";
-import { Trash2, Search, AlertCircle } from "lucide-react";
+import { Trash2, Search, AlertCircle, Volume2 } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +14,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+// Sound alert for below minimum price
+const playAlertSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = "sine";
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    console.log("Audio not supported");
+  }
+};
 
 interface InvoiceTableProps {
   items: InvoiceItem[];
@@ -416,18 +439,44 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                 />
               </td>
               <td className="px-4 py-3 border-b border-border/50">
-                <input
-                  ref={(el) => setInputRef(`${item.id}-price`, el)}
-                  type="text"
-                  inputMode="decimal"
-                  value={item.price || ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^\d.]/g, '');
-                    onUpdateItem(item.id, "price", parseFloat(val) || 0);
-                  }}
-                  onKeyDown={(e) => handleKeyDown(e, item.id, "price")}
-                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
-                />
+                <div className="relative">
+                  <input
+                    ref={(el) => setInputRef(`${item.id}-price`, el)}
+                    type="text"
+                    inputMode="decimal"
+                    value={item.price || ""}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^\d.]/g, '');
+                      const newPrice = parseFloat(val) || 0;
+                      onUpdateItem(item.id, "price", newPrice);
+                    }}
+                    onBlur={() => {
+                      // Check if price is below minimum on blur
+                      if (item.minPrice > 0 && item.price < item.minPrice && item.price > 0) {
+                        playAlertSound();
+                        toast.warning(
+                          `تحذير: سعر "${item.itemName}" أقل من الحد الأدنى!`,
+                          {
+                            description: `السعر: ${item.price} - الحد الأدنى: ${item.minPrice}`,
+                            duration: 5000,
+                            icon: <Volume2 className="text-warning" />,
+                          }
+                        );
+                      }
+                    }}
+                    onKeyDown={(e) => handleKeyDown(e, item.id, "price")}
+                    className={`w-full bg-background border-2 rounded-lg px-3 py-2 text-center focus:outline-none transition-all ${
+                      item.minPrice > 0 && item.price < item.minPrice && item.price > 0
+                        ? "border-destructive bg-destructive/10 text-destructive animate-pulse"
+                        : "border-border focus:border-primary"
+                    }`}
+                  />
+                  {item.minPrice > 0 && item.price < item.minPrice && item.price > 0 && (
+                    <div className="absolute -top-1 -right-1">
+                      <AlertCircle className="w-4 h-4 text-destructive animate-bounce" />
+                    </div>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3 border-b border-border/50">
                 <input
