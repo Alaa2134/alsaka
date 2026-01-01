@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { Phone, Search, FileText, CreditCard, Package, ArrowLeft } from "lucide-react";
+import { Phone, Search, FileText, CreditCard, Package, ArrowLeft, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +41,7 @@ export default function ClientTracking() {
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [totalInvoices, setTotalInvoices] = useState(0);
   const [totalPaid, setTotalPaid] = useState(0);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // Auto-search if phone is provided in URL
   useEffect(() => {
@@ -132,6 +133,132 @@ export default function ClientTracking() {
 
   const balance = totalInvoices - totalPaid;
 
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error("فشل فتح نافذة الطباعة");
+      return;
+    }
+
+    const currentDate = new Date().toLocaleDateString("ar-EG");
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>كشف حساب - ${client?.name}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; padding: 20px; background: white; color: black; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+          .header h1 { font-size: 24px; margin-bottom: 10px; }
+          .client-info { margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; }
+          .client-info p { margin: 5px 0; }
+          .summary { display: flex; justify-content: space-around; margin-bottom: 30px; text-align: center; }
+          .summary-item { padding: 15px 20px; border-radius: 8px; }
+          .summary-item.total { background: #e3f2fd; }
+          .summary-item.paid { background: #e8f5e9; }
+          .summary-item.balance { background: ${balance > 0 ? '#ffebee' : '#e8f5e9'}; }
+          .summary-item h3 { font-size: 14px; color: #666; margin-bottom: 5px; }
+          .summary-item p { font-size: 20px; font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th { background: #333; color: white; padding: 10px; text-align: right; }
+          td { padding: 10px; border-bottom: 1px solid #ddd; }
+          tr:nth-child(even) { background: #f9f9f9; }
+          .section-title { font-size: 18px; margin: 20px 0 10px; padding-bottom: 5px; border-bottom: 1px solid #333; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>كشف حساب عميل</h1>
+          <p>تاريخ الطباعة: ${currentDate}</p>
+        </div>
+
+        <div class="client-info">
+          <p><strong>اسم العميل:</strong> ${client?.name}</p>
+          <p><strong>رقم العميل:</strong> ${client?.client_number}</p>
+          <p><strong>رقم الهاتف:</strong> ${client?.phone}</p>
+        </div>
+
+        <div class="summary">
+          <div class="summary-item total">
+            <h3>إجمالي الآجل</h3>
+            <p>${totalInvoices.toFixed(2)} ج.م</p>
+          </div>
+          <div class="summary-item paid">
+            <h3>المدفوع</h3>
+            <p>${totalPaid.toFixed(2)} ج.م</p>
+          </div>
+          <div class="summary-item balance">
+            <h3>المتبقي</h3>
+            <p>${balance.toFixed(2)} ج.م</p>
+          </div>
+        </div>
+
+        <h3 class="section-title">الفواتير (${invoices.length})</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>رقم الفاتورة</th>
+              <th>التاريخ</th>
+              <th>طريقة الدفع</th>
+              <th>المبلغ</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoices.map(inv => `
+              <tr>
+                <td>${inv.invoice_number}</td>
+                <td>${new Date(inv.invoice_date).toLocaleDateString("ar-EG")}</td>
+                <td>${inv.payment_method}</td>
+                <td>${Number(inv.total_amount).toFixed(2)} ج.م</td>
+                <td>${inv.status === 'completed' ? 'مكتملة' : 'معلقة'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <h3 class="section-title">الدفعات (${payments.length})</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>طريقة الدفع</th>
+              <th>المبلغ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${payments.map(p => `
+              <tr>
+                <td>${new Date(p.payment_date).toLocaleDateString("ar-EG")}</td>
+                <td>${p.payment_method}</td>
+                <td>${Number(p.amount).toFixed(2)} ج.م</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>هذا كشف حساب رسمي - شكراً لتعاملكم معنا</p>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          }
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <>
       <Helmet>
@@ -186,14 +313,20 @@ export default function ClientTracking() {
 
           {/* Client Info */}
           {client && (
-            <div className="space-y-4 animate-fade-in">
-              {/* Client Card */}
+            <div ref={printRef} className="space-y-4 animate-fade-in">
+              {/* Client Card with Print Button */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="text-primary" />
-                    بيانات العميل
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="text-primary" />
+                      بيانات العميل
+                    </CardTitle>
+                    <Button onClick={handlePrint} variant="outline" size="sm" className="flex items-center gap-2">
+                      <Printer size={16} />
+                      طباعة كشف الحساب
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
