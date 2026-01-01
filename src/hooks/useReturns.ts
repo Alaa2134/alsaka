@@ -35,7 +35,7 @@ export const useReturns = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("returns")
-        .select("*, clients(name)")
+        .select("*, clients(name), return_items(*)")
         .order("created_at", { ascending: false });
       
       if (error) throw error;
