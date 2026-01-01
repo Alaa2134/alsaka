@@ -35,7 +35,7 @@ export const InvoiceHeader = ({
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
   const [activeField, setActiveField] = useState<"number" | "name" | null>(null);
 
-  // Filter clients based on input
+  // Filter clients based on input - including phone search
   const filteredClients = useMemo(() => {
     if (!clients) return [];
     const searchTerm = activeField === "number" ? clientNumber : clientName;
@@ -44,7 +44,7 @@ export const InvoiceHeader = ({
     return clients.filter(c => 
       c.client_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone?.includes(searchTerm)
+      c.phone?.toLowerCase().includes(searchTerm.toLowerCase())
     ).slice(0, 6);
   }, [clients, clientNumber, clientName, activeField]);
 
