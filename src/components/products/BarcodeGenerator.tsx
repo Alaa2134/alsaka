@@ -11,6 +11,7 @@ import { Product } from "@/hooks/useProducts";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { sanitizeForPrint } from "@/utils/sanitizeHtml";
 
 interface BarcodeGeneratorProps {
   open: boolean;
@@ -164,8 +165,16 @@ export const BarcodeGenerator = ({
       return;
     }
 
-    const barcodeHtml = barcodeRef.current.innerHTML;
-    const productName = product?.name || "";
+    // Sanitize barcode HTML and product name
+    const barcodeHtml = sanitizeForPrint(barcodeRef.current.innerHTML);
+    const productName = sanitizeForPrint(product?.name || "");
+
+    const barcodeItemHtml = `
+      <div class="barcode-item">
+        <div class="product-name">${productName}</div>
+        <div class="barcode-container">${barcodeHtml}</div>
+      </div>
+    `;
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -207,12 +216,7 @@ export const BarcodeGenerator = ({
         </style>
       </head>
       <body>
-        ${Array(printQuantity).fill(`
-          <div class="barcode-item">
-            <div class="product-name">${productName}</div>
-            <div class="barcode-container">${barcodeHtml}</div>
-          </div>
-        `).join("")}
+        ${Array(printQuantity).fill(barcodeItemHtml).join("")}
         <script>
           window.onload = function() {
             window.print();
