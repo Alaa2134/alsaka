@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface InvoiceSearchProps {
   open: boolean;
   onClose: () => void;
+  onLoadInvoice?: (invoice: InvoiceResult, items: InvoiceItemResult[]) => void;
 }
 
 interface InvoiceResult {
@@ -33,7 +34,7 @@ interface InvoiceItemResult {
   total: number;
 }
 
-export const InvoiceSearch = ({ open, onClose }: InvoiceSearchProps) => {
+export const InvoiceSearch = ({ open, onClose, onLoadInvoice }: InvoiceSearchProps) => {
   const { tenant } = useAuth();
   const [searchNumber, setSearchNumber] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -146,29 +147,51 @@ export const InvoiceSearch = ({ open, onClose }: InvoiceSearchProps) => {
                   {searchResults.map((invoice) => (
                     <div
                       key={invoice.id}
-                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer"
-                      onClick={() => handleViewInvoice(invoice)}
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="bg-primary/10 text-primary font-bold px-3 py-2 rounded-lg">
+                      <div 
+                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        onClick={() => handleViewInvoice(invoice)}
+                      >
+                        <div className="bg-primary/10 text-primary font-bold px-2 py-1 rounded text-sm">
                           #{invoice.invoice_number}
                         </div>
                         <div>
-                          <div className="font-semibold">
+                          <div className="font-medium text-sm">
                             {invoice.clients?.name || "بدون عميل"}
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-xs text-muted-foreground">
                             {new Date(invoice.invoice_date).toLocaleDateString("ar-EG")}
                           </div>
                         </div>
                       </div>
-                      <div className="text-left">
-                        <div className="font-bold text-lg">
-                          {invoice.total_amount.toFixed(2)}
+                      <div className="flex items-center gap-2">
+                        <div className="text-left">
+                          <div className="font-bold text-sm">
+                            {invoice.total_amount.toFixed(2)}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {invoice.payment_method}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {invoice.payment_method}
-                        </div>
+                        {onLoadInvoice && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const { data: items } = await supabase
+                                .from("invoice_items")
+                                .select("id, item_number, item_name, quantity, price, min_price, total")
+                                .eq("invoice_id", invoice.id);
+                              onLoadInvoice(invoice, items || []);
+                              onClose();
+                            }}
+                          >
+                            تحميل
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
