@@ -3,6 +3,16 @@ import { InvoiceItem } from "@/types/invoice";
 import { Trash2, Search, AlertCircle } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface InvoiceTableProps {
   items: InvoiceItem[];
@@ -147,6 +157,8 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
   
   // Auto-set default warehouse
   const defaultWh = defaultWarehouse || (warehousesList && warehousesList.length === 1 ? warehousesList[0].name : "");
@@ -446,7 +458,10 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
               </td>
               <td className="px-4 py-3 border-b border-border/50 text-center">
                 <button
-                  onClick={() => onDeleteItem(item.id)}
+                  onClick={() => {
+                    setItemToDelete({ id: item.id, name: item.itemName || `صنف ${index + 1}` });
+                    setDeleteDialogOpen(true);
+                  }}
                   className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-all hover:scale-110"
                   title="حذف الصنف"
                 >
@@ -457,6 +472,32 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
           ))}
         </tbody>
       </table>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد حذف الصنف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف "{itemToDelete?.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (itemToDelete) {
+                  onDeleteItem(itemToDelete.id);
+                }
+                setItemToDelete(null);
+              }}
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
