@@ -15,6 +15,29 @@ export interface LabelSettings {
   showBarcodeText: boolean;
   columns: number;
   gap: number;
+  // Extended settings for barcode generator templates
+  templateStyle?: {
+    background: string;
+    borderStyle: string;
+    borderColor: string;
+    borderWidth: string;
+    borderRadius: string;
+    textColor: string;
+    fontWeight: string;
+    textAlign: string;
+    padding: string;
+    shadow: string;
+    gradient?: string;
+    priceStyle?: string;
+  };
+  labelSizeId?: string;
+  customLabelWidth?: string;
+  customLabelHeight?: string;
+  barcodeMargin?: number;
+  barcodeFontSize?: number;
+  barcodeBackground?: string;
+  barcodeLineColor?: string;
+  showValue?: boolean;
 }
 
 export interface LabelTemplate {
