@@ -361,14 +361,14 @@ export const UserManager = () => {
               <div className="space-y-2">
                 <Label>الشركة</Label>
                 <Select 
-                  value={editingUser.tenant_id || ''} 
-                  onValueChange={(value) => setEditingUser({ ...editingUser, tenant_id: value || null })}
+                  value={editingUser.tenant_id || 'none'} 
+                  onValueChange={(value) => setEditingUser({ ...editingUser, tenant_id: value === 'none' ? null : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="بدون شركة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">بدون شركة</SelectItem>
+                    <SelectItem value="none">بدون شركة</SelectItem>
                     {tenants?.map((tenant) => (
                       <SelectItem key={tenant.id} value={tenant.id}>{tenant.name}</SelectItem>
                     ))}
@@ -443,14 +443,14 @@ export const UserManager = () => {
             <div className="space-y-2">
               <Label>الشركة</Label>
               <Select 
-                value={newUser.tenant_id} 
-                onValueChange={(value) => setNewUser({ ...newUser, tenant_id: value })}
+                value={newUser.tenant_id || 'none'} 
+                onValueChange={(value) => setNewUser({ ...newUser, tenant_id: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="اختر شركة" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">بدون شركة</SelectItem>
+                  <SelectItem value="none">بدون شركة</SelectItem>
                   {tenants?.map((tenant) => (
                     <SelectItem key={tenant.id} value={tenant.id}>{tenant.name}</SelectItem>
                   ))}
