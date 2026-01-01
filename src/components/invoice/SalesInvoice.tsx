@@ -351,8 +351,48 @@ export const SalesInvoice = () => {
     secondary_color: tenant.secondary_color,
   } : null;
 
+  // Handle loading invoice from search
+  const handleLoadInvoice = useCallback((invoice: any, invoiceItems: any[]) => {
+    setInvoiceNumber(invoice.invoice_number);
+    setDate(invoice.invoice_date);
+    setPaymentMethod(invoice.payment_method);
+    setNotes(invoice.notes || "");
+    
+    // Find client
+    if (invoice.clients?.name) {
+      setClientName(invoice.clients.name);
+      const client = clients?.find(c => c.name === invoice.clients.name);
+      if (client) {
+        setClientNumber(client.client_number);
+        setClientId(client.id);
+        setClientPhone(client.phone || "");
+      }
+    } else {
+      setClientName("");
+      setClientNumber("");
+      setClientId(null);
+      setClientPhone("");
+    }
+    
+    // Load items
+    if (invoiceItems.length > 0) {
+      setItems(invoiceItems.map(item => ({
+        id: generateId(),
+        itemNumber: item.item_number,
+        itemName: item.item_name,
+        quantity: item.quantity,
+        price: item.price,
+        minPrice: item.min_price,
+        total: item.total,
+        warehouse: "",
+      })));
+    }
+    
+    toast.success(`تم تحميل الفاتورة رقم ${invoice.invoice_number}`);
+  }, [clients]);
+
   return (
-    <div className="p-6 md:p-8">
+    <div className="p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header with search button */}
         <div className="flex items-center justify-between mb-2">
@@ -360,24 +400,24 @@ export const SalesInvoice = () => {
             variant="outline"
             size="sm"
             onClick={() => setShowSearch(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 h-7 text-xs"
           >
-            <Search size={16} />
-            بحث عن فاتورة
+            <Search size={14} />
+            بحث
           </Button>
           
           {/* Autosave indicator */}
           {lastSaved && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
-              <Save size={14} className="text-success" />
-              <span>حفظ تلقائي: {lastSaved.toLocaleTimeString("ar-EG")}</span>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Save size={12} className="text-success" />
+              <span>{lastSaved.toLocaleTimeString("ar-EG")}</span>
             </div>
           )}
         </div>
         
-        <div className="bg-card rounded-2xl shadow-soft p-8 border border-border">
+        <div className="bg-card rounded-xl shadow-soft p-4 md:p-6 border border-border">
           {/* Barcode Scanner */}
-          <div className="mb-6">
+          <div className="mb-4">
             <BarcodeScanner products={products} onProductFound={handleBarcodeProduct} />
           </div>
 
@@ -426,7 +466,11 @@ export const SalesInvoice = () => {
         onSelectTemplate={setSelectedTemplate}
       />
 
-      <InvoiceSearch open={showSearch} onClose={() => setShowSearch(false)} />
+      <InvoiceSearch 
+        open={showSearch} 
+        onClose={() => setShowSearch(false)} 
+        onLoadInvoice={handleLoadInvoice}
+      />
     </div>
   );
 };
