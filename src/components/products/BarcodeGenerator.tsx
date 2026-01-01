@@ -5,9 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, RefreshCw, Copy, Check } from "lucide-react";
+import { Printer, RefreshCw, Copy, Check, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/hooks/useProducts";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface BarcodeGeneratorProps {
   open: boolean;
@@ -64,6 +67,15 @@ export const BarcodeGenerator = ({
   const [printQuantity, setPrintQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
   const barcodeRef = useRef<HTMLDivElement>(null);
+  
+  // Barcode style settings
+  const [barcodeWidth, setBarcodeWidth] = useState(1.5);
+  const [barcodeHeight, setBarcodeHeight] = useState(50);
+  const [barcodeFontSize, setBarcodeFontSize] = useState(12);
+  const [barcodeMargin, setBarcodeMargin] = useState(10);
+  const [showValue, setShowValue] = useState(true);
+  const [barcodeBackground, setBarcodeBackground] = useState("#ffffff");
+  const [barcodeLineColor, setBarcodeLineColor] = useState("#000000");
 
   const handleGenerateNew = () => {
     const newBarcode = generateRandomBarcode(barcodeType);
@@ -159,7 +171,7 @@ export const BarcodeGenerator = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             إنشاء باركود
@@ -167,85 +179,207 @@ export const BarcodeGenerator = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Barcode Type */}
-          <div>
-            <Label>نوع الباركود</Label>
-            <Select value={barcodeType} onValueChange={(v) => setBarcodeType(v as any)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EAN13">EAN-13 (دولي)</SelectItem>
-                <SelectItem value="CODE128">CODE128 (متعدد)</SelectItem>
-                <SelectItem value="UPC">UPC (أمريكي)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="basic">الأساسي</TabsTrigger>
+            <TabsTrigger value="style" className="flex items-center gap-1">
+              <Settings2 size={14} />
+              التصميم
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Barcode Input */}
-          <div>
-            <Label>رقم الباركود</Label>
-            <div className="flex gap-2">
-              <Input
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                placeholder="أدخل أو اضغط توليد"
-                className="font-mono"
-              />
-              <Button variant="outline" size="icon" onClick={handleGenerateNew} title="توليد جديد">
-                <RefreshCw size={16} />
-              </Button>
-              <Button variant="outline" size="icon" onClick={handleCopy} title="نسخ">
-                {copied ? <Check size={16} className="text-success" /> : <Copy size={16} />}
-              </Button>
+          <TabsContent value="basic" className="space-y-4 mt-4">
+            {/* Barcode Type */}
+            <div>
+              <Label>نوع الباركود</Label>
+              <Select value={barcodeType} onValueChange={(v) => setBarcodeType(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EAN13">EAN-13 (دولي)</SelectItem>
+                  <SelectItem value="CODE128">CODE128 (متعدد)</SelectItem>
+                  <SelectItem value="UPC">UPC (أمريكي)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          {/* Barcode Preview */}
-          {barcode && (
-            <div className="flex flex-col items-center p-4 bg-white rounded-lg border">
-              <div ref={barcodeRef}>
-                <Barcode
+            {/* Barcode Input */}
+            <div>
+              <Label>رقم الباركود</Label>
+              <div className="flex gap-2">
+                <Input
                   value={barcode}
-                  format={barcodeType}
-                  width={1.5}
-                  height={50}
-                  fontSize={12}
-                  margin={10}
-                  displayValue={true}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  placeholder="أدخل أو اضغط توليد"
+                  className="font-mono"
                 />
+                <Button variant="outline" size="icon" onClick={handleGenerateNew} title="توليد جديد">
+                  <RefreshCw size={16} />
+                </Button>
+                <Button variant="outline" size="icon" onClick={handleCopy} title="نسخ">
+                  {copied ? <Check size={16} className="text-success" /> : <Copy size={16} />}
+                </Button>
               </div>
             </div>
-          )}
 
-          {/* Print Quantity */}
-          <div>
-            <Label>عدد النسخ للطباعة</Label>
-            <Input
-              type="number"
-              min={1}
-              max={100}
-              value={printQuantity}
-              onChange={(e) => setPrintQuantity(parseInt(e.target.value) || 1)}
-            />
-          </div>
+            {/* Print Quantity */}
+            <div>
+              <Label>عدد النسخ للطباعة</Label>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={printQuantity}
+                onChange={(e) => setPrintQuantity(parseInt(e.target.value) || 1)}
+              />
+            </div>
+          </TabsContent>
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-2">
-            <Button onClick={handleSave} className="flex-1" disabled={!barcode}>
-              حفظ الباركود
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handlePrint} 
-              disabled={!barcode}
-              className="flex items-center gap-2"
-            >
-              <Printer size={16} />
-              طباعة
-            </Button>
+          <TabsContent value="style" className="space-y-4 mt-4">
+            {/* Width */}
+            <div>
+              <Label className="flex justify-between">
+                <span>عرض الخط</span>
+                <span className="text-muted-foreground">{barcodeWidth}</span>
+              </Label>
+              <Slider
+                value={[barcodeWidth]}
+                onValueChange={(v) => setBarcodeWidth(v[0])}
+                min={0.5}
+                max={3}
+                step={0.1}
+              />
+            </div>
+
+            {/* Height */}
+            <div>
+              <Label className="flex justify-between">
+                <span>الارتفاع</span>
+                <span className="text-muted-foreground">{barcodeHeight}px</span>
+              </Label>
+              <Slider
+                value={[barcodeHeight]}
+                onValueChange={(v) => setBarcodeHeight(v[0])}
+                min={20}
+                max={100}
+                step={5}
+              />
+            </div>
+
+            {/* Font Size */}
+            <div>
+              <Label className="flex justify-between">
+                <span>حجم الخط</span>
+                <span className="text-muted-foreground">{barcodeFontSize}px</span>
+              </Label>
+              <Slider
+                value={[barcodeFontSize]}
+                onValueChange={(v) => setBarcodeFontSize(v[0])}
+                min={8}
+                max={24}
+                step={1}
+              />
+            </div>
+
+            {/* Margin */}
+            <div>
+              <Label className="flex justify-between">
+                <span>الهامش</span>
+                <span className="text-muted-foreground">{barcodeMargin}px</span>
+              </Label>
+              <Slider
+                value={[barcodeMargin]}
+                onValueChange={(v) => setBarcodeMargin(v[0])}
+                min={0}
+                max={30}
+                step={2}
+              />
+            </div>
+
+            {/* Colors */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>لون الخلفية</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={barcodeBackground}
+                    onChange={(e) => setBarcodeBackground(e.target.value)}
+                    className="w-12 h-9 p-1"
+                  />
+                  <Input
+                    value={barcodeBackground}
+                    onChange={(e) => setBarcodeBackground(e.target.value)}
+                    className="flex-1 font-mono text-xs"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>لون الخطوط</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={barcodeLineColor}
+                    onChange={(e) => setBarcodeLineColor(e.target.value)}
+                    className="w-12 h-9 p-1"
+                  />
+                  <Input
+                    value={barcodeLineColor}
+                    onChange={(e) => setBarcodeLineColor(e.target.value)}
+                    className="flex-1 font-mono text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Show Value */}
+            <div className="flex items-center justify-between bg-muted p-3 rounded-lg">
+              <Label>إظهار الرقم أسفل الباركود</Label>
+              <Switch
+                checked={showValue}
+                onCheckedChange={setShowValue}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Barcode Preview */}
+        {barcode && (
+          <div 
+            className="flex flex-col items-center p-4 rounded-lg border"
+            style={{ backgroundColor: barcodeBackground }}
+          >
+            <div ref={barcodeRef}>
+              <Barcode
+                value={barcode}
+                format={barcodeType}
+                width={barcodeWidth}
+                height={barcodeHeight}
+                fontSize={barcodeFontSize}
+                margin={barcodeMargin}
+                displayValue={showValue}
+                background={barcodeBackground}
+                lineColor={barcodeLineColor}
+              />
+            </div>
           </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-2">
+          <Button onClick={handleSave} className="flex-1" disabled={!barcode}>
+            حفظ الباركود
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handlePrint} 
+            disabled={!barcode}
+            className="flex items-center gap-2"
+          >
+            <Printer size={16} />
+            طباعة
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
