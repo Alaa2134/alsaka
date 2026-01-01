@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,14 +12,66 @@ serve(async (req) => {
   }
 
   try {
-    const { fileContent, fileType } = await req.json();
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ 
+        error: 'غير مصرح - يجب تسجيل الدخول' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { fileContent, fileType, accessCode } = await req.json();
     
+    // Validate access code
+    if (!accessCode) {
+      return new Response(JSON.stringify({ 
+        error: 'غير مصرح - رمز الوصول مطلوب' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify access code is valid
+    const { data: userData, error: userError } = await supabase
+      .from('app_users')
+      .select('id, tenant_id, role, is_active')
+      .eq('access_code', accessCode)
+      .eq('is_active', true)
+      .single();
+
+    if (userError || !userData) {
+      return new Response(JSON.stringify({ 
+        error: 'غير مصرح - رمز الوصول غير صالح' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if user has permission (admin, manager only)
+    if (!['admin', 'manager', 'company_admin', 'system_manager'].includes(userData.role)) {
+      return new Response(JSON.stringify({ 
+        error: 'غير مصرح - لا تملك صلاحية استخدام هذه الخدمة' 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    console.log(`Processing file of type: ${fileType}`);
+    console.log(`Processing file of type: ${fileType} for user: ${userData.id}`);
 
     const systemPrompt = `أنت مساعد متخصص في استخراج بيانات المنتجات من الملفات.
     
