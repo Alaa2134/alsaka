@@ -58,29 +58,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [tenant]);
 
-  // Auto logout on browser/tab close
+  // Auto logout on browser/tab close - but allow same device to re-login
   useEffect(() => {
     const handleBeforeUnload = () => {
-      // Use sessionStorage to track if this is a page reload vs close
+      // Mark as reloading to differentiate from close
       sessionStorage.setItem('isReloading', 'true');
     };
 
     const handleLoad = () => {
       const isReloading = sessionStorage.getItem('isReloading');
       if (!isReloading) {
-        // Browser was closed and reopened - logout
+        // Browser was closed and reopened - clear session but keep device ID
+        // This allows re-login on same device without needing admin unlock
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(TENANT_KEY);
       }
       sessionStorage.removeItem('isReloading');
     };
 
+    // Also clear session when page is hidden for too long (mobile background)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        sessionStorage.setItem('hiddenAt', Date.now().toString());
+      } else if (document.visibilityState === 'visible') {
+        const hiddenAt = sessionStorage.getItem('hiddenAt');
+        if (hiddenAt) {
+          const hiddenDuration = Date.now() - parseInt(hiddenAt);
+          // If hidden for more than 30 minutes, clear session
+          if (hiddenDuration > 30 * 60 * 1000) {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(TENANT_KEY);
+            window.location.reload();
+          }
+          sessionStorage.removeItem('hiddenAt');
+        }
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('load', handleLoad);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('load', handleLoad);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

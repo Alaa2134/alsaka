@@ -8,6 +8,8 @@ interface InvoiceTableProps {
   items: InvoiceItem[];
   onUpdateItem: (id: string, field: keyof InvoiceItem, value: string | number) => void;
   onDeleteItem: (id: string) => void;
+  onAddItem?: () => void;
+  defaultWarehouse?: string;
 }
 
 interface Product {
@@ -138,13 +140,16 @@ const SuggestionDropdown = ({
   );
 };
 
-export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTableProps) => {
+export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, defaultWarehouse }: InvoiceTableProps) => {
   const { data: products } = useProducts();
   const { data: warehousesList } = useWarehouses();
   const [activeInput, setActiveInput] = useState<{ id: string; field: "itemNumber" | "itemName" } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("");
+  
+  // Auto-set default warehouse
+  const defaultWh = defaultWarehouse || (warehousesList && warehousesList.length === 1 ? warehousesList[0].name : "");
   
   // Refs for inputs to handle Enter navigation
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
@@ -201,7 +206,8 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
     onUpdateItem(itemId, "price", product.price);
     onUpdateItem(itemId, "minPrice", product.min_price);
     const wh = warehousesList?.find(w => w.id === product.warehouse_id);
-    if (wh) onUpdateItem(itemId, "warehouse", wh.name);
+    // Set warehouse from product, or default warehouse
+    onUpdateItem(itemId, "warehouse", wh?.name || defaultWh);
     setActiveInput(null);
     setSearchTerm("");
     setSelectedSuggestionIndex(0);
@@ -249,14 +255,37 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
         return;
       }
       
-      // Otherwise, move to next field
+      // Navigate through fields: itemNumber -> itemName -> quantity -> price
       const fieldOrder = ["itemNumber", "itemName", "quantity", "price"];
       const currentIndex = fieldOrder.indexOf(field);
+      
       if (currentIndex < fieldOrder.length - 1) {
+        // Move to next field
         const nextField = fieldOrder[currentIndex + 1];
         const nextInput = inputRefs.current.get(`${itemId}-${nextField}`);
         nextInput?.focus();
         nextInput?.select();
+      } else {
+        // Last field (price) - add new item and focus on it
+        if (onAddItem) {
+          onAddItem();
+          // Focus on the new item's first field after a short delay
+          setTimeout(() => {
+            const allItemIds = items.map(i => i.id);
+            // The new item will be added, so we need to wait for it
+            // Focus on the first input of the table
+            const firstInput = document.querySelector('table input[type="text"]') as HTMLInputElement;
+            if (firstInput) {
+              // Find the last row's first input
+              const rows = document.querySelectorAll('table tbody tr');
+              const lastRow = rows[rows.length - 1];
+              if (lastRow) {
+                const newInput = lastRow.querySelector('input[type="text"]') as HTMLInputElement;
+                newInput?.focus();
+              }
+            }
+          }, 100);
+        }
       }
     } else if (e.key === "Escape") {
       setActiveInput(null);
@@ -363,10 +392,13 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
               <td className="px-4 py-3 border-b border-border/50">
                 <input
                   ref={(el) => setInputRef(`${item.id}-quantity`, el)}
-                  type="number"
-                  min="1"
-                  value={item.quantity}
-                  onChange={(e) => onUpdateItem(item.id, "quantity", parseInt(e.target.value) || 0)}
+                  type="text"
+                  inputMode="numeric"
+                  value={item.quantity || ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '');
+                    onUpdateItem(item.id, "quantity", parseInt(val) || 0);
+                  }}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "quantity")}
                   className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                 />
@@ -374,22 +406,26 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
               <td className="px-4 py-3 border-b border-border/50">
                 <input
                   ref={(el) => setInputRef(`${item.id}-price`, el)}
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={item.price}
-                  onChange={(e) => onUpdateItem(item.id, "price", parseFloat(e.target.value) || 0)}
+                  type="text"
+                  inputMode="decimal"
+                  value={item.price || ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d.]/g, '');
+                    onUpdateItem(item.id, "price", parseFloat(val) || 0);
+                  }}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "price")}
                   className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                 />
               </td>
               <td className="px-4 py-3 border-b border-border/50">
                 <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={item.minPrice}
-                  onChange={(e) => onUpdateItem(item.id, "minPrice", parseFloat(e.target.value) || 0)}
+                  type="text"
+                  inputMode="decimal"
+                  value={item.minPrice || ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d.]/g, '');
+                    onUpdateItem(item.id, "minPrice", parseFloat(val) || 0);
+                  }}
                   className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
                 />
               </td>

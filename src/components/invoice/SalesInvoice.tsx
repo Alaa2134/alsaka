@@ -399,6 +399,8 @@ export const SalesInvoice = () => {
             items={items}
             onUpdateItem={handleUpdateItem}
             onDeleteItem={handleDeleteItem}
+            onAddItem={handleAddItem}
+            defaultWarehouse={warehouses && warehouses.length === 1 ? warehouses[0].name : undefined}
           />
 
           <InvoiceFooter
