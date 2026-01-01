@@ -3,7 +3,7 @@ import { InvoiceTemplateSelector } from "./InvoiceTemplateSelector";
 import { ClassicTemplate, ModernTemplate, MinimalTemplate, ThermalTemplate } from "./templates";
 import { TemplateType, InvoiceData, InvoiceItemData, TenantData } from "./templates/types";
 import { Printer, X, FileText } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useDefaultTemplate, TemplateSettings, defaultTemplateSettings } from "@/hooks/useInvoiceTemplates";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,16 @@ export const InvoicePreviewModal = ({
 }: InvoicePreviewModalProps) => {
   const printRef = useRef<HTMLDivElement>(null);
   const { data: defaultTemplate } = useDefaultTemplate();
-  const [useCustomTemplate, setUseCustomTemplate] = useState(false);
+  
+  // Automatically use custom template if there's a default template saved
+  const [useCustomTemplate, setUseCustomTemplate] = useState(true);
+  
+  // Update state when defaultTemplate loads
+  useEffect(() => {
+    if (defaultTemplate) {
+      setUseCustomTemplate(true);
+    }
+  }, [defaultTemplate]);
 
   const templateSettings: TemplateSettings = defaultTemplate?.settings || defaultTemplateSettings;
 
