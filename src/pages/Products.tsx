@@ -97,6 +97,7 @@ const Products = () => {
         barcode: formData.barcode || null,
         category: finalCategory || null,
         warehouse_id: formData.warehouse_id || null,
+        image_url: null,
       });
     }
     

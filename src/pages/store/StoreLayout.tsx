@@ -20,6 +20,9 @@ interface TenantData {
 
 interface CompanySettings {
   store_enabled: boolean;
+  store_access_blocked: boolean;
+  subscription_type: string;
+  subscription_expires_at: string | null;
   tax_percentage: number;
   currency: string;
   payment_cod_enabled: boolean;
@@ -106,8 +109,28 @@ const StoreLayoutInner = () => {
           return;
         }
 
+        // Check if store access is blocked (subscription required)
+        if (settingsData?.store_access_blocked) {
+          setError("هذا المتجر يتطلب اشتراك Pro - تواصل مع صاحب المتجر للتفعيل");
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if subscription expired for Pro stores
+        if (settingsData?.subscription_type === 'pro' && settingsData?.subscription_expires_at) {
+          const expiresAt = new Date(settingsData.subscription_expires_at);
+          if (expiresAt < new Date()) {
+            setError("انتهى اشتراك Pro لهذا المتجر - تواصل مع صاحب المتجر للتجديد");
+            setIsLoading(false);
+            return;
+          }
+        }
+
         setSettings(settingsData || {
           store_enabled: true,
+          store_access_blocked: false,
+          subscription_type: 'free',
+          subscription_expires_at: null,
           tax_percentage: 0,
           currency: "EGP",
           payment_cod_enabled: true,

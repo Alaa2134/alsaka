@@ -813,6 +813,7 @@ export type Database = {
           category: string | null
           created_at: string
           id: string
+          image_url: string | null
           item_number: string
           min_price: number
           name: string
@@ -827,6 +828,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           item_number: string
           min_price?: number
           name: string
@@ -841,6 +843,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           item_number?: string
           min_price?: number
           name?: string
