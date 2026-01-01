@@ -23,6 +23,7 @@ import ClientTracking from "./pages/ClientTracking";
 import SystemDashboard from "./pages/SystemDashboard";
 import Accounting from "./pages/Accounting";
 import StoreOrders from "./pages/StoreOrders";
+import CompanySettings from "./pages/CompanySettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -92,6 +93,11 @@ const App = () => (
                 <Route path="/store-orders" element={
                   <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
                     <StoreOrders />
+                  </ProtectedRoute>
+                } />
+                <Route path="/company-settings" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                    <CompanySettings />
                   </ProtectedRoute>
                 } />
                 <Route path="/users" element={
