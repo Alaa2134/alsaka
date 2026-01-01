@@ -36,6 +36,7 @@ import { StoreProductDetail } from "./pages/store/StoreProductDetail";
 import { StoreCart } from "./pages/store/StoreCart";
 import { StoreCheckout } from "./pages/store/StoreCheckout";
 import { StoreLinkPage } from "./pages/store/StoreLinkPage";
+import CustomerLogin from "./pages/store/CustomerLogin";
 
 const queryClient = new QueryClient();
 
@@ -150,6 +151,8 @@ const App = () => (
                   <Route path="cart" element={<StoreCart />} />
                   <Route path="checkout" element={<StoreCheckout />} />
                   <Route path="link/:linkCode" element={<StoreLinkPage />} />
+                  <Route path="login" element={<CustomerLogin />} />
+                  <Route path="account" element={<CustomerLogin />} />
                 </Route>
                 
                 <Route path="*" element={<NotFound />} />
