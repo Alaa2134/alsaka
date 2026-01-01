@@ -82,6 +82,197 @@ const LABEL_SIZES: LabelSize[] = [
   { id: "custom", name: "مخصص", width: "50mm", height: "30mm", fontSize: 10, barcodeScale: 0.7 },
 ];
 
+// Label design templates
+interface LabelTemplate {
+  id: string;
+  name: string;
+  description: string;
+  style: {
+    background: string;
+    borderStyle: string;
+    borderColor: string;
+    borderWidth: string;
+    borderRadius: string;
+    textColor: string;
+    fontWeight: string;
+    textAlign: string;
+    padding: string;
+    shadow: string;
+    gradient?: string;
+  };
+  showProductName: boolean;
+  showPrice: boolean;
+  showBarcode: boolean;
+  priceStyle?: string;
+}
+
+const LABEL_TEMPLATES: LabelTemplate[] = [
+  {
+    id: "classic",
+    name: "كلاسيكي",
+    description: "تصميم بسيط وأنيق",
+    style: {
+      background: "#ffffff",
+      borderStyle: "solid",
+      borderColor: "#000000",
+      borderWidth: "1px",
+      borderRadius: "0",
+      textColor: "#000000",
+      fontWeight: "bold",
+      textAlign: "center",
+      padding: "4px",
+      shadow: "none",
+    },
+    showProductName: true,
+    showPrice: true,
+    showBarcode: true,
+  },
+  {
+    id: "modern",
+    name: "عصري",
+    description: "تصميم حديث بزوايا مستديرة",
+    style: {
+      background: "#f8fafc",
+      borderStyle: "solid",
+      borderColor: "#e2e8f0",
+      borderWidth: "2px",
+      borderRadius: "8px",
+      textColor: "#1e293b",
+      fontWeight: "600",
+      textAlign: "center",
+      padding: "6px",
+      shadow: "0 1px 3px rgba(0,0,0,0.1)",
+    },
+    showProductName: true,
+    showPrice: true,
+    showBarcode: true,
+  },
+  {
+    id: "minimal",
+    name: "بسيط",
+    description: "باركود فقط بدون إطار",
+    style: {
+      background: "#ffffff",
+      borderStyle: "none",
+      borderColor: "transparent",
+      borderWidth: "0",
+      borderRadius: "0",
+      textColor: "#374151",
+      fontWeight: "normal",
+      textAlign: "center",
+      padding: "2px",
+      shadow: "none",
+    },
+    showProductName: false,
+    showPrice: false,
+    showBarcode: true,
+  },
+  {
+    id: "elegant",
+    name: "أنيق",
+    description: "تصميم فاخر مع ظل",
+    style: {
+      background: "#fffbeb",
+      borderStyle: "double",
+      borderColor: "#d97706",
+      borderWidth: "3px",
+      borderRadius: "4px",
+      textColor: "#92400e",
+      fontWeight: "bold",
+      textAlign: "center",
+      padding: "8px",
+      shadow: "0 4px 6px rgba(0,0,0,0.1)",
+    },
+    showProductName: true,
+    showPrice: true,
+    showBarcode: true,
+    priceStyle: "background: #fef3c7; padding: 2px 6px; border-radius: 4px;",
+  },
+  {
+    id: "bold",
+    name: "جريء",
+    description: "تصميم بارز مع خلفية داكنة",
+    style: {
+      background: "#1f2937",
+      borderStyle: "solid",
+      borderColor: "#374151",
+      borderWidth: "2px",
+      borderRadius: "6px",
+      textColor: "#ffffff",
+      fontWeight: "bold",
+      textAlign: "center",
+      padding: "6px",
+      shadow: "0 2px 4px rgba(0,0,0,0.2)",
+    },
+    showProductName: true,
+    showPrice: true,
+    showBarcode: true,
+  },
+  {
+    id: "retail",
+    name: "تجاري",
+    description: "مثالي للمتاجر مع سعر بارز",
+    style: {
+      background: "#ffffff",
+      borderStyle: "solid",
+      borderColor: "#dc2626",
+      borderWidth: "2px",
+      borderRadius: "0",
+      textColor: "#111827",
+      fontWeight: "bold",
+      textAlign: "center",
+      padding: "4px",
+      shadow: "none",
+    },
+    showProductName: true,
+    showPrice: true,
+    showBarcode: true,
+    priceStyle: "background: #dc2626; color: white; padding: 2px 8px; font-size: 110%;",
+  },
+  {
+    id: "eco",
+    name: "صديق للبيئة",
+    description: "تصميم طبيعي بألوان خضراء",
+    style: {
+      background: "#f0fdf4",
+      borderStyle: "dashed",
+      borderColor: "#22c55e",
+      borderWidth: "2px",
+      borderRadius: "8px",
+      textColor: "#166534",
+      fontWeight: "600",
+      textAlign: "center",
+      padding: "6px",
+      shadow: "none",
+    },
+    showProductName: true,
+    showPrice: true,
+    showBarcode: true,
+  },
+  {
+    id: "premium",
+    name: "فاخر",
+    description: "تصميم ذهبي للمنتجات الفاخرة",
+    style: {
+      background: "linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)",
+      borderStyle: "solid",
+      borderColor: "#ca8a04",
+      borderWidth: "2px",
+      borderRadius: "4px",
+      textColor: "#713f12",
+      fontWeight: "bold",
+      textAlign: "center",
+      padding: "8px",
+      shadow: "0 4px 12px rgba(202, 138, 4, 0.2)",
+      gradient: "linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)",
+    },
+    showProductName: true,
+    showPrice: true,
+    showBarcode: true,
+    priceStyle: "background: linear-gradient(135deg, #ca8a04, #eab308); color: white; padding: 3px 10px; border-radius: 4px; font-weight: bold;",
+  },
+];
+
 interface BarcodeStyleSettings {
   barcodeWidth: number;
   barcodeHeight: number;
@@ -95,6 +286,7 @@ interface BarcodeStyleSettings {
   customLabelHeight: string;
   showProductName: boolean;
   showPrice: boolean;
+  labelTemplateId: string;
 }
 
 const defaultBarcodeStyle: BarcodeStyleSettings = {
@@ -110,6 +302,7 @@ const defaultBarcodeStyle: BarcodeStyleSettings = {
   customLabelHeight: "30mm",
   showProductName: true,
   showPrice: false,
+  labelTemplateId: "classic",
 };
 
 const loadSavedSettings = (): BarcodeStyleSettings => {
@@ -158,8 +351,10 @@ export const BarcodeGenerator = ({
   const [customLabelHeight, setCustomLabelHeight] = useState(savedSettings.customLabelHeight);
   const [showProductName, setShowProductName] = useState(savedSettings.showProductName);
   const [showPrice, setShowPrice] = useState(savedSettings.showPrice);
+  const [labelTemplateId, setLabelTemplateId] = useState(savedSettings.labelTemplateId);
 
   const currentLabelSize = LABEL_SIZES.find(l => l.id === labelSizeId) || LABEL_SIZES[1];
+  const currentTemplate = LABEL_TEMPLATES.find(t => t.id === labelTemplateId) || LABEL_TEMPLATES[0];
 
   // Save current settings as default
   const saveAsDefault = () => {
@@ -176,6 +371,7 @@ export const BarcodeGenerator = ({
       customLabelHeight,
       showProductName,
       showPrice,
+      labelTemplateId,
     };
     localStorage.setItem(BARCODE_SETTINGS_KEY, JSON.stringify(settings));
     toast.success("تم حفظ الإعدادات كقالب افتراضي");
@@ -195,6 +391,7 @@ export const BarcodeGenerator = ({
     setCustomLabelHeight(defaultBarcodeStyle.customLabelHeight);
     setShowProductName(defaultBarcodeStyle.showProductName);
     setShowPrice(defaultBarcodeStyle.showPrice);
+    setLabelTemplateId(defaultBarcodeStyle.labelTemplateId);
     toast.success("تم إعادة الإعدادات للقيم الافتراضية");
   };
 
@@ -230,12 +427,13 @@ export const BarcodeGenerator = ({
     const labelHeight = labelSizeId === "custom" ? customLabelHeight : currentLabelSize.height;
     const labelFontSize = currentLabelSize.fontSize;
     const scale = currentLabelSize.barcodeScale;
+    const template = currentTemplate;
 
     const barcodeItemHtml = `
       <div class="barcode-item">
-        ${showProductName ? `<div class="product-name">${productName}</div>` : ""}
-        <div class="barcode-container">${barcodeHtml}</div>
-        ${showPrice && productPrice ? `<div class="product-price">${productPrice}</div>` : ""}
+        ${currentTemplate.showProductName && showProductName ? `<div class="product-name">${productName}</div>` : ""}
+        ${currentTemplate.showBarcode ? `<div class="barcode-container">${barcodeHtml}</div>` : ""}
+        ${currentTemplate.showPrice && showPrice && productPrice ? `<div class="product-price" ${template.priceStyle ? `style="${template.priceStyle}"` : ""}>${productPrice}</div>` : ""}
       </div>
     `;
 
@@ -265,16 +463,20 @@ export const BarcodeGenerator = ({
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 1mm;
-            border: 0.5px dashed #ccc;
+            padding: ${template.style.padding};
+            background: ${template.style.gradient || template.style.background};
+            border: ${template.style.borderWidth} ${template.style.borderStyle} ${template.style.borderColor};
+            border-radius: ${template.style.borderRadius};
+            box-shadow: ${template.style.shadow};
             page-break-inside: avoid;
             overflow: hidden;
           }
           .product-name {
             font-size: ${labelFontSize}px;
-            font-weight: bold;
+            font-weight: ${template.style.fontWeight};
+            color: ${template.style.textColor};
             margin-bottom: 1mm;
-            text-align: center;
+            text-align: ${template.style.textAlign};
             max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -282,9 +484,9 @@ export const BarcodeGenerator = ({
           }
           .product-price {
             font-size: ${labelFontSize - 1}px;
-            font-weight: bold;
+            font-weight: ${template.style.fontWeight};
             margin-top: 1mm;
-            color: #333;
+            color: ${template.style.textColor};
           }
           .barcode-container {
             transform: scale(${scale});
@@ -295,7 +497,7 @@ export const BarcodeGenerator = ({
             height: auto;
           }
           @media print {
-            .barcode-item { border: none; }
+            body { gap: 0; padding: 0; }
           }
         </style>
       </head>
@@ -311,7 +513,7 @@ export const BarcodeGenerator = ({
       </html>
     `);
     printWindow.document.close();
-  }, [barcode, product, printQuantity, labelSizeId, customLabelWidth, customLabelHeight, currentLabelSize, showProductName, showPrice]);
+  }, [barcode, product, printQuantity, labelSizeId, customLabelWidth, customLabelHeight, currentLabelSize, showProductName, showPrice, currentTemplate]);
 
   const handleSave = () => {
     if (barcode && onBarcodeGenerated) {
@@ -524,6 +726,41 @@ export const BarcodeGenerator = ({
           </TabsContent>
 
           <TabsContent value="label" className="space-y-4 mt-4">
+            {/* Label Template Selection */}
+            <div>
+              <Label className="mb-2 block">قالب التصميم</Label>
+              <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto p-1">
+                {LABEL_TEMPLATES.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => setLabelTemplateId(template.id)}
+                    className={`p-3 rounded-lg border-2 transition-all text-right ${
+                      labelTemplateId === template.id
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-muted hover:border-muted-foreground/30"
+                    }`}
+                    style={{
+                      background: template.style.gradient || template.style.background,
+                    }}
+                  >
+                    <div 
+                      className="text-sm font-bold truncate"
+                      style={{ color: template.style.textColor }}
+                    >
+                      {template.name}
+                    </div>
+                    <div 
+                      className="text-xs opacity-75 truncate"
+                      style={{ color: template.style.textColor }}
+                    >
+                      {template.description}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Label Size */}
             <div>
               <Label>حجم الملصق</Label>
@@ -564,7 +801,7 @@ export const BarcodeGenerator = ({
             )}
 
             {/* Label Content Options */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
                 <Label className="cursor-pointer">إظهار اسم المنتج</Label>
                 <Switch
@@ -581,50 +818,71 @@ export const BarcodeGenerator = ({
               </div>
             </div>
 
-            {/* Label Preview */}
-            <div className="p-4 border rounded-lg bg-white">
-              <Label className="text-xs text-muted-foreground mb-2 block">معاينة الملصق</Label>
-              <div 
-                className="mx-auto border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center p-2 overflow-hidden"
-                style={{ 
-                  width: labelSizeId === "custom" ? customLabelWidth : currentLabelSize.width,
-                  height: labelSizeId === "custom" ? customLabelHeight : currentLabelSize.height,
-                  maxWidth: "100%",
-                  transform: "scale(0.9)",
-                  transformOrigin: "center",
-                }}
-              >
-                {showProductName && product?.name && (
-                  <div 
-                    className="font-bold text-center truncate w-full"
-                    style={{ fontSize: `${currentLabelSize.fontSize}px` }}
-                  >
-                    {product.name}
-                  </div>
-                )}
-                {barcode && (
-                  <div style={{ transform: `scale(${currentLabelSize.barcodeScale * 0.6})` }}>
-                    <Barcode
-                      value={barcode}
-                      format={barcodeType}
-                      width={barcodeWidth}
-                      height={barcodeHeight * 0.5}
-                      fontSize={barcodeFontSize * 0.7}
-                      margin={2}
-                      displayValue={showValue}
-                      background="transparent"
-                      lineColor={barcodeLineColor}
-                    />
-                  </div>
-                )}
-                {showPrice && product?.price && (
-                  <div 
-                    className="font-bold"
-                    style={{ fontSize: `${currentLabelSize.fontSize - 1}px` }}
-                  >
-                    {product.price.toLocaleString()} ج.م
-                  </div>
-                )}
+            {/* Label Preview with Template */}
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <Label className="text-xs text-muted-foreground mb-3 block">معاينة الملصق</Label>
+              <div className="flex justify-center">
+                <div 
+                  className="flex flex-col items-center justify-center overflow-hidden"
+                  style={{ 
+                    width: labelSizeId === "custom" ? customLabelWidth : currentLabelSize.width,
+                    height: labelSizeId === "custom" ? customLabelHeight : currentLabelSize.height,
+                    maxWidth: "100%",
+                    background: currentTemplate.style.gradient || currentTemplate.style.background,
+                    border: `${currentTemplate.style.borderWidth} ${currentTemplate.style.borderStyle} ${currentTemplate.style.borderColor}`,
+                    borderRadius: currentTemplate.style.borderRadius,
+                    boxShadow: currentTemplate.style.shadow,
+                    padding: currentTemplate.style.padding,
+                    transform: "scale(0.85)",
+                    transformOrigin: "center",
+                  }}
+                >
+                  {showProductName && currentTemplate.showProductName && product?.name && (
+                    <div 
+                      className="text-center truncate w-full"
+                      style={{ 
+                        fontSize: `${currentLabelSize.fontSize}px`,
+                        fontWeight: currentTemplate.style.fontWeight,
+                        color: currentTemplate.style.textColor,
+                      }}
+                    >
+                      {product.name}
+                    </div>
+                  )}
+                  {barcode && currentTemplate.showBarcode && (
+                    <div style={{ transform: `scale(${currentLabelSize.barcodeScale * 0.5})` }}>
+                      <Barcode
+                        value={barcode}
+                        format={barcodeType}
+                        width={barcodeWidth}
+                        height={barcodeHeight * 0.4}
+                        fontSize={barcodeFontSize * 0.6}
+                        margin={1}
+                        displayValue={showValue}
+                        background="transparent"
+                        lineColor={currentTemplate.id === "bold" ? "#ffffff" : barcodeLineColor}
+                      />
+                    </div>
+                  )}
+                  {showPrice && currentTemplate.showPrice && product?.price && (
+                    <div 
+                      style={{ 
+                        fontSize: `${currentLabelSize.fontSize - 1}px`,
+                        fontWeight: currentTemplate.style.fontWeight,
+                        color: currentTemplate.style.textColor,
+                        ...(currentTemplate.priceStyle ? {} : {}),
+                      }}
+                    >
+                      <span 
+                        dangerouslySetInnerHTML={{ 
+                          __html: currentTemplate.priceStyle 
+                            ? `<span style="${currentTemplate.priceStyle}">${product.price.toLocaleString()} ج.م</span>` 
+                            : `${product.price.toLocaleString()} ج.م` 
+                        }} 
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </TabsContent>
