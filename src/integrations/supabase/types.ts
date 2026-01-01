@@ -335,6 +335,52 @@ export type Database = {
           },
         ]
       }
+      customer_wishlist: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          product_id: string
+          tenant_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          tenant_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_wishlist_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_wishlist_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_wishlist_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           created_at: string
@@ -746,6 +792,48 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -1117,7 +1205,9 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           customer_phone: string
+          delivered_at: string | null
           discount_amount: number | null
+          estimated_delivery: string | null
           id: string
           notes: string | null
           order_number: string
@@ -1126,10 +1216,13 @@ export type Database = {
           payment_proof_url: string | null
           payment_status: string | null
           shipping_amount: number | null
+          shipping_notes: string | null
+          shipping_status: string | null
           subtotal: number
           tax_amount: number | null
           tenant_id: string
           total_amount: number
+          tracking_number: string | null
           updated_at: string
         }
         Insert: {
@@ -1140,7 +1233,9 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           customer_phone: string
+          delivered_at?: string | null
           discount_amount?: number | null
+          estimated_delivery?: string | null
           id?: string
           notes?: string | null
           order_number: string
@@ -1149,10 +1244,13 @@ export type Database = {
           payment_proof_url?: string | null
           payment_status?: string | null
           shipping_amount?: number | null
+          shipping_notes?: string | null
+          shipping_status?: string | null
           subtotal: number
           tax_amount?: number | null
           tenant_id: string
           total_amount: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Update: {
@@ -1163,7 +1261,9 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string
+          delivered_at?: string | null
           discount_amount?: number | null
+          estimated_delivery?: string | null
           id?: string
           notes?: string | null
           order_number?: string
@@ -1172,10 +1272,13 @@ export type Database = {
           payment_proof_url?: string | null
           payment_status?: string | null
           shipping_amount?: number | null
+          shipping_notes?: string | null
+          shipping_status?: string | null
           subtotal?: number
           tax_amount?: number | null
           tenant_id?: string
           total_amount?: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Relationships: [

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ShoppingCart, Menu, User, LogIn, Sparkles } from "lucide-react";
+import { Search, ShoppingCart, Menu, User, LogIn, Sparkles, Heart, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -102,7 +102,35 @@ export const StoreHeader = ({ storeName, logoUrl, primaryColor, tenantSlug }: St
             </form>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {/* Wishlist Button - Only show if logged in */}
+              {customer && (
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => navigate(`/store/${tenantSlug}/wishlist`)}
+                    title="المفضلة"
+                  >
+                    <Heart className="h-5 w-5" />
+                  </Button>
+                </motion.div>
+              )}
+
+              {/* Orders Button - Only show if logged in */}
+              {customer && (
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => navigate(`/store/${tenantSlug}/orders`)}
+                    title="طلباتي"
+                  >
+                    <Package className="h-5 w-5" />
+                  </Button>
+                </motion.div>
+              )}
+
               {/* Customer Account Button */}
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button 
@@ -202,6 +230,28 @@ export const StoreHeader = ({ storeName, logoUrl, primaryColor, tenantSlug }: St
                           </>
                         )}
                       </Link>
+                      
+                      {/* Mobile Wishlist and Orders Links */}
+                      {customer && (
+                        <>
+                          <Link
+                            to={`/store/${tenantSlug}/wishlist`}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="text-lg font-medium hover:text-primary transition-colors flex items-center gap-2"
+                          >
+                            <Heart className="h-4 w-4" style={{ color: primaryColor }} />
+                            المفضلة
+                          </Link>
+                          <Link
+                            to={`/store/${tenantSlug}/orders`}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="text-lg font-medium hover:text-primary transition-colors flex items-center gap-2"
+                          >
+                            <Package className="h-4 w-4" style={{ color: primaryColor }} />
+                            طلباتي
+                          </Link>
+                        </>
+                      )}
                     </nav>
                   </div>
                 </SheetContent>
