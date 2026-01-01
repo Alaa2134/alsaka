@@ -25,6 +25,12 @@ import Accounting from "./pages/Accounting";
 import StoreOrders from "./pages/StoreOrders";
 import CompanySettings from "./pages/CompanySettings";
 import NotFound from "./pages/NotFound";
+import { StoreLayout } from "./pages/store/StoreLayout";
+import { StoreHome } from "./pages/store/StoreHome";
+import { StoreProducts } from "./pages/store/StoreProducts";
+import { StoreProductDetail } from "./pages/store/StoreProductDetail";
+import { StoreCart } from "./pages/store/StoreCart";
+import { StoreCheckout } from "./pages/store/StoreCheckout";
 
 const queryClient = new QueryClient();
 
