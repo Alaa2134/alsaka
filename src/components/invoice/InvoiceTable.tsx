@@ -277,15 +277,15 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
       <table className="w-full border-collapse">
         <thead>
           <tr className="bg-foreground text-background">
-            <th className="px-4 py-4 text-right font-bold w-12">#</th>
-            <th className="px-4 py-4 text-right font-bold w-28">رقم الصنف</th>
-            <th className="px-4 py-4 text-right font-bold">اسم الصنف</th>
-            <th className="px-4 py-4 text-center font-bold w-24">الكمية</th>
-            <th className="px-4 py-4 text-center font-bold w-28">السعر</th>
-            <th className="px-4 py-4 text-center font-bold w-28">الحد الأدنى</th>
-            <th className="px-4 py-4 text-center font-bold w-28">الإجمالي</th>
-            <th className="px-4 py-4 text-right font-bold">المخزن</th>
-            <th className="px-4 py-4 text-center font-bold w-14">حذف</th>
+            <th className="px-3 py-3 text-right font-bold w-10">#</th>
+            <th className="px-3 py-3 text-right font-bold w-24">رقم الصنف</th>
+            <th className="px-3 py-3 text-right font-bold min-w-[250px]">اسم الصنف</th>
+            <th className="px-3 py-3 text-center font-bold w-20">الكمية</th>
+            <th className="px-3 py-3 text-center font-bold w-24">السعر</th>
+            <th className="px-3 py-3 text-center font-bold w-24">الحد الأدنى</th>
+            <th className="px-3 py-3 text-center font-bold w-24">الإجمالي</th>
+            <th className="px-3 py-3 text-right font-bold w-28">المخزن</th>
+            <th className="px-3 py-3 text-center font-bold w-12">حذف</th>
           </tr>
         </thead>
         <tbody>
