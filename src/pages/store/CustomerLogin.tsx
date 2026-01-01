@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Phone, Hash, LogIn, User, ArrowRight } from "lucide-react";
+import { Phone, Hash, LogIn, User, ArrowRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,6 +61,16 @@ const CustomerLogin = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Orders Link */}
+                <Button
+                  variant="default"
+                  className="w-full gap-2"
+                  onClick={() => navigate(`/store/${tenantSlug}/orders`)}
+                >
+                  <Package className="h-4 w-4" />
+                  عرض طلباتي
+                </Button>
 
                 <div className="flex gap-2">
                   <Button
