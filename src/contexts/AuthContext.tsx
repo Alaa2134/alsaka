@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { generateDeviceId } from "@/utils/deviceId";
+import { Session, User } from "@supabase/supabase-js";
 
 export type AppRole = "system_manager" | "company_admin" | "admin" | "manager" | "cashier" | "viewer";
 
@@ -47,18 +48,21 @@ export interface AppUser {
   tenant_id: string | null;
   device_id: string | null;
   device_locked_at: string | null;
+  auth_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 interface AuthContextType {
   user: AppUser | null;
+  session: Session | null;
+  authUser: User | null;
   tenant: Tenant | null;
   companySettings: CompanySettings | null;
   isLoading: boolean;
   isSystemManager: boolean;
   login: (code: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   hasPermission: (requiredRoles: AppRole[]) => boolean;
   updateTenantTheme: (colors: { primary_color?: string; secondary_color?: string }) => Promise<void>;
   unlockDevice: (userId: string) => Promise<boolean>;
@@ -72,6 +76,8 @@ const TENANT_KEY = "app_tenant_session";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authUser, setAuthUser] = useState<User | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,68 +94,136 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [tenant]);
 
-  // Auto logout on browser/tab close - but allow same device to re-login
+  // Set up Supabase Auth listener
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      sessionStorage.setItem('isReloading', 'true');
-    };
-
-    const handleLoad = () => {
-      const isReloading = sessionStorage.getItem('isReloading');
-      if (!isReloading) {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(TENANT_KEY);
-      }
-      sessionStorage.removeItem('isReloading');
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        sessionStorage.setItem('hiddenAt', Date.now().toString());
-      } else if (document.visibilityState === 'visible') {
-        const hiddenAt = sessionStorage.getItem('hiddenAt');
-        if (hiddenAt) {
-          const hiddenDuration = Date.now() - parseInt(hiddenAt);
-          if (hiddenDuration > 30 * 60 * 1000) {
-            localStorage.removeItem(STORAGE_KEY);
-            localStorage.removeItem(TENANT_KEY);
-            window.location.reload();
-          }
-          sessionStorage.removeItem('hiddenAt');
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        setSession(newSession);
+        setAuthUser(newSession?.user ?? null);
+        
+        // Defer data fetching to avoid deadlock
+        if (newSession?.user) {
+          setTimeout(() => {
+            loadAppUserFromAuth(newSession.user.id);
+          }, 0);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setTenant(null);
+          setCompanySettings(null);
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(TENANT_KEY);
         }
       }
-    };
+    );
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('load', handleLoad);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setAuthUser(existingSession?.user ?? null);
+      
+      if (existingSession?.user) {
+        loadAppUserFromAuth(existingSession.user.id);
+      } else {
+        // Fall back to localStorage check for backward compatibility
+        const storedSession = localStorage.getItem(STORAGE_KEY);
+        if (storedSession) {
+          try {
+            const parsedUser = JSON.parse(storedSession);
+            // Try to login with stored access code
+            if (parsedUser.access_code) {
+              migrateAndLogin(parsedUser.access_code);
+            } else {
+              setIsLoading(false);
+            }
+          } catch {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(TENANT_KEY);
+            setIsLoading(false);
+          }
+        } else {
+          setIsLoading(false);
+        }
+      }
+    });
 
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('load', handleLoad);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Check for existing session on mount
-  useEffect(() => {
-    const storedSession = localStorage.getItem(STORAGE_KEY);
-    const storedTenant = localStorage.getItem(TENANT_KEY);
-    
-    if (storedSession) {
-      try {
-        const parsedUser = JSON.parse(storedSession);
-        const parsedTenant = storedTenant ? JSON.parse(storedTenant) : null;
-        verifyUser(parsedUser.id, parsedTenant);
-      } catch {
+  const loadAppUserFromAuth = async (authId: string) => {
+    try {
+      const { data: appUser, error } = await supabase
+        .from("app_users")
+        .select("*")
+        .eq("auth_id", authId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error || !appUser) {
+        console.error("Failed to load app user:", error);
+        setIsLoading(false);
+        return;
+      }
+
+      setUser(appUser as AppUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appUser));
+
+      // Load tenant
+      if (appUser.tenant_id) {
+        const { data: tenantData } = await supabase
+          .from("tenants")
+          .select("*")
+          .eq("id", appUser.tenant_id)
+          .maybeSingle();
+        
+        if (tenantData) {
+          setTenant(tenantData as Tenant);
+          localStorage.setItem(TENANT_KEY, JSON.stringify(tenantData));
+          await fetchCompanySettings(tenantData.id);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading app user:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const migrateAndLogin = async (accessCode: string) => {
+    // Create auth user if doesn't exist
+    try {
+      const response = await supabase.functions.invoke('create-auth-user', {
+        body: { accessCode }
+      });
+
+      if (response.error) {
+        console.error("Migration error:", response.error);
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(TENANT_KEY);
         setIsLoading(false);
+        return;
       }
-    } else {
+
+      // Now login with Supabase Auth
+      const email = `${accessCode}@app.internal`;
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: accessCode
+      });
+
+      if (signInError) {
+        console.error("Sign in after migration failed:", signInError);
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TENANT_KEY);
+      }
+    } catch (err) {
+      console.error("Migration error:", err);
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TENANT_KEY);
+    } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
   const fetchCompanySettings = async (tenantId: string) => {
     const { data } = await supabase
@@ -169,88 +243,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const verifyUser = async (userId: string, cachedTenant: Tenant | null) => {
-    try {
-      const currentDeviceId = generateDeviceId();
-      
-      const { data, error } = await supabase
-        .from("app_users")
-        .select("*")
-        .eq("id", userId)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (error || !data) {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(TENANT_KEY);
-        setUser(null);
-        setTenant(null);
-      } else {
-        const appUser = data as AppUser;
-        
-        // System managers don't need device lock
-        if (appUser.role !== 'system_manager' && appUser.device_id && appUser.device_id !== currentDeviceId) {
-          localStorage.removeItem(STORAGE_KEY);
-          localStorage.removeItem(TENANT_KEY);
-          setUser(null);
-          setTenant(null);
-          setIsLoading(false);
-          return;
-        }
-        
-        setUser(appUser);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-
-        // Fetch tenant if user has one
-        if (appUser.tenant_id) {
-          const { data: tenantData } = await supabase
-            .from("tenants")
-            .select("*")
-            .eq("id", appUser.tenant_id)
-            .maybeSingle();
-          
-          if (tenantData) {
-            setTenant(tenantData as Tenant);
-            localStorage.setItem(TENANT_KEY, JSON.stringify(tenantData));
-            await fetchCompanySettings(tenantData.id);
-          }
-        } else if (cachedTenant) {
-          setTenant(cachedTenant);
-        }
-      }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(TENANT_KEY);
-      setUser(null);
-      setTenant(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const login = async (code: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const currentDeviceId = generateDeviceId();
       
-      const { data, error } = await supabase
+      // First check if user exists and validate device lock
+      const { data: appUser, error: findError } = await supabase
         .from("app_users")
         .select("*")
         .eq("access_code", code)
         .eq("is_active", true)
         .maybeSingle();
 
-      if (error) {
-        console.error("Login error:", error);
+      if (findError) {
+        console.error("Login error:", findError);
         return { success: false, error: "حدث خطأ في الاتصال" };
       }
 
-      if (!data) {
+      if (!appUser) {
         return { success: false, error: "كود الدخول غير صحيح" };
       }
 
-      const appUser = data as AppUser;
-      
-      // System managers don't need device lock
+      // Check device lock (except for system managers)
       if (appUser.role !== 'system_manager') {
         if (appUser.device_id && appUser.device_id !== currentDeviceId) {
           return { 
@@ -258,39 +272,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             error: "هذا الكود مستخدم على جهاز آخر. تواصل مع المدير لفك القفل." 
           };
         }
-        
-        if (!appUser.device_id) {
-          const { error: updateError } = await supabase
-            .from("app_users")
-            .update({ 
-              device_id: currentDeviceId,
-              device_locked_at: new Date().toISOString()
-            })
-            .eq("id", appUser.id);
-          
-          if (!updateError) {
-            appUser.device_id = currentDeviceId;
-            appUser.device_locked_at = new Date().toISOString();
-          }
+      }
+
+      // Create auth user if doesn't exist
+      if (!appUser.auth_id) {
+        const response = await supabase.functions.invoke('create-auth-user', {
+          body: { accessCode: code }
+        });
+
+        if (response.error) {
+          console.error("Auth user creation error:", response.error);
+          return { success: false, error: "فشل في إنشاء حساب المصادقة" };
         }
       }
 
-      setUser(appUser);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appUser));
+      // Login with Supabase Auth
+      const email = `${code}@app.internal`;
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: code
+      });
 
-      // Fetch tenant if user has one
-      if (appUser.tenant_id) {
-        const { data: tenantData } = await supabase
-          .from("tenants")
-          .select("*")
-          .eq("id", appUser.tenant_id)
-          .maybeSingle();
-        
-        if (tenantData) {
-          setTenant(tenantData as Tenant);
-          localStorage.setItem(TENANT_KEY, JSON.stringify(tenantData));
-          await fetchCompanySettings(tenantData.id);
-        }
+      if (signInError) {
+        console.error("Sign in error:", signInError);
+        return { success: false, error: "فشل في تسجيل الدخول" };
+      }
+
+      // Update device lock if needed
+      if (appUser.role !== 'system_manager' && !appUser.device_id) {
+        await supabase
+          .from("app_users")
+          .update({ 
+            device_id: currentDeviceId,
+            device_locked_at: new Date().toISOString()
+          })
+          .eq("id", appUser.id);
       }
       
       return { success: true };
@@ -300,8 +316,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setSession(null);
+    setAuthUser(null);
     setTenant(null);
     setCompanySettings(null);
     localStorage.removeItem(STORAGE_KEY);
@@ -351,6 +370,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{ 
       user, 
+      session,
+      authUser,
       tenant, 
       companySettings,
       isLoading, 
