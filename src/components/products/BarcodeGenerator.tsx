@@ -56,26 +56,90 @@ const generateRandomBarcode = (type: "EAN13" | "CODE128" | "UPC" = "EAN13"): str
   }
 };
 
+// Default barcode settings saved in localStorage
+const BARCODE_SETTINGS_KEY = "barcode_default_settings";
+
+interface BarcodeStyleSettings {
+  barcodeWidth: number;
+  barcodeHeight: number;
+  barcodeFontSize: number;
+  barcodeMargin: number;
+  showValue: boolean;
+  barcodeBackground: string;
+  barcodeLineColor: string;
+}
+
+const defaultBarcodeStyle: BarcodeStyleSettings = {
+  barcodeWidth: 1.5,
+  barcodeHeight: 50,
+  barcodeFontSize: 12,
+  barcodeMargin: 10,
+  showValue: true,
+  barcodeBackground: "#ffffff",
+  barcodeLineColor: "#000000",
+};
+
+const loadSavedSettings = (): BarcodeStyleSettings => {
+  try {
+    const saved = localStorage.getItem(BARCODE_SETTINGS_KEY);
+    if (saved) {
+      return { ...defaultBarcodeStyle, ...JSON.parse(saved) };
+    }
+  } catch (e) {
+    console.error("Error loading barcode settings:", e);
+  }
+  return defaultBarcodeStyle;
+};
+
 export const BarcodeGenerator = ({ 
   open, 
   onClose, 
   product, 
   onBarcodeGenerated 
 }: BarcodeGeneratorProps) => {
+  const savedSettings = loadSavedSettings();
+  
   const [barcode, setBarcode] = useState(product?.barcode || "");
   const [barcodeType, setBarcodeType] = useState<"EAN13" | "CODE128" | "UPC">("EAN13");
   const [printQuantity, setPrintQuantity] = useState(1);
   const [copied, setCopied] = useState(false);
   const barcodeRef = useRef<HTMLDivElement>(null);
   
-  // Barcode style settings
-  const [barcodeWidth, setBarcodeWidth] = useState(1.5);
-  const [barcodeHeight, setBarcodeHeight] = useState(50);
-  const [barcodeFontSize, setBarcodeFontSize] = useState(12);
-  const [barcodeMargin, setBarcodeMargin] = useState(10);
-  const [showValue, setShowValue] = useState(true);
-  const [barcodeBackground, setBarcodeBackground] = useState("#ffffff");
-  const [barcodeLineColor, setBarcodeLineColor] = useState("#000000");
+  // Barcode style settings - load from saved
+  const [barcodeWidth, setBarcodeWidth] = useState(savedSettings.barcodeWidth);
+  const [barcodeHeight, setBarcodeHeight] = useState(savedSettings.barcodeHeight);
+  const [barcodeFontSize, setBarcodeFontSize] = useState(savedSettings.barcodeFontSize);
+  const [barcodeMargin, setBarcodeMargin] = useState(savedSettings.barcodeMargin);
+  const [showValue, setShowValue] = useState(savedSettings.showValue);
+  const [barcodeBackground, setBarcodeBackground] = useState(savedSettings.barcodeBackground);
+  const [barcodeLineColor, setBarcodeLineColor] = useState(savedSettings.barcodeLineColor);
+
+  // Save current settings as default
+  const saveAsDefault = () => {
+    const settings: BarcodeStyleSettings = {
+      barcodeWidth,
+      barcodeHeight,
+      barcodeFontSize,
+      barcodeMargin,
+      showValue,
+      barcodeBackground,
+      barcodeLineColor,
+    };
+    localStorage.setItem(BARCODE_SETTINGS_KEY, JSON.stringify(settings));
+    toast.success("تم حفظ الإعدادات كقالب افتراضي");
+  };
+
+  // Reset to defaults
+  const resetToDefaults = () => {
+    setBarcodeWidth(defaultBarcodeStyle.barcodeWidth);
+    setBarcodeHeight(defaultBarcodeStyle.barcodeHeight);
+    setBarcodeFontSize(defaultBarcodeStyle.barcodeFontSize);
+    setBarcodeMargin(defaultBarcodeStyle.barcodeMargin);
+    setShowValue(defaultBarcodeStyle.showValue);
+    setBarcodeBackground(defaultBarcodeStyle.barcodeBackground);
+    setBarcodeLineColor(defaultBarcodeStyle.barcodeLineColor);
+    toast.success("تم إعادة الإعدادات للقيم الافتراضية");
+  };
 
   const handleGenerateNew = () => {
     const newBarcode = generateRandomBarcode(barcodeType);
@@ -340,6 +404,16 @@ export const BarcodeGenerator = ({
                 checked={showValue}
                 onCheckedChange={setShowValue}
               />
+            </div>
+
+            {/* Save/Reset Buttons */}
+            <div className="flex gap-2 pt-2 border-t">
+              <Button variant="outline" size="sm" onClick={saveAsDefault} className="flex-1">
+                حفظ كقالب افتراضي
+              </Button>
+              <Button variant="ghost" size="sm" onClick={resetToDefaults}>
+                إعادة تعيين
+              </Button>
             </div>
           </TabsContent>
         </Tabs>
