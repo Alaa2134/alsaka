@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { Search, FileText, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ interface InvoiceItemResult {
   total: number;
 }
 
-export const InvoiceSearch = ({ open, onClose, onLoadInvoice }: InvoiceSearchProps) => {
+export const InvoiceSearch = forwardRef<HTMLDivElement, InvoiceSearchProps>(({ open, onClose, onLoadInvoice }, ref) => {
   const { tenant } = useAuth();
   const [searchNumber, setSearchNumber] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -227,4 +227,6 @@ export const InvoiceSearch = ({ open, onClose, onLoadInvoice }: InvoiceSearchPro
       )}
     </>
   );
-};
+});
+
+InvoiceSearch.displayName = "InvoiceSearch";
