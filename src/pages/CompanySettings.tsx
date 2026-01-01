@@ -21,7 +21,11 @@ import {
   Save,
   Building2,
   Globe,
-  Percent
+  Percent,
+  Sparkles,
+  Gauge,
+  Layers,
+  Zap
 } from "lucide-react";
 import { LogoUploader } from "@/components/shared/LogoUploader";
 
@@ -43,6 +47,12 @@ interface CompanySettingsData {
   bank_account_number: string | null;
   tax_percentage: number;
   currency: string;
+  // 3D Settings
+  enable_3d_effects: boolean;
+  animation_speed: string;
+  enable_particles: boolean;
+  enable_glassmorphism: boolean;
+  depth_intensity: number;
 }
 
 const CompanySettings = () => {
@@ -116,6 +126,12 @@ const CompanySettings = () => {
           bank_account_number: settings.bank_account_number,
           tax_percentage: settings.tax_percentage,
           currency: settings.currency,
+          // 3D Settings
+          enable_3d_effects: settings.enable_3d_effects,
+          animation_speed: settings.animation_speed,
+          enable_particles: settings.enable_particles,
+          enable_glassmorphism: settings.enable_glassmorphism,
+          depth_intensity: settings.depth_intensity,
         })
         .eq("id", settings.id);
 
@@ -320,6 +336,104 @@ const CompanySettings = () => {
                     onCheckedChange={(checked) => updateSetting("inventory_enabled", checked)}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* 3D Effects Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  تأثيرات 3D
+                </CardTitle>
+                <CardDescription>تحكم في التأثيرات البصرية للمتجر</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Layers className="h-5 w-5 text-purple-500" />
+                    <div>
+                      <p className="font-medium">تفعيل تأثيرات 3D</p>
+                      <p className="text-sm text-muted-foreground">تجربة بصرية ثلاثية الأبعاد</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={settings?.enable_3d_effects || false}
+                    onCheckedChange={(checked) => updateSetting("enable_3d_effects", checked)}
+                  />
+                </div>
+
+                {settings?.enable_3d_effects && (
+                  <>
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Zap className="h-5 w-5 text-yellow-500" />
+                        <div>
+                          <p className="font-medium">الجزيئات المتحركة</p>
+                          <p className="text-sm text-muted-foreground">تأثيرات خلفية متحركة</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={settings?.enable_particles || false}
+                        onCheckedChange={(checked) => updateSetting("enable_particles", checked)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Layers className="h-5 w-5 text-cyan-500" />
+                        <div>
+                          <p className="font-medium">تأثير الزجاج</p>
+                          <p className="text-sm text-muted-foreground">Glassmorphism للبطاقات</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={settings?.enable_glassmorphism || false}
+                        onCheckedChange={(checked) => updateSetting("enable_glassmorphism", checked)}
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="flex items-center gap-2">
+                        <Gauge className="h-4 w-4" />
+                        سرعة الأنيميشن
+                      </Label>
+                      <div className="flex gap-2">
+                        {["slow", "normal", "fast"].map((speed) => (
+                          <Button
+                            key={speed}
+                            type="button"
+                            variant={settings?.animation_speed === speed ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => updateSetting("animation_speed", speed)}
+                            className="flex-1"
+                          >
+                            {speed === "slow" ? "بطيء" : speed === "normal" ? "عادي" : "سريع"}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="flex items-center gap-2">
+                        <Layers className="h-4 w-4" />
+                        قوة العمق: {settings?.depth_intensity || 15}
+                      </Label>
+                      <input
+                        type="range"
+                        min="5"
+                        max="30"
+                        value={settings?.depth_intensity || 15}
+                        onChange={(e) => updateSetting("depth_intensity", Number(e.target.value))}
+                        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>خفيف</span>
+                        <span>قوي</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
