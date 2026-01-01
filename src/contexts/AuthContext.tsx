@@ -20,6 +20,9 @@ export interface CompanySettings {
   subdomain: string | null;
   custom_domain: string | null;
   store_enabled: boolean;
+  store_access_blocked: boolean;
+  subscription_type: string;
+  subscription_expires_at: string | null;
   accounting_enabled: boolean;
   inventory_enabled: boolean;
   payment_cod_enabled: boolean;
