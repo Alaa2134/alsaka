@@ -211,6 +211,7 @@ export const ProductImportExport = () => {
           category: product.category,
           barcode: product.barcode,
           warehouse_id: null,
+          image_url: null,
         });
         successCount++;
       } catch (error) {
