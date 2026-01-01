@@ -33,7 +33,6 @@ export const StoreCheckout = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
-  const [newClientNumber, setNewClientNumber] = useState<string | null>(null);
 
   // Form state - pre-fill if customer is logged in
   const [formData, setFormData] = useState({
@@ -145,54 +144,7 @@ export const StoreCheckout = () => {
         data: { order_id: order.id, order_number: newOrderNumber, amount: grandTotal },
       });
 
-      // Auto-register customer if not already registered
-      if (!customer) {
-        // Check if client already exists with this phone
-        const normalizedPhone = formData.phone.replace(/[\s\-()]/g, '');
-        const { data: existingClient } = await supabase
-          .from("clients")
-          .select("id, client_number")
-          .eq("tenant_id", tenant.id)
-          .eq("phone", normalizedPhone)
-          .maybeSingle();
-
-        if (!existingClient) {
-          // Generate new client number
-          const { data: lastClient } = await supabase
-            .from("clients")
-            .select("client_number")
-            .eq("tenant_id", tenant.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          let clientNum = 1;
-          if (lastClient?.client_number) {
-            const match = lastClient.client_number.match(/\d+/);
-            if (match) {
-              clientNum = parseInt(match[0], 10) + 1;
-            }
-          }
-          const generatedClientNumber = `C${clientNum.toString().padStart(5, '0')}`;
-
-          // Create new client
-          const { error: clientError } = await supabase
-            .from("clients")
-            .insert({
-              tenant_id: tenant.id,
-              name: formData.name,
-              phone: normalizedPhone,
-              email: formData.email || null,
-              address: formData.address,
-              client_number: generatedClientNumber,
-              notes: `عميل مسجل تلقائياً من الطلب #${newOrderNumber}`,
-            });
-
-          if (!clientError) {
-            setNewClientNumber(generatedClientNumber);
-          }
-        }
-      }
+      // No auto-registration needed - customer must be logged in
 
       // Update product stock
       for (const item of items) {
@@ -222,6 +174,37 @@ export const StoreCheckout = () => {
     }
   };
 
+  // Require login before checkout
+  if (!customer && !orderComplete) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center max-w-md">
+        <div className="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <User className="h-10 w-10 text-primary" />
+        </div>
+        <h1 className="text-2xl font-bold mb-2">يرجى تسجيل الدخول أولاً</h1>
+        <p className="text-muted-foreground mb-6">
+          يجب تسجيل الدخول برقم الهاتف ورقم العميل لإتمام الطلب
+        </p>
+        <div className="flex flex-col gap-3">
+          <Link to={`/store/${tenant.slug}/login`}>
+            <Button size="lg" className="w-full gap-2">
+              <User className="h-5 w-5" />
+              تسجيل الدخول
+            </Button>
+          </Link>
+          <Link to={`/store/${tenant.slug}/cart`}>
+            <Button variant="outline" size="lg" className="w-full">
+              العودة للسلة
+            </Button>
+          </Link>
+        </div>
+        <p className="text-sm text-muted-foreground mt-6">
+          ليس لديك حساب؟ تواصل مع المتجر للتسجيل
+        </p>
+      </div>
+    );
+  }
+
   if (items.length === 0 && !orderComplete) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
@@ -248,18 +231,6 @@ export const StoreCheckout = () => {
           رقم الطلب: <span className="font-bold text-foreground">{orderNumber}</span>
         </p>
         
-        {newClientNumber && (
-          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4">
-            <p className="text-sm text-muted-foreground mb-1">تم تسجيلك كعميل جديد!</p>
-            <p className="font-bold text-lg">
-              رقم العميل: <span className="text-primary">{newClientNumber}</span>
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              احتفظ برقم العميل لتسجيل الدخول وتتبع طلباتك
-            </p>
-          </div>
-        )}
-        
         <p className="text-muted-foreground mb-8">
           سيتم التواصل معك قريباً لتأكيد الطلب
         </p>
@@ -270,14 +241,12 @@ export const StoreCheckout = () => {
           <Link to={`/store/${tenant.slug}/products`}>
             <Button>متابعة التسوق</Button>
           </Link>
-          {newClientNumber && (
-            <Link to={`/store/${tenant.slug}/login`}>
-              <Button variant="secondary">
-                <User className="h-4 w-4 ml-2" />
-                تسجيل الدخول
-              </Button>
-            </Link>
-          )}
+          <Link to={`/store/${tenant.slug}/orders`}>
+            <Button variant="secondary">
+              <ShoppingCart className="h-4 w-4 ml-2" />
+              عرض طلباتي
+            </Button>
+          </Link>
         </div>
       </div>
     );
