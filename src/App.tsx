@@ -20,6 +20,9 @@ import InvoicesAdmin from "./pages/InvoicesAdmin";
 import UsersAdmin from "./pages/UsersAdmin";
 import TenantsAdmin from "./pages/TenantsAdmin";
 import ClientTracking from "./pages/ClientTracking";
+import SystemDashboard from "./pages/SystemDashboard";
+import Accounting from "./pages/Accounting";
+import StoreOrders from "./pages/StoreOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,53 +39,68 @@ const App = () => (
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/tracking" element={<ClientTracking />} />
+                <Route path="/system" element={
+                  <ProtectedRoute requiredRoles={["system_manager"]}>
+                    <SystemDashboard />
+                  </ProtectedRoute>
+                } />
                 <Route path="/" element={
-                  <ProtectedRoute requiredRoles={["admin", "manager", "cashier"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
                     <Index />
                   </ProtectedRoute>
                 } />
                 <Route path="/invoices" element={
-                  <ProtectedRoute requiredRoles={["admin", "manager", "cashier"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
                     <InvoicesAdmin />
                   </ProtectedRoute>
                 } />
                 <Route path="/products" element={
-                  <ProtectedRoute requiredRoles={["admin", "manager"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
                     <Products />
                   </ProtectedRoute>
                 } />
                 <Route path="/clients" element={
-                  <ProtectedRoute requiredRoles={["admin", "manager"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
                     <Clients />
                   </ProtectedRoute>
                 } />
                 <Route path="/reports" element={
-                  <ProtectedRoute requiredRoles={["admin", "manager"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
                     <Reports />
                   </ProtectedRoute>
                 } />
                 <Route path="/warehouses" element={
-                  <ProtectedRoute requiredRoles={["admin", "manager"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
                     <Warehouses />
                   </ProtectedRoute>
                 } />
                 <Route path="/returns" element={
-                  <ProtectedRoute requiredRoles={["admin", "manager", "cashier"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
                     <Returns />
                   </ProtectedRoute>
                 } />
                 <Route path="/invoice-designer" element={
-                  <ProtectedRoute requiredRoles={["admin", "manager"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
                     <InvoiceDesigner />
                   </ProtectedRoute>
                 } />
+                <Route path="/accounting" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                    <Accounting />
+                  </ProtectedRoute>
+                } />
+                <Route path="/store-orders" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                    <StoreOrders />
+                  </ProtectedRoute>
+                } />
                 <Route path="/users" element={
-                  <ProtectedRoute requiredRoles={["admin"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
                     <UsersAdmin />
                   </ProtectedRoute>
                 } />
                 <Route path="/tenants" element={
-                  <ProtectedRoute requiredRoles={["admin"]}>
+                  <ProtectedRoute requiredRoles={["system_manager", "admin"]}>
                     <TenantsAdmin />
                   </ProtectedRoute>
                 } />

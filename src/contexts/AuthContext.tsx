@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import { generateDeviceId } from "@/utils/deviceId";
 
-export type AppRole = "admin" | "manager" | "cashier" | "viewer";
+export type AppRole = "system_manager" | "company_admin" | "admin" | "manager" | "cashier" | "viewer";
 
 export interface Tenant {
   id: string;
@@ -12,6 +12,27 @@ export interface Tenant {
   primary_color: string;
   secondary_color: string;
   is_active: boolean;
+}
+
+export interface CompanySettings {
+  id: string;
+  tenant_id: string;
+  subdomain: string | null;
+  custom_domain: string | null;
+  store_enabled: boolean;
+  accounting_enabled: boolean;
+  inventory_enabled: boolean;
+  payment_cod_enabled: boolean;
+  payment_stripe_enabled: boolean;
+  payment_bank_enabled: boolean;
+  payment_vodafone_enabled: boolean;
+  stripe_account_id: string | null;
+  bank_account_name: string | null;
+  bank_account_number: string | null;
+  bank_name: string | null;
+  vodafone_number: string | null;
+  tax_percentage: number;
+  currency: string;
 }
 
 export interface AppUser {
@@ -30,12 +51,15 @@ export interface AppUser {
 interface AuthContextType {
   user: AppUser | null;
   tenant: Tenant | null;
+  companySettings: CompanySettings | null;
   isLoading: boolean;
+  isSystemManager: boolean;
   login: (code: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   hasPermission: (requiredRoles: AppRole[]) => boolean;
   updateTenantTheme: (colors: { primary_color?: string; secondary_color?: string }) => Promise<void>;
   unlockDevice: (userId: string) => Promise<boolean>;
+  refreshCompanySettings: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,7 +70,10 @@ const TENANT_KEY = "app_tenant_session";
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isSystemManager = user?.role === "system_manager";
 
   // Apply tenant theme colors
   useEffect(() => {
@@ -61,22 +88,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Auto logout on browser/tab close - but allow same device to re-login
   useEffect(() => {
     const handleBeforeUnload = () => {
-      // Mark as reloading to differentiate from close
       sessionStorage.setItem('isReloading', 'true');
     };
 
     const handleLoad = () => {
       const isReloading = sessionStorage.getItem('isReloading');
       if (!isReloading) {
-        // Browser was closed and reopened - clear session but keep device ID
-        // This allows re-login on same device without needing admin unlock
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(TENANT_KEY);
       }
       sessionStorage.removeItem('isReloading');
     };
 
-    // Also clear session when page is hidden for too long (mobile background)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         sessionStorage.setItem('hiddenAt', Date.now().toString());
@@ -84,7 +107,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const hiddenAt = sessionStorage.getItem('hiddenAt');
         if (hiddenAt) {
           const hiddenDuration = Date.now() - parseInt(hiddenAt);
-          // If hidden for more than 30 minutes, clear session
           if (hiddenDuration > 30 * 60 * 1000) {
             localStorage.removeItem(STORAGE_KEY);
             localStorage.removeItem(TENANT_KEY);
@@ -126,6 +148,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const fetchCompanySettings = async (tenantId: string) => {
+    const { data } = await supabase
+      .from("company_settings")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    
+    if (data) {
+      setCompanySettings(data as CompanySettings);
+    }
+  };
+
+  const refreshCompanySettings = async () => {
+    if (tenant?.id) {
+      await fetchCompanySettings(tenant.id);
+    }
+  };
+
   const verifyUser = async (userId: string, cachedTenant: Tenant | null) => {
     try {
       const currentDeviceId = generateDeviceId();
@@ -145,8 +185,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         const appUser = data as AppUser;
         
-        // Check device lock
-        if (appUser.device_id && appUser.device_id !== currentDeviceId) {
+        // System managers don't need device lock
+        if (appUser.role !== 'system_manager' && appUser.device_id && appUser.device_id !== currentDeviceId) {
           localStorage.removeItem(STORAGE_KEY);
           localStorage.removeItem(TENANT_KEY);
           setUser(null);
@@ -169,6 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (tenantData) {
             setTenant(tenantData as Tenant);
             localStorage.setItem(TENANT_KEY, JSON.stringify(tenantData));
+            await fetchCompanySettings(tenantData.id);
           }
         } else if (cachedTenant) {
           setTenant(cachedTenant);
@@ -206,29 +247,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const appUser = data as AppUser;
       
-      // Check if already locked to another device
-      if (appUser.device_id && appUser.device_id !== currentDeviceId) {
-        return { 
-          success: false, 
-          error: "هذا الكود مستخدم على جهاز آخر. تواصل مع المدير لفك القفل." 
-        };
-      }
-      
-      // Lock to this device if not already locked
-      if (!appUser.device_id) {
-        const { error: updateError } = await supabase
-          .from("app_users")
-          .update({ 
-            device_id: currentDeviceId,
-            device_locked_at: new Date().toISOString()
-          })
-          .eq("id", appUser.id);
+      // System managers don't need device lock
+      if (appUser.role !== 'system_manager') {
+        if (appUser.device_id && appUser.device_id !== currentDeviceId) {
+          return { 
+            success: false, 
+            error: "هذا الكود مستخدم على جهاز آخر. تواصل مع المدير لفك القفل." 
+          };
+        }
         
-        if (updateError) {
-          console.error("Device lock error:", updateError);
-        } else {
-          appUser.device_id = currentDeviceId;
-          appUser.device_locked_at = new Date().toISOString();
+        if (!appUser.device_id) {
+          const { error: updateError } = await supabase
+            .from("app_users")
+            .update({ 
+              device_id: currentDeviceId,
+              device_locked_at: new Date().toISOString()
+            })
+            .eq("id", appUser.id);
+          
+          if (!updateError) {
+            appUser.device_id = currentDeviceId;
+            appUser.device_locked_at = new Date().toISOString();
+          }
         }
       }
 
@@ -246,6 +286,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (tenantData) {
           setTenant(tenantData as Tenant);
           localStorage.setItem(TENANT_KEY, JSON.stringify(tenantData));
+          await fetchCompanySettings(tenantData.id);
         }
       }
       
@@ -259,9 +300,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     setTenant(null);
+    setCompanySettings(null);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(TENANT_KEY);
-    // Reset theme colors
     document.documentElement.style.removeProperty('--primary');
     document.documentElement.style.removeProperty('--accent');
     document.documentElement.style.removeProperty('--gradient-start');
@@ -270,11 +311,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const hasPermission = (requiredRoles: AppRole[]): boolean => {
     if (!user) return false;
+    // System manager has all permissions
+    if (user.role === 'system_manager') return true;
     return requiredRoles.includes(user.role);
   };
 
   const updateTenantTheme = async (colors: { primary_color?: string; secondary_color?: string }) => {
-    if (!tenant || !user || user.role !== 'admin') return;
+    if (!tenant || !user || !['admin', 'company_admin', 'system_manager'].includes(user.role)) return;
     
     const { error } = await supabase
       .from("tenants")
@@ -288,9 +331,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Admin function to unlock a device for a user
   const unlockDevice = async (userId: string): Promise<boolean> => {
-    if (!user || user.role !== 'admin') return false;
+    if (!user || !['admin', 'company_admin', 'system_manager'].includes(user.role)) return false;
     
     const { error } = await supabase
       .from("app_users")
@@ -304,7 +346,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, tenant, isLoading, login, logout, hasPermission, updateTenantTheme, unlockDevice }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      tenant, 
+      companySettings,
+      isLoading, 
+      isSystemManager,
+      login, 
+      logout, 
+      hasPermission, 
+      updateTenantTheme, 
+      unlockDevice,
+      refreshCompanySettings
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -320,10 +374,8 @@ export const useAuth = () => {
 
 // Helper function to convert hex to HSL
 function hexToHsl(hex: string): string {
-  // Remove # if present
   hex = hex.replace('#', '');
   
-  // Parse hex values
   const r = parseInt(hex.substring(0, 2), 16) / 255;
   const g = parseInt(hex.substring(2, 4), 16) / 255;
   const b = parseInt(hex.substring(4, 6), 16) / 255;
@@ -356,6 +408,8 @@ function hexToHsl(hex: string): string {
 
 // Role hierarchy for permission checks
 export const roleHierarchy: Record<AppRole, number> = {
+  system_manager: 6,
+  company_admin: 5,
   admin: 4,
   manager: 3,
   cashier: 2,
@@ -363,8 +417,10 @@ export const roleHierarchy: Record<AppRole, number> = {
 };
 
 export const roleLabels: Record<AppRole, string> = {
-  admin: "مدير النظام",
-  manager: "مدير",
+  system_manager: "مدير النظام العام",
+  company_admin: "مدير الشركة",
+  admin: "مدير",
+  manager: "مشرف",
   cashier: "كاشير",
   viewer: "مشاهد",
 };

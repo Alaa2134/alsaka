@@ -23,17 +23,20 @@ import { useTheme } from "@/components/theme/ThemeProvider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const navItems: { path: string; label: string; icon: typeof FileText; roles: AppRole[] }[] = [
-  { path: "/", label: "فاتورة البيع", icon: FileText, roles: ["admin", "manager", "cashier"] },
-  { path: "/invoices", label: "إدارة الفواتير", icon: ClipboardList, roles: ["admin", "manager", "cashier"] },
-  { path: "/returns", label: "المرتجعات", icon: RotateCcw, roles: ["admin", "manager", "cashier"] },
-  { path: "/products", label: "إدارة المنتجات", icon: Package, roles: ["admin", "manager"] },
-  { path: "/clients", label: "إدارة العملاء", icon: Users, roles: ["admin", "manager"] },
-  { path: "/tracking", label: "متابعة العملاء", icon: Phone, roles: ["admin", "manager"] },
-  { path: "/warehouses", label: "المخازن", icon: Warehouse, roles: ["admin", "manager"] },
-  { path: "/reports", label: "التقارير", icon: BarChart3, roles: ["admin", "manager"] },
-  { path: "/invoice-designer", label: "تصميم الفاتورة", icon: Sparkles, roles: ["admin", "manager"] },
-  { path: "/users", label: "إدارة المستخدمين", icon: Shield, roles: ["admin"] },
-  { path: "/tenants", label: "إدارة الشركات", icon: Building2, roles: ["admin"] },
+  { path: "/system", label: "لوحة تحكم النظام", icon: Shield, roles: ["system_manager"] },
+  { path: "/", label: "فاتورة البيع", icon: FileText, roles: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
+  { path: "/invoices", label: "إدارة الفواتير", icon: ClipboardList, roles: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
+  { path: "/returns", label: "المرتجعات", icon: RotateCcw, roles: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
+  { path: "/products", label: "إدارة المنتجات", icon: Package, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/clients", label: "إدارة العملاء", icon: Users, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/tracking", label: "متابعة العملاء", icon: Phone, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/warehouses", label: "المخازن", icon: Warehouse, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/store-orders", label: "طلبات المتجر", icon: Package, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/accounting", label: "المحاسبة", icon: BarChart3, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/reports", label: "التقارير", icon: BarChart3, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/invoice-designer", label: "تصميم الفاتورة", icon: Sparkles, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/users", label: "إدارة المستخدمين", icon: Shield, roles: ["system_manager", "company_admin", "admin"] },
+  { path: "/tenants", label: "إدارة الشركات", icon: Building2, roles: ["system_manager", "admin"] },
 ];
 
 export const Sidebar = () => {
