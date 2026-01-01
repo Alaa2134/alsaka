@@ -25,7 +25,9 @@ import {
   Sparkles,
   Gauge,
   Layers,
-  Zap
+  Zap,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { LogoUploader } from "@/components/shared/LogoUploader";
 
@@ -53,6 +55,12 @@ interface CompanySettingsData {
   enable_particles: boolean;
   enable_glassmorphism: boolean;
   depth_intensity: number;
+  // Sound Settings
+  sound_alerts_enabled: boolean;
+  // Subscription
+  subscription_type: string;
+  subscription_expires_at: string | null;
+  store_access_blocked: boolean;
 }
 
 const CompanySettings = () => {
@@ -132,6 +140,8 @@ const CompanySettings = () => {
           enable_particles: settings.enable_particles,
           enable_glassmorphism: settings.enable_glassmorphism,
           depth_intensity: settings.depth_intensity,
+          // Sound Settings
+          sound_alerts_enabled: settings.sound_alerts_enabled,
         })
         .eq("id", settings.id);
 
@@ -334,6 +344,25 @@ const CompanySettings = () => {
                   <Switch
                     checked={settings?.inventory_enabled || false}
                     onCheckedChange={(checked) => updateSetting("inventory_enabled", checked)}
+                  />
+                </div>
+
+                {/* Sound Alerts */}
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {settings?.sound_alerts_enabled ? (
+                      <Volume2 className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <VolumeX className="h-5 w-5 text-muted-foreground" />
+                    )}
+                    <div>
+                      <p className="font-medium">صوت التنبيهات</p>
+                      <p className="text-sm text-muted-foreground">تنبيه صوتي عند البيع بأقل من الحد الأدنى</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={settings?.sound_alerts_enabled ?? true}
+                    onCheckedChange={(checked) => updateSetting("sound_alerts_enabled", checked)}
                   />
                 </div>
               </CardContent>

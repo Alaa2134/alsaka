@@ -3,6 +3,7 @@ import { InvoiceItem } from "@/types/invoice";
 import { Trash2, Search, AlertCircle, Volume2 } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
+import { useSoundAlerts } from "@/hooks/useSoundAlerts";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -14,28 +15,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-// Sound alert for below minimum price
-const playAlertSound = () => {
-  try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800;
-    oscillator.type = "sine";
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
-  } catch (e) {
-    console.log("Audio not supported");
-  }
-};
 
 interface InvoiceTableProps {
   items: InvoiceItem[];
@@ -176,6 +155,7 @@ const SuggestionDropdown = ({
 export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, defaultWarehouse }: InvoiceTableProps) => {
   const { data: products } = useProducts();
   const { data: warehousesList } = useWarehouses();
+  const { playAlertSound } = useSoundAlerts();
   const [activeInput, setActiveInput] = useState<{ id: string; field: "itemNumber" | "itemName" } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);

@@ -243,9 +243,13 @@ export type Database = {
           payment_cod_enabled: boolean | null
           payment_stripe_enabled: boolean | null
           payment_vodafone_enabled: boolean | null
+          sound_alerts_enabled: boolean | null
+          store_access_blocked: boolean | null
           store_enabled: boolean | null
           stripe_account_id: string | null
           subdomain: string | null
+          subscription_expires_at: string | null
+          subscription_type: string | null
           tax_percentage: number | null
           tenant_id: string
           updated_at: string
@@ -274,9 +278,13 @@ export type Database = {
           payment_cod_enabled?: boolean | null
           payment_stripe_enabled?: boolean | null
           payment_vodafone_enabled?: boolean | null
+          sound_alerts_enabled?: boolean | null
+          store_access_blocked?: boolean | null
           store_enabled?: boolean | null
           stripe_account_id?: string | null
           subdomain?: string | null
+          subscription_expires_at?: string | null
+          subscription_type?: string | null
           tax_percentage?: number | null
           tenant_id: string
           updated_at?: string
@@ -305,9 +313,13 @@ export type Database = {
           payment_cod_enabled?: boolean | null
           payment_stripe_enabled?: boolean | null
           payment_vodafone_enabled?: boolean | null
+          sound_alerts_enabled?: boolean | null
+          store_access_blocked?: boolean | null
           store_enabled?: boolean | null
           stripe_account_id?: string | null
           subdomain?: string | null
+          subscription_expires_at?: string | null
+          subscription_type?: string | null
           tax_percentage?: number | null
           tenant_id?: string
           updated_at?: string
