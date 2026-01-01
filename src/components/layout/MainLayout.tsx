@@ -4,6 +4,7 @@ import { useAuth, roleLabels } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import { Home, LogOut, Moon, Sun, User } from "lucide-react";
+import OrderNotificationListener from "@/components/notifications/OrderNotificationListener";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Order Notification Listener */}
+      <OrderNotificationListener />
+      
       {/* Top Header Bar */}
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="flex h-14 items-center justify-between px-4">
