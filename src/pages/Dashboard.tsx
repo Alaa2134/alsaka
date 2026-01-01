@@ -3,6 +3,7 @@ import { AccountingDashboard } from "@/components/dashboard/AccountingDashboard"
 import { StockAlerts } from "@/components/stock/StockAlerts";
 import { SubscriptionAlert } from "@/components/subscription/SubscriptionAlert";
 import { StoreLinkCard } from "@/components/store/StoreLinkCard";
+import { StoreAnalyticsCard } from "@/components/store/StoreAnalyticsCard";
 import { Helmet } from "react-helmet-async";
 
 const Dashboard = () => {
@@ -19,7 +20,10 @@ const Dashboard = () => {
             <div className="md:col-span-2">
               <StockAlerts />
             </div>
-            <StoreLinkCard />
+            <div className="space-y-4">
+              <StoreLinkCard />
+              <StoreAnalyticsCard />
+            </div>
           </div>
         </div>
         <AccountingDashboard />
