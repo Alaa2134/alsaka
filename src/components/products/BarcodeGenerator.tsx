@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, RefreshCw, Copy, Check, Settings2, Maximize2, ZoomIn, ZoomOut, X, Eye } from "lucide-react";
+import { Printer, RefreshCw, Copy, Check, Settings2, Maximize2, ZoomIn, ZoomOut, Eye, Save, Trash2, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/hooks/useProducts";
 import { Switch } from "@/components/ui/switch";
@@ -13,6 +13,9 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sanitizeForPrint } from "@/utils/sanitizeHtml";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLabelTemplates, useCreateLabelTemplate, useDeleteLabelTemplate, LabelSettings, LabelTemplate } from "@/hooks/useLabelTemplates";
+import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface BarcodeGeneratorProps {
   open: boolean;
@@ -82,8 +85,8 @@ const LABEL_SIZES: LabelSize[] = [
   { id: "custom", name: "مخصص", width: "50mm", height: "30mm", fontSize: 10, barcodeScale: 0.7 },
 ];
 
-// Label design templates
-interface LabelTemplate {
+// Label design templates (local presets)
+interface LabelDesignTemplate {
   id: string;
   name: string;
   description: string;
@@ -106,7 +109,7 @@ interface LabelTemplate {
   priceStyle?: string;
 }
 
-const LABEL_TEMPLATES: LabelTemplate[] = [
+const LABEL_DESIGN_TEMPLATES: LabelDesignTemplate[] = [
   {
     id: "classic",
     name: "كلاسيكي",
@@ -325,6 +328,11 @@ export const BarcodeGenerator = ({
 }: BarcodeGeneratorProps) => {
   const savedSettings = loadSavedSettings();
   
+  // Database templates
+  const { data: dbTemplates = [], isLoading: isLoadingTemplates } = useLabelTemplates();
+  const createTemplate = useCreateLabelTemplate();
+  const deleteTemplate = useDeleteLabelTemplate();
+  
   const [barcode, setBarcode] = useState(product?.barcode || "");
   const [barcodeType, setBarcodeType] = useState<"EAN13" | "CODE128" | "UPC">("EAN13");
   const [printQuantity, setPrintQuantity] = useState(1);
@@ -335,6 +343,10 @@ export const BarcodeGenerator = ({
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  
+  // Save template dialog
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
   
   // Barcode style settings - load from saved
   const [barcodeWidth, setBarcodeWidth] = useState(savedSettings.barcodeWidth);
@@ -354,7 +366,65 @@ export const BarcodeGenerator = ({
   const [labelTemplateId, setLabelTemplateId] = useState(savedSettings.labelTemplateId);
 
   const currentLabelSize = LABEL_SIZES.find(l => l.id === labelSizeId) || LABEL_SIZES[1];
-  const currentTemplate = LABEL_TEMPLATES.find(t => t.id === labelTemplateId) || LABEL_TEMPLATES[0];
+  const currentTemplate = LABEL_DESIGN_TEMPLATES.find(t => t.id === labelTemplateId) || LABEL_DESIGN_TEMPLATES[0];
+
+  // Save template to database
+  const handleSaveTemplateToDb = () => {
+    if (!newTemplateName.trim()) {
+      toast.error("يرجى إدخال اسم القالب");
+      return;
+    }
+    
+    const templateSettings: LabelSettings = {
+      labelWidth: parseInt(customLabelWidth) || 50,
+      labelHeight: parseInt(customLabelHeight) || 30,
+      fontSize: currentLabelSize.fontSize,
+      barcodeHeight,
+      barcodeWidth,
+      showProductName,
+      showProductNumber: true,
+      showPrice,
+      showBarcodeText: showValue,
+      columns: 4,
+      gap: 5,
+      templateStyle: currentTemplate.style,
+      labelSizeId,
+      customLabelWidth,
+      customLabelHeight,
+      barcodeMargin,
+      barcodeFontSize,
+      barcodeBackground,
+      barcodeLineColor,
+      showValue,
+    };
+    
+    createTemplate.mutate({
+      name: newTemplateName.trim(),
+      settings: templateSettings,
+      is_default: false,
+    });
+    
+    setShowSaveDialog(false);
+    setNewTemplateName("");
+  };
+
+  // Load template from database
+  const handleLoadDbTemplate = (template: LabelTemplate) => {
+    const s = template.settings;
+    if (s.barcodeWidth) setBarcodeWidth(s.barcodeWidth);
+    if (s.barcodeHeight) setBarcodeHeight(s.barcodeHeight);
+    if (s.barcodeFontSize) setBarcodeFontSize(s.barcodeFontSize);
+    if (s.barcodeMargin) setBarcodeMargin(s.barcodeMargin);
+    if (s.showValue !== undefined) setShowValue(s.showValue);
+    if (s.barcodeBackground) setBarcodeBackground(s.barcodeBackground);
+    if (s.barcodeLineColor) setBarcodeLineColor(s.barcodeLineColor);
+    if (s.labelSizeId) setLabelSizeId(s.labelSizeId);
+    if (s.customLabelWidth) setCustomLabelWidth(s.customLabelWidth);
+    if (s.customLabelHeight) setCustomLabelHeight(s.customLabelHeight);
+    if (s.showProductName !== undefined) setShowProductName(s.showProductName);
+    if (s.showPrice !== undefined) setShowPrice(s.showPrice);
+    toast.success(`تم تحميل القالب: ${template.name}`);
+  };
 
   // Save current settings as default
   const saveAsDefault = () => {
@@ -730,7 +800,7 @@ export const BarcodeGenerator = ({
             <div>
               <Label className="mb-2 block">قالب التصميم</Label>
               <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto p-1">
-                {LABEL_TEMPLATES.map((template) => (
+                {LABEL_DESIGN_TEMPLATES.map((template) => (
                   <button
                     key={template.id}
                     type="button"
@@ -816,6 +886,100 @@ export const BarcodeGenerator = ({
                   onCheckedChange={setShowPrice}
                 />
               </div>
+            </div>
+
+            {/* Saved Templates from Database */}
+            {dbTemplates.length > 0 && (
+              <div className="border-t pt-4">
+                <Label className="mb-2 block flex items-center gap-2">
+                  <FolderOpen size={16} />
+                  قوالبك المحفوظة
+                </Label>
+                <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                  {dbTemplates.map((template) => (
+                    <div
+                      key={template.id}
+                      className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleLoadDbTemplate(template)}
+                        className="flex-1 text-right text-sm font-medium hover:text-primary transition-colors"
+                      >
+                        {template.name}
+                        {template.is_default && (
+                          <Badge variant="secondary" className="mr-2 text-xs">افتراضي</Badge>
+                        )}
+                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                            <Trash2 size={14} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>حذف القالب</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              هل أنت متأكد من حذف القالب "{template.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteTemplate.mutate(template.id)}>
+                              حذف
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Save Template Button */}
+            <div className="border-t pt-4">
+              {showSaveDialog ? (
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                  <Label>اسم القالب الجديد</Label>
+                  <Input
+                    value={newTemplateName}
+                    onChange={(e) => setNewTemplateName(e.target.value)}
+                    placeholder="مثال: قالب المتجر"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveTemplateToDb}
+                      disabled={createTemplate.isPending || !newTemplateName.trim()}
+                      className="flex-1 gap-2"
+                      size="sm"
+                    >
+                      <Save size={14} />
+                      حفظ
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowSaveDialog(false);
+                        setNewTemplateName("");
+                      }}
+                      size="sm"
+                    >
+                      إلغاء
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSaveDialog(true)}
+                  className="w-full gap-2"
+                >
+                  <Save size={16} />
+                  حفظ كقالب جديد
+                </Button>
+              )}
             </div>
 
             {/* Label Preview with Template */}
