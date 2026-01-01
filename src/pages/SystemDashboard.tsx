@@ -16,13 +16,15 @@ import {
   XCircle,
   Activity,
   Globe,
-  Link2
+  Link2,
+  Crown
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet-async";
 import { Navigate } from "react-router-dom";
 import { SystemLinkSettings } from "@/components/links/SystemLinkSettings";
+import { SubscriptionManager } from "@/components/system/SubscriptionManager";
 
 const SystemDashboard = () => {
   const { user, isSystemManager } = useAuth();
@@ -126,6 +128,10 @@ const SystemDashboard = () => {
                 <Activity className="h-4 w-4" />
                 نظرة عامة
               </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                <Crown className="h-4 w-4" />
+                الاشتراكات
+              </TabsTrigger>
               <TabsTrigger value="links" className="flex items-center gap-2">
                 <Link2 className="h-4 w-4" />
                 إعدادات الروابط
@@ -198,6 +204,10 @@ const SystemDashboard = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="subscriptions">
+              <SubscriptionManager />
             </TabsContent>
 
             <TabsContent value="links">
