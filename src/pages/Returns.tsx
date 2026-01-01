@@ -55,6 +55,7 @@ const Returns = () => {
   
   const [returnNumber, setReturnNumber] = useState("");
   const [clientId, setClientId] = useState<string>("");
+  const [clientName, setClientName] = useState("");
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LocalReturnItem[]>([createEmptyItem()]);
@@ -144,6 +145,7 @@ const Returns = () => {
     // Reset form
     setReturnNumber(nextNumber || "R0001");
     setClientId("");
+    setClientName("");
     setReason("");
     setNotes("");
     setItems([createEmptyItem()]);
@@ -176,7 +178,7 @@ const Returns = () => {
             <div className="bg-card rounded-lg p-6 shadow-lg border border-border mb-6">
               <h2 className="text-lg font-bold mb-4">فاتورة مرتجعات جديدة</h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                   <Label>رقم المرتجع</Label>
                   <Input
@@ -187,7 +189,16 @@ const Returns = () => {
                 </div>
                 <div>
                   <Label>العميل</Label>
-                  <Select value={clientId} onValueChange={setClientId}>
+                  <Select 
+                    value={clientId} 
+                    onValueChange={(value) => {
+                      setClientId(value);
+                      const client = clients?.find(c => c.id === value);
+                      if (client) {
+                        setClientName(client.name);
+                      }
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="اختر العميل" />
                     </SelectTrigger>
@@ -199,6 +210,14 @@ const Returns = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label>اسم العميل</Label>
+                  <Input
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="اسم العميل"
+                  />
                 </div>
                 <div>
                   <Label>سبب الإرجاع</Label>
