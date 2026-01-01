@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { InvoiceHeader } from "./InvoiceHeader";
 import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceFooter } from "./InvoiceFooter";
@@ -10,10 +10,11 @@ import { toast } from "sonner";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useClients, useCreateClient, useNextClientNumber } from "@/hooks/useClients";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { useCreateInvoice, useNextInvoiceNumber } from "@/hooks/useInvoices";
+import { supabase } from "@/integrations/supabase/client";
+import { useCreateInvoice, useUpdateInvoice, useInvoices, useNextInvoiceNumber } from "@/hooks/useInvoices";
 import { useAuth } from "@/contexts/AuthContext";
 import { TemplateType } from "./templates/types";
-import { Save, Search } from "lucide-react";
+import { Save, Search, ChevronRight, ChevronLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const AUTOSAVE_KEY = "invoice_autosave";
@@ -51,7 +52,9 @@ export const SalesInvoice = () => {
   const { data: products } = useProducts();
   const { data: clients } = useClients();
   const { data: warehouses } = useWarehouses();
+  const { data: allInvoices } = useInvoices();
   const createInvoice = useCreateInvoice();
+  const updateInvoice = useUpdateInvoice();
   const createClient = useCreateClient({ showToast: false });
 
   const [clientPhone, setClientPhone] = useState("");
@@ -69,8 +72,18 @@ export const SalesInvoice = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("classic");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasRestoredData, setHasRestoredData] = useState(false);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+  const [currentInvoiceIndex, setCurrentInvoiceIndex] = useState<number>(-1);
   
   const isInitialized = useRef(false);
+
+  // Sorted invoices for navigation (newest first)
+  const sortedInvoices = useMemo(() => {
+    if (!allInvoices) return [];
+    return [...allInvoices].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [allInvoices]);
 
   // Load autosaved data on mount
   useEffect(() => {
@@ -251,7 +264,11 @@ export const SalesInvoice = () => {
   }, [warehouses]);
 
   const handleNewInvoice = useCallback(() => {
-    setInvoiceNumber((prev) => String(parseInt(prev) + 1));
+    if (nextNumber) {
+      setInvoiceNumber(nextNumber);
+    } else {
+      setInvoiceNumber((prev) => String(parseInt(prev) + 1));
+    }
     setClientNumber("");
     setClientName("");
     setClientId(null);
@@ -259,9 +276,11 @@ export const SalesInvoice = () => {
     setPaymentMethod("نقدي");
     setItems([createEmptyItem()]);
     setNotes("");
+    setEditingInvoiceId(null);
+    setCurrentInvoiceIndex(-1);
     clearAutosave();
     toast.success("تم إنشاء فاتورة جديدة");
-  }, [clearAutosave]);
+  }, [clearAutosave, nextNumber]);
 
   const handleSaveInvoice = async () => {
     const validItems = items.filter(i => i.itemNumber && i.itemName);
@@ -290,27 +309,41 @@ export const SalesInvoice = () => {
       }
     }
 
-    await createInvoice.mutateAsync({
-      invoice: {
-        invoice_number: invoiceNumber,
-        client_id: finalClientId,
-        invoice_date: date,
-        payment_method: paymentMethod,
-        total_amount: calculateTotal(validItems),
-        notes: notes || null,
-        status: "completed",
-      },
-      items: validItems.map(item => ({
-        item_number: item.itemNumber,
-        item_name: item.itemName,
-        quantity: item.quantity,
-        price: item.price,
-        min_price: item.minPrice,
-        total: item.total,
-        product_id: products?.find(p => p.item_number === item.itemNumber)?.id || null,
-        warehouse_id: warehouses?.find(w => w.name === item.warehouse)?.id || null,
-      })),
-    });
+    const invoiceData = {
+      invoice_number: invoiceNumber,
+      client_id: finalClientId,
+      invoice_date: date,
+      payment_method: paymentMethod,
+      total_amount: calculateTotal(validItems),
+      notes: notes || null,
+      status: "completed",
+    };
+
+    const itemsData = validItems.map(item => ({
+      item_number: item.itemNumber,
+      item_name: item.itemName,
+      quantity: item.quantity,
+      price: item.price,
+      min_price: item.minPrice,
+      total: item.total,
+      product_id: products?.find(p => p.item_number === item.itemNumber)?.id || null,
+      warehouse_id: warehouses?.find(w => w.name === item.warehouse)?.id || null,
+    }));
+
+    if (editingInvoiceId) {
+      // Update existing invoice
+      await updateInvoice.mutateAsync({
+        invoiceId: editingInvoiceId,
+        invoice: invoiceData,
+        items: itemsData,
+      });
+    } else {
+      // Create new invoice
+      await createInvoice.mutateAsync({
+        invoice: invoiceData,
+        items: itemsData,
+      });
+    }
 
     clearAutosave();
     handleNewInvoice();
@@ -319,6 +352,96 @@ export const SalesInvoice = () => {
   const handlePrint = useCallback(() => {
     setShowPreview(true);
   }, []);
+
+  // Navigate to previous invoice
+  const handlePrevInvoice = useCallback(async () => {
+    if (!sortedInvoices.length) return;
+    
+    let newIndex: number;
+    if (currentInvoiceIndex === -1) {
+      // First navigation - go to most recent invoice
+      newIndex = 0;
+    } else if (currentInvoiceIndex < sortedInvoices.length - 1) {
+      // Go to older invoice
+      newIndex = currentInvoiceIndex + 1;
+    } else {
+      toast.info("هذه أقدم فاتورة");
+      return;
+    }
+    
+    const invoice = sortedInvoices[newIndex];
+    await loadInvoiceById(invoice.id, newIndex);
+  }, [sortedInvoices, currentInvoiceIndex]);
+
+  const handleNextInvoice = useCallback(async () => {
+    if (!sortedInvoices.length || currentInvoiceIndex <= 0) {
+      if (currentInvoiceIndex === 0) {
+        // Create new invoice
+        handleNewInvoice();
+      } else {
+        toast.info("لا توجد فواتير أحدث");
+      }
+      return;
+    }
+    
+    const newIndex = currentInvoiceIndex - 1;
+    const invoice = sortedInvoices[newIndex];
+    await loadInvoiceById(invoice.id, newIndex);
+  }, [sortedInvoices, currentInvoiceIndex, handleNewInvoice]);
+
+  const loadInvoiceById = async (invoiceId: string, index: number) => {
+    const { data: invoiceItems, error } = await supabase
+      .from("invoice_items")
+      .select("*")
+      .eq("invoice_id", invoiceId);
+    
+    if (error) {
+      toast.error("خطأ في تحميل الفاتورة");
+      return;
+    }
+    
+    const invoice = sortedInvoices.find(i => i.id === invoiceId);
+    if (!invoice) return;
+    
+    setInvoiceNumber(invoice.invoice_number);
+    setDate(invoice.invoice_date);
+    setPaymentMethod(invoice.payment_method);
+    setNotes(invoice.notes || "");
+    setEditingInvoiceId(invoice.id);
+    setCurrentInvoiceIndex(index);
+    
+    // Find client
+    if (invoice.clients?.name) {
+      setClientName(invoice.clients.name);
+      const client = clients?.find(c => c.name === invoice.clients.name);
+      if (client) {
+        setClientNumber(client.client_number);
+        setClientId(client.id);
+        setClientPhone(client.phone || "");
+      }
+    } else {
+      setClientName("");
+      setClientNumber("");
+      setClientId(null);
+      setClientPhone("");
+    }
+    
+    // Load items
+    if (invoiceItems && invoiceItems.length > 0) {
+      setItems(invoiceItems.map(item => ({
+        id: generateId(),
+        itemNumber: item.item_number,
+        itemName: item.item_name,
+        quantity: item.quantity,
+        price: item.price,
+        minPrice: item.min_price,
+        total: item.total,
+        warehouse: warehouses?.find(w => w.id === item.warehouse_id)?.name || "",
+      })));
+    }
+    
+    toast.success(`الفاتورة رقم ${invoice.invoice_number}`);
+  };
 
   // Prepare invoice data for preview
   const previewInvoice = {
@@ -357,6 +480,11 @@ export const SalesInvoice = () => {
     setDate(invoice.invoice_date);
     setPaymentMethod(invoice.payment_method);
     setNotes(invoice.notes || "");
+    setEditingInvoiceId(invoice.id);
+    
+    // Find index in sorted invoices
+    const index = sortedInvoices.findIndex(i => i.id === invoice.id);
+    setCurrentInvoiceIndex(index);
     
     // Find client
     if (invoice.clients?.name) {
@@ -384,35 +512,64 @@ export const SalesInvoice = () => {
         price: item.price,
         minPrice: item.min_price,
         total: item.total,
-        warehouse: "",
+        warehouse: warehouses?.find(w => w.id === item.warehouse_id)?.name || "",
       })));
     }
     
     toast.success(`تم تحميل الفاتورة رقم ${invoice.invoice_number}`);
-  }, [clients]);
+  }, [clients, sortedInvoices, warehouses]);
 
   return (
     <div className="p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header with search button */}
-        <div className="flex items-center justify-between mb-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSearch(true)}
-            className="flex items-center gap-1 h-7 text-xs"
-          >
-            <Search size={14} />
-            بحث
-          </Button>
+        {/* Header with navigation and search */}
+        <div className="flex items-center justify-between mb-2 gap-2">
+          {/* Navigation arrows */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextInvoice}
+              className="h-7 w-7 p-0"
+              title="فاتورة أحدث"
+            >
+              <ChevronRight size={16} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrevInvoice}
+              className="h-7 w-7 p-0"
+              title="فاتورة أقدم"
+            >
+              <ChevronLeft size={16} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSearch(true)}
+              className="flex items-center gap-1 h-7 text-xs"
+            >
+              <Search size={14} />
+              بحث
+            </Button>
+          </div>
           
-          {/* Autosave indicator */}
-          {lastSaved && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Save size={12} className="text-success" />
-              <span>{lastSaved.toLocaleTimeString("ar-EG")}</span>
-            </div>
-          )}
+          {/* Editing indicator and autosave */}
+          <div className="flex items-center gap-2">
+            {editingInvoiceId && (
+              <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">
+                <Edit size={10} />
+                تعديل
+              </div>
+            )}
+            {lastSaved && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Save size={12} className="text-success" />
+                <span>{lastSaved.toLocaleTimeString("ar-EG")}</span>
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="bg-card rounded-xl shadow-soft p-4 md:p-6 border border-border">
@@ -449,7 +606,8 @@ export const SalesInvoice = () => {
             onAddItem={handleAddItem}
             onPrint={handlePrint}
             onSave={handleSaveInvoice}
-            isSaving={createInvoice.isPending}
+            isSaving={createInvoice.isPending || updateInvoice.isPending}
+            isEditing={!!editingInvoiceId}
             notes={notes}
             onNotesChange={setNotes}
           />
