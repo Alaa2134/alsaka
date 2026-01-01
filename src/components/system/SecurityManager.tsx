@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, ShieldCheck, ShieldOff, Key, Trash2, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Shield, ShieldCheck, ShieldOff, Key, Trash2, RefreshCw, Timer, Save } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +27,7 @@ export const SecurityManager = () => {
   const [showSetup, setShowSetup] = useState(false);
   const [showDisableConfirm, setShowDisableConfirm] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  const [inactivityTimeout, setInactivityTimeout] = useState<number>(15);
 
   // Fetch current user's 2FA status
   const { data: securityData, isLoading } = useQuery({
@@ -39,6 +42,21 @@ export const SecurityManager = () => {
       return data;
     },
     enabled: !!user?.id
+  });
+
+  // Fetch inactivity timeout setting
+  const { data: timeoutSetting } = useQuery({
+    queryKey: ['inactivity-timeout-setting'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'inactivity_timeout_minutes')
+        .maybeSingle();
+      const value = data?.value ? parseInt(data.value as string) : 15;
+      setInactivityTimeout(value);
+      return value;
+    }
   });
 
   const disable2FA = useMutation({
@@ -83,6 +101,24 @@ export const SecurityManager = () => {
     },
     onError: () => {
       toast.error('فشل في تجديد الأكواد');
+    }
+  });
+
+  const updateTimeout = useMutation({
+    mutationFn: async (minutes: number) => {
+      const { error } = await supabase
+        .from('system_settings')
+        .update({ value: String(minutes) })
+        .eq('key', 'inactivity_timeout_minutes');
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inactivity-timeout'] });
+      queryClient.invalidateQueries({ queryKey: ['inactivity-timeout-setting'] });
+      toast.success('تم تحديث مدة الخمول');
+    },
+    onError: () => {
+      toast.error('فشل في تحديث مدة الخمول');
     }
   });
 
@@ -160,6 +196,46 @@ export const SecurityManager = () => {
               تفعيل المصادقة الثنائية
             </Button>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Inactivity Timeout Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Timer className="w-5 h-5" />
+            إعدادات قفل الجلسة
+          </CardTitle>
+          <CardDescription>
+            تحديد مدة الخمول قبل قفل الجلسة تلقائياً
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Label htmlFor="timeout">مدة الخمول (بالدقائق)</Label>
+              <Input
+                id="timeout"
+                type="number"
+                min={1}
+                max={120}
+                value={inactivityTimeout}
+                onChange={(e) => setInactivityTimeout(parseInt(e.target.value) || 15)}
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                سيتم إظهار تحذير قبل دقيقة واحدة من القفل
+              </p>
+            </div>
+            <Button 
+              onClick={() => updateTimeout.mutate(inactivityTimeout)}
+              disabled={updateTimeout.isPending}
+              className="mt-5"
+            >
+              <Save className="w-4 h-4 ml-2" />
+              حفظ
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

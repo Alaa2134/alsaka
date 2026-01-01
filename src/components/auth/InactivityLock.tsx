@@ -2,25 +2,47 @@ import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock, Timer } from "lucide-react";
+import { Lock, Timer, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface InactivityLockProps {
-  timeoutMinutes?: number;
   children: React.ReactNode;
 }
 
-export const InactivityLock = ({ timeoutMinutes = 15, children }: InactivityLockProps) => {
-  const { user, login, logout } = useAuth();
+export const InactivityLock = ({ children }: InactivityLockProps) => {
+  const { user, logout } = useAuth();
   const [isLocked, setIsLocked] = useState(false);
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [showWarning, setShowWarning] = useState(false);
+  const [warningShown, setWarningShown] = useState(false);
+
+  // Fetch timeout setting from system_settings
+  const { data: timeoutSetting } = useQuery({
+    queryKey: ['inactivity-timeout'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'inactivity_timeout_minutes')
+        .maybeSingle();
+      return data?.value ? parseInt(data.value as string) : 15;
+    },
+    staleTime: 60000 // Cache for 1 minute
+  });
+
+  const timeoutMinutes = timeoutSetting || 15;
+  const warningMinutes = timeoutMinutes - 1; // Warning 1 minute before lock
 
   const resetTimer = useCallback(() => {
     setLastActivity(Date.now());
+    setShowWarning(false);
+    setWarningShown(false);
   }, []);
 
   // Track user activity
@@ -48,16 +70,34 @@ export const InactivityLock = ({ timeoutMinutes = 15, children }: InactivityLock
       const now = Date.now();
       const inactiveTime = (now - lastActivity) / 1000 / 60; // in minutes
       
+      // Show warning 1 minute before lock
+      if (inactiveTime >= warningMinutes && !warningShown && !isLocked) {
+        setShowWarning(true);
+        setWarningShown(true);
+        toast.warning(
+          `⚠️ سيتم قفل الجلسة خلال دقيقة واحدة بسبب عدم النشاط`,
+          {
+            duration: 10000,
+            action: {
+              label: 'تمديد',
+              onClick: () => resetTimer()
+            }
+          }
+        );
+      }
+      
+      // Lock after timeout
       if (inactiveTime >= timeoutMinutes && !isLocked) {
         setIsLocked(true);
+        setShowWarning(false);
         toast.info("تم قفل الجلسة بسبب عدم النشاط");
       }
     };
 
-    const interval = setInterval(checkInactivity, 10000); // Check every 10 seconds
+    const interval = setInterval(checkInactivity, 5000); // Check every 5 seconds
 
     return () => clearInterval(interval);
-  }, [user, lastActivity, timeoutMinutes, isLocked]);
+  }, [user, lastActivity, timeoutMinutes, warningMinutes, isLocked, warningShown, resetTimer]);
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +120,7 @@ export const InactivityLock = ({ timeoutMinutes = 15, children }: InactivityLock
     setIsLocked(false);
     setCode("");
     setLastActivity(Date.now());
+    setWarningShown(false);
     toast.success("تم فتح القفل بنجاح");
     
     setIsLoading(false);

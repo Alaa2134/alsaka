@@ -52,7 +52,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <InactivityLock timeoutMinutes={15}>
+            <InactivityLock>
               <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<Login />} />
