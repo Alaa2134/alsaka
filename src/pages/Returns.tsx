@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useReturns, useNextReturnNumber, useCreateReturn, ReturnItem } from "@/hooks/useReturns";
+import { useReturns, useNextReturnNumber, useCreateReturn, useUpdateReturn, useReturnsReport, ReturnItem } from "@/hooks/useReturns";
 import { useProducts } from "@/hooks/useProducts";
 import { useClients } from "@/hooks/useClients";
-import { RotateCcw, Plus, Trash2, Save, Search, Printer, X } from "lucide-react";
+import { RotateCcw, Plus, Trash2, Save, Search, Printer, X, Edit, Calendar, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDefaultTemplate, TemplateSettings, defaultTemplateSettings } from "@/hooks/useInvoiceTemplates";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -62,6 +63,7 @@ const Returns = () => {
   const { data: clients } = useClients();
   const { data: defaultTemplate } = useDefaultTemplate();
   const createReturn = useCreateReturn();
+  const updateReturn = useUpdateReturn();
   
   const [returnNumber, setReturnNumber] = useState("");
   const [clientId, setClientId] = useState<string>("");
@@ -74,13 +76,28 @@ const Returns = () => {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [selectedReturn, setSelectedReturn] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  
+  // Edit mode
+  const [editMode, setEditMode] = useState(false);
+  const [editReturnId, setEditReturnId] = useState<string | null>(null);
+  
+  // Report mode
+  const [showReport, setShowReport] = useState(false);
+  const [reportStartDate, setReportStartDate] = useState(
+    new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split("T")[0]
+  );
+  const [reportEndDate, setReportEndDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const { data: reportData } = useReturnsReport(reportStartDate, reportEndDate);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   // Set initial return number
-  useState(() => {
-    if (nextNumber) {
+  useEffect(() => {
+    if (nextNumber && !editMode) {
       setReturnNumber(nextNumber);
     }
-  });
+  }, [nextNumber, editMode]);
 
   const handleAddItem = () => {
     setItems([...items, createEmptyItem()]);
@@ -122,6 +139,18 @@ const Returns = () => {
     return items.reduce((sum, item) => sum + item.total, 0);
   }, [items]);
 
+  const resetForm = () => {
+    setReturnNumber(nextNumber || "R0001");
+    setClientId("");
+    setClientName("");
+    setReason("");
+    setNotes("");
+    setItems([createEmptyItem()]);
+    setShowForm(false);
+    setEditMode(false);
+    setEditReturnId(null);
+  };
+
   const handleSave = async () => {
     if (!returnNumber) {
       toast.error("رقم المرتجع مطلوب");
@@ -134,36 +163,68 @@ const Returns = () => {
       return;
     }
 
-    await createReturn.mutateAsync({
-      returnData: {
-        return_number: returnNumber,
-        invoice_id: null,
-        client_id: clientId || null,
-        tenant_id: null,
-        return_date: new Date().toISOString().split("T")[0],
-        total_amount: calculateTotal(),
-        reason,
-        status: "completed",
-        notes,
-      },
-      items: validItems.map(item => ({
+    const returnData = {
+      return_number: returnNumber,
+      invoice_id: null,
+      client_id: clientId || null,
+      tenant_id: null,
+      return_date: new Date().toISOString().split("T")[0],
+      total_amount: calculateTotal(),
+      reason,
+      status: "completed",
+      notes,
+    };
+
+    const itemsData = validItems.map(item => ({
+      product_id: item.product_id,
+      item_number: item.item_number,
+      item_name: item.item_name,
+      quantity: item.quantity,
+      price: item.price,
+      total: item.total,
+    }));
+
+    if (editMode && editReturnId) {
+      await updateReturn.mutateAsync({
+        returnId: editReturnId,
+        returnData,
+        items: itemsData,
+      });
+    } else {
+      await createReturn.mutateAsync({
+        returnData,
+        items: itemsData,
+      });
+    }
+
+    resetForm();
+  };
+
+  // Load return for editing
+  const handleEditReturn = (ret: any) => {
+    setEditMode(true);
+    setEditReturnId(ret.id);
+    setReturnNumber(ret.return_number);
+    setClientId(ret.client_id || "");
+    setClientName(ret.clients?.name || "");
+    setReason(ret.reason || "");
+    setNotes(ret.notes || "");
+    
+    if (ret.return_items && ret.return_items.length > 0) {
+      setItems(ret.return_items.map((item: any) => ({
+        id: crypto.randomUUID(),
         product_id: item.product_id,
         item_number: item.item_number,
         item_name: item.item_name,
         quantity: item.quantity,
         price: item.price,
         total: item.total,
-      })),
-    });
-
-    // Reset form
-    setReturnNumber(nextNumber || "R0001");
-    setClientId("");
-    setClientName("");
-    setReason("");
-    setNotes("");
-    setItems([createEmptyItem()]);
-    setShowForm(false);
+      })));
+    } else {
+      setItems([createEmptyItem()]);
+    }
+    
+    setShowForm(true);
   };
 
   // Filter returns based on search query
@@ -227,6 +288,50 @@ const Returns = () => {
     setShowPrintPreview(false);
   };
 
+  // Print report
+  const handlePrintReport = () => {
+    if (!reportRef.current) return;
+    
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8">
+          <title>تقرير المرتجعات</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
+            body { font-family: 'Cairo', sans-serif; }
+            @page { size: A4; margin: 10mm; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          ${reportRef.current.innerHTML}
+          <script>
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          </script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  };
+
+  // Calculate report totals
+  const reportTotals = reportData?.reduce((acc, ret) => ({
+    count: acc.count + 1,
+    total: acc.total + Number(ret.total_amount),
+    itemsCount: acc.itemsCount + (ret.return_items?.length || 0),
+  }), { count: 0, total: 0, itemsCount: 0 }) || { count: 0, total: 0, itemsCount: 0 };
+
   return (
     <>
       <Helmet>
@@ -242,10 +347,16 @@ const Returns = () => {
               <RotateCcw className="w-8 h-8 text-primary" />
               <h1 className="text-2xl font-bold text-foreground">فواتير المرتجعات</h1>
             </div>
-            <Button onClick={() => setShowForm(!showForm)}>
-              <Plus size={18} className="ml-2" />
-              فاتورة مرتجعات جديدة
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowReport(true)}>
+                <FileText size={18} className="ml-2" />
+                تقرير المرتجعات
+              </Button>
+              <Button onClick={() => { resetForm(); setShowForm(!showForm); }}>
+                <Plus size={18} className="ml-2" />
+                فاتورة مرتجعات جديدة
+              </Button>
+            </div>
           </div>
 
           {/* Search Bar */}
@@ -261,10 +372,22 @@ const Returns = () => {
             </div>
           </div>
 
-          {/* New Return Form */}
+          {/* New/Edit Return Form */}
           {showForm && (
             <div className="bg-card rounded-lg p-6 shadow-lg border border-border mb-6">
-              <h2 className="text-lg font-bold mb-4">فاتورة مرتجعات جديدة</h2>
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                {editMode ? (
+                  <>
+                    <Edit size={20} />
+                    تعديل فاتورة مرتجع
+                  </>
+                ) : (
+                  <>
+                    <Plus size={20} />
+                    فاتورة مرتجعات جديدة
+                  </>
+                )}
+              </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
@@ -273,6 +396,8 @@ const Returns = () => {
                     value={returnNumber || nextNumber || ""}
                     onChange={(e) => setReturnNumber(e.target.value)}
                     placeholder="R0001"
+                    readOnly={editMode}
+                    className={editMode ? "bg-muted" : ""}
                   />
                 </div>
                 <div>
@@ -408,9 +533,12 @@ const Returns = () => {
                   <div className="text-lg font-bold">
                     الإجمالي: <span className="text-primary">{calculateTotal().toFixed(2)}</span>
                   </div>
-                  <Button onClick={handleSave} disabled={createReturn.isPending}>
+                  <Button variant="outline" onClick={resetForm}>
+                    إلغاء
+                  </Button>
+                  <Button onClick={handleSave} disabled={createReturn.isPending || updateReturn.isPending}>
                     <Save size={18} className="ml-2" />
-                    حفظ المرتجع
+                    {editMode ? "تحديث المرتجع" : "حفظ المرتجع"}
                   </Button>
                 </div>
               </div>
@@ -438,19 +566,20 @@ const Returns = () => {
                   <TableHead className="text-right">السبب</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-center">تعديل</TableHead>
                   <TableHead className="text-center">طباعة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {returnsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       جاري التحميل...
                     </TableCell>
                   </TableRow>
                 ) : filteredReturns?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {searchQuery ? "لا توجد نتائج للبحث" : "لا توجد مرتجعات"}
                     </TableCell>
                   </TableRow>
@@ -466,6 +595,15 @@ const Returns = () => {
                         <span className="px-2 py-1 bg-green-500/10 text-green-500 rounded text-sm">
                           مكتمل
                         </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditReturn(ret)}
+                        >
+                          <Edit size={16} />
+                        </Button>
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
@@ -517,6 +655,111 @@ const Returns = () => {
               <Printer size={18} />
               طباعة
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Dialog */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText size={20} />
+                تقرير المرتجعات
+              </span>
+              <Button variant="ghost" size="icon" onClick={() => setShowReport(false)}>
+                <X size={20} />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+            <div className="flex items-center gap-2">
+              <Calendar size={18} />
+              <Label>من:</Label>
+              <Input
+                type="date"
+                value={reportStartDate}
+                onChange={(e) => setReportStartDate(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label>إلى:</Label>
+              <Input
+                type="date"
+                value={reportEndDate}
+                onChange={(e) => setReportEndDate(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <Button onClick={handlePrintReport}>
+              <Printer size={18} className="ml-2" />
+              طباعة التقرير
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-auto border rounded-xl bg-gray-100 p-4">
+            <div ref={reportRef} className="bg-white shadow-lg mx-auto p-6" style={{ maxWidth: "210mm" }}>
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-bold text-primary">تقرير المرتجعات</h1>
+                <p className="text-muted-foreground">
+                  من {new Date(reportStartDate).toLocaleDateString("ar-EG")} إلى {new Date(reportEndDate).toLocaleDateString("ar-EG")}
+                </p>
+              </div>
+
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-blue-50 rounded-lg text-center">
+                  <p className="text-2xl font-bold text-blue-600">{reportTotals.count}</p>
+                  <p className="text-sm text-muted-foreground">عدد المرتجعات</p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg text-center">
+                  <p className="text-2xl font-bold text-green-600">{reportTotals.itemsCount}</p>
+                  <p className="text-sm text-muted-foreground">عدد الأصناف</p>
+                </div>
+                <div className="p-4 bg-orange-50 rounded-lg text-center">
+                  <p className="text-2xl font-bold text-orange-600">{reportTotals.total.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">إجمالي القيمة</p>
+                </div>
+              </div>
+
+              {/* Table */}
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-primary text-primary-foreground">
+                    <th className="border p-2 text-right">#</th>
+                    <th className="border p-2 text-right">رقم المرتجع</th>
+                    <th className="border p-2 text-right">التاريخ</th>
+                    <th className="border p-2 text-right">العميل</th>
+                    <th className="border p-2 text-right">السبب</th>
+                    <th className="border p-2 text-right">الأصناف</th>
+                    <th className="border p-2 text-right">الإجمالي</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData?.map((ret: any, index: number) => (
+                    <tr key={ret.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <td className="border p-2">{index + 1}</td>
+                      <td className="border p-2">{ret.return_number}</td>
+                      <td className="border p-2">{new Date(ret.return_date).toLocaleDateString("ar-EG")}</td>
+                      <td className="border p-2">{ret.clients?.name || "-"}</td>
+                      <td className="border p-2">{ret.reason || "-"}</td>
+                      <td className="border p-2 text-center">{ret.return_items?.length || 0}</td>
+                      <td className="border p-2 font-bold">{Number(ret.total_amount).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-primary text-primary-foreground font-bold">
+                    <td colSpan={5} className="border p-2 text-right">الإجمالي</td>
+                    <td className="border p-2 text-center">{reportTotals.itemsCount}</td>
+                    <td className="border p-2">{reportTotals.total.toFixed(2)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -603,7 +846,7 @@ const ReturnPrintTemplate = ({
       )}
 
       {/* Total */}
-      <div className="text-left p-4 rounded-lg mb-4" style={{ backgroundColor: "#f97316", color: "white" }}>
+      <div className="text-left p-4 rounded-lg mb-4" style={{ backgroundColor: settings.accentColor || "#f97316", color: "white" }}>
         <p className="text-xl font-bold">إجمالي المرتجع: {Number(returnData.total_amount).toFixed(2)} ج.م</p>
       </div>
 

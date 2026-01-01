@@ -422,11 +422,9 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   type="text"
                   inputMode="decimal"
                   value={item.minPrice || ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^\d.]/g, '');
-                    onUpdateItem(item.id, "minPrice", parseFloat(val) || 0);
-                  }}
-                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
+                  readOnly
+                  className="w-full bg-muted border-2 border-border rounded-lg px-3 py-2 text-center cursor-not-allowed opacity-70"
+                  title="الحد الأدنى - يمكن تعديله من صفحة المنتجات فقط"
                 />
               </td>
               <td className="px-4 py-3 border-b border-border/50 text-center">

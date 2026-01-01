@@ -154,3 +154,120 @@ export const useCreateReturn = () => {
     },
   });
 };
+
+export const useUpdateReturn = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      returnId,
+      returnData, 
+      items 
+    }: { 
+      returnId: string;
+      returnData: Partial<Return>; 
+      items: Omit<ReturnItem, "id" | "return_id" | "created_at">[] 
+    }) => {
+      // Get original items to adjust stock
+      const { data: originalItems } = await supabase
+        .from("return_items")
+        .select("*")
+        .eq("return_id", returnId);
+      
+      // Reverse original stock changes
+      if (originalItems) {
+        for (const item of originalItems) {
+          if (item.product_id) {
+            const { data: product } = await supabase
+              .from("products")
+              .select("stock_quantity")
+              .eq("id", item.product_id)
+              .single();
+            
+            if (product) {
+              await supabase
+                .from("products")
+                .update({ stock_quantity: product.stock_quantity - item.quantity })
+                .eq("id", item.product_id);
+            }
+          }
+        }
+      }
+      
+      // Update return
+      const { data: updatedReturn, error: returnError } = await supabase
+        .from("returns")
+        .update(returnData)
+        .eq("id", returnId)
+        .select()
+        .single();
+      
+      if (returnError) throw returnError;
+      
+      // Delete old items
+      await supabase
+        .from("return_items")
+        .delete()
+        .eq("return_id", returnId);
+      
+      // Create new return items
+      const itemsWithReturnId = items.map(item => ({
+        ...item,
+        return_id: returnId,
+      }));
+      
+      const { error: itemsError } = await supabase
+        .from("return_items")
+        .insert(itemsWithReturnId);
+      
+      if (itemsError) throw itemsError;
+      
+      // Apply new stock changes
+      for (const item of items) {
+        if (item.product_id) {
+          const { data: product } = await supabase
+            .from("products")
+            .select("stock_quantity")
+            .eq("id", item.product_id)
+            .single();
+          
+          if (product) {
+            await supabase
+              .from("products")
+              .update({ stock_quantity: product.stock_quantity + item.quantity })
+              .eq("id", item.product_id);
+          }
+        }
+      }
+      
+      return updatedReturn;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["returns"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("تم تحديث فاتورة المرتجعات بنجاح");
+    },
+    onError: (error: Error) => {
+      toast.error(`خطأ في تحديث فاتورة المرتجعات: ${error.message}`);
+    },
+  });
+};
+
+// Returns report by date range
+export const useReturnsReport = (startDate: string, endDate: string) => {
+  return useQuery({
+    queryKey: ["returns-report", startDate, endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("returns")
+        .select("*, clients(name), return_items(*)")
+        .gte("return_date", startDate)
+        .lte("return_date", endDate)
+        .order("return_date", { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!startDate && !!endDate,
+  });
+};
