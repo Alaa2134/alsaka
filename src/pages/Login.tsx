@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
+import { TwoFactorVerify } from "@/components/auth/TwoFactorVerify";
 
 interface TenantInfo {
   name: string;
@@ -18,6 +19,8 @@ const Login = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [tenantInfo, setTenantInfo] = useState<TenantInfo | null>(null);
+  const [show2FA, setShow2FA] = useState(false);
+  const [pending2FAUserId, setPending2FAUserId] = useState<string>("");
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -51,6 +54,23 @@ const Login = () => {
     const result = await login(code);
     setIsLoading(false);
 
+    if (result.success) {
+      navigate("/");
+    } else if (result.requires2FA && result.userId) {
+      setPending2FAUserId(result.userId);
+      setShow2FA(true);
+    } else {
+      setError(result.error || "خطأ في تسجيل الدخول");
+    }
+  };
+
+  const handle2FASuccess = async () => {
+    setShow2FA(false);
+    setIsLoading(true);
+    // Re-login with 2FA bypassed (user already verified)
+    const result = await login(code, "bypass");
+    setIsLoading(false);
+    
     if (result.success) {
       navigate("/");
     } else {
@@ -191,6 +211,17 @@ const Login = () => {
             </div>
           </div>
         </div>
+
+        {/* 2FA Verification Dialog */}
+        <TwoFactorVerify
+          open={show2FA}
+          userId={pending2FAUserId}
+          onSuccess={handle2FASuccess}
+          onCancel={() => {
+            setShow2FA(false);
+            setPending2FAUserId("");
+          }}
+        />
       </div>
     </>
   );

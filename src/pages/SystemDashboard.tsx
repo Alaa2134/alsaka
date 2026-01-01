@@ -25,6 +25,7 @@ import { SubscriptionManager } from "@/components/system/SubscriptionManager";
 import { DatabaseManager } from "@/components/system/DatabaseManager";
 import { TenantManager } from "@/components/system/TenantManager";
 import { UserManager } from "@/components/system/UserManager";
+import { SecurityManager } from "@/components/system/SecurityManager";
 
 const SystemDashboard = () => {
   const { user, isSystemManager } = useAuth();
@@ -148,6 +149,10 @@ const SystemDashboard = () => {
                 <Link2 className="h-4 w-4" />
                 الروابط
               </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                الأمان
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview">
@@ -236,6 +241,10 @@ const SystemDashboard = () => {
 
             <TabsContent value="links">
               <SystemLinkSettings />
+            </TabsContent>
+
+            <TabsContent value="security">
+              <SecurityManager />
             </TabsContent>
           </Tabs>
         </div>

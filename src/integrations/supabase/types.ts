@@ -73,6 +73,7 @@ export type Database = {
           access_code: string
           access_code_hash: string | null
           auth_id: string | null
+          backup_codes: string[] | null
           created_at: string
           device_id: string | null
           device_locked_at: string | null
@@ -81,12 +82,16 @@ export type Database = {
           name: string
           role: Database["public"]["Enums"]["app_role"]
           tenant_id: string | null
+          two_factor_enabled: boolean | null
+          two_factor_secret: string | null
+          two_factor_verified_at: string | null
           updated_at: string
         }
         Insert: {
           access_code: string
           access_code_hash?: string | null
           auth_id?: string | null
+          backup_codes?: string[] | null
           created_at?: string
           device_id?: string | null
           device_locked_at?: string | null
@@ -95,12 +100,16 @@ export type Database = {
           name: string
           role?: Database["public"]["Enums"]["app_role"]
           tenant_id?: string | null
+          two_factor_enabled?: boolean | null
+          two_factor_secret?: string | null
+          two_factor_verified_at?: string | null
           updated_at?: string
         }
         Update: {
           access_code?: string
           access_code_hash?: string | null
           auth_id?: string | null
+          backup_codes?: string[] | null
           created_at?: string
           device_id?: string | null
           device_locked_at?: string | null
@@ -109,6 +118,9 @@ export type Database = {
           name?: string
           role?: Database["public"]["Enums"]["app_role"]
           tenant_id?: string | null
+          two_factor_enabled?: boolean | null
+          two_factor_secret?: string | null
+          two_factor_verified_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1405,6 +1417,41 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      two_factor_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "two_factor_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_permissions: {
         Row: {
