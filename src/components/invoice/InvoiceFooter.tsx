@@ -1,4 +1,4 @@
-import { Plus, FileText, Printer, Save, MessageSquare } from "lucide-react";
+import { Plus, FileText, Printer, Save, MessageSquare, Edit } from "lucide-react";
 
 interface InvoiceFooterProps {
   totalAmount: number;
@@ -7,6 +7,7 @@ interface InvoiceFooterProps {
   onPrint: () => void;
   onSave?: () => void;
   isSaving?: boolean;
+  isEditing?: boolean;
   notes: string;
   onNotesChange: (value: string) => void;
 }
@@ -18,6 +19,7 @@ export const InvoiceFooter = ({
   onPrint,
   onSave,
   isSaving,
+  isEditing,
   notes,
   onNotesChange,
 }: InvoiceFooterProps) => {
@@ -66,10 +68,10 @@ export const InvoiceFooter = ({
             <button
               onClick={onSave}
               disabled={isSaving}
-              className="flex items-center gap-1 bg-green-600 text-white px-2.5 py-1.5 rounded font-medium hover:bg-green-700 transition-all text-xs disabled:opacity-50"
+              className={`flex items-center gap-1 ${isEditing ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'} text-white px-2.5 py-1.5 rounded font-medium transition-all text-xs disabled:opacity-50`}
             >
-              <Save size={12} />
-              {isSaving ? "..." : "حفظ"}
+              {isEditing ? <Edit size={12} /> : <Save size={12} />}
+              {isSaving ? "..." : isEditing ? "تحديث" : "حفظ"}
             </button>
           )}
 

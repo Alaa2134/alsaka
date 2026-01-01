@@ -136,6 +136,61 @@ export const useCreateInvoice = () => {
   });
 };
 
+export const useUpdateInvoice = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      invoiceId,
+      invoice, 
+      items 
+    }: { 
+      invoiceId: string;
+      invoice: Partial<Omit<Invoice, "id" | "created_at" | "updated_at">>; 
+      items: Omit<InvoiceItem, "id" | "invoice_id" | "created_at">[] 
+    }) => {
+      // Update invoice
+      const { data: invoiceData, error: invoiceError } = await supabase
+        .from("invoices")
+        .update(invoice)
+        .eq("id", invoiceId)
+        .select()
+        .single();
+      
+      if (invoiceError) throw invoiceError;
+      
+      // Delete existing items
+      const { error: deleteError } = await supabase
+        .from("invoice_items")
+        .delete()
+        .eq("invoice_id", invoiceId);
+      
+      if (deleteError) throw deleteError;
+      
+      // Create new invoice items
+      const itemsWithInvoiceId = items.map(item => ({
+        ...item,
+        invoice_id: invoiceId,
+      }));
+      
+      const { error: itemsError } = await supabase
+        .from("invoice_items")
+        .insert(itemsWithInvoiceId);
+      
+      if (itemsError) throw itemsError;
+      
+      return invoiceData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("تم تحديث الفاتورة بنجاح");
+    },
+    onError: (error: Error) => {
+      toast.error(`خطأ في تحديث الفاتورة: ${error.message}`);
+    },
+  });
+};
+
 export const useSalesReport = (startDate: string, endDate: string) => {
   return useQuery({
     queryKey: ["salesReport", startDate, endDate],
