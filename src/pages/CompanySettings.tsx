@@ -18,6 +18,8 @@ import {
   Banknote, 
   Phone as PhoneIcon, 
   Truck,
+  ExternalLink,
+  Eye,
   Save,
   Building2,
   Globe,
@@ -316,9 +318,36 @@ const CompanySettings = () => {
                     <p className="text-sm text-destructive">{slugError}</p>
                   )}
                   {tenantData?.slug && !slugError && (
-                    <p className="text-sm text-muted-foreground">
-                      رابط المتجر: {window.location.origin}/store/{tenantData.slug}
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm text-muted-foreground">
+                        رابط المتجر: {window.location.origin}/store/{tenantData.slug}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`/store/${tenantData.slug}`, '_blank')}
+                          className="gap-1"
+                        >
+                          <Eye className="h-3 w-3" />
+                          معاينة
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/store/${tenantData.slug}`);
+                            toast.success("تم نسخ الرابط");
+                          }}
+                          className="gap-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          نسخ
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
 
