@@ -144,10 +144,15 @@ export const InvoiceHeader = ({
                   key={client.id}
                   type="button"
                   onClick={() => handleClientSelect(client)}
-                  className="w-full px-3 py-2 text-right hover:bg-primary/10 transition-colors flex justify-between items-center text-sm border-b border-border/50 last:border-0"
+                  className="w-full px-3 py-2 text-right hover:bg-primary/10 transition-colors text-sm border-b border-border/50 last:border-0"
                 >
-                  <span className="font-medium text-foreground truncate">{client.name}</span>
-                  <span className="text-xs text-muted-foreground">{client.client_number}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-foreground truncate">{client.name}</span>
+                    <span className="text-xs text-muted-foreground">{client.client_number}</span>
+                  </div>
+                  {client.phone && (
+                    <div className="text-xs text-muted-foreground mt-0.5" dir="ltr">{client.phone}</div>
+                  )}
                 </button>
               ))}
             </div>
@@ -182,10 +187,15 @@ export const InvoiceHeader = ({
                   key={client.id}
                   type="button"
                   onClick={() => handleClientSelect(client)}
-                  className="w-full px-3 py-2 text-right hover:bg-primary/10 transition-colors flex justify-between items-center text-sm border-b border-border/50 last:border-0"
+                  className="w-full px-3 py-2 text-right hover:bg-primary/10 transition-colors text-sm border-b border-border/50 last:border-0"
                 >
-                  <span className="font-medium text-foreground truncate">{client.name}</span>
-                  <span className="text-xs text-muted-foreground">{client.client_number}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-foreground truncate">{client.name}</span>
+                    <span className="text-xs text-muted-foreground">{client.client_number}</span>
+                  </div>
+                  {client.phone && (
+                    <div className="text-xs text-muted-foreground mt-0.5" dir="ltr">{client.phone}</div>
+                  )}
                 </button>
               ))}
             </div>
