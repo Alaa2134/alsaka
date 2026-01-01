@@ -61,6 +61,27 @@ const generateRandomBarcode = (type: "EAN13" | "CODE128" | "UPC" = "EAN13"): str
 // Default barcode settings saved in localStorage
 const BARCODE_SETTINGS_KEY = "barcode_default_settings";
 
+// Label size presets
+interface LabelSize {
+  id: string;
+  name: string;
+  width: string;
+  height: string;
+  fontSize: number;
+  barcodeScale: number;
+}
+
+const LABEL_SIZES: LabelSize[] = [
+  { id: "small", name: "صغير (25×15 مم)", width: "25mm", height: "15mm", fontSize: 6, barcodeScale: 0.4 },
+  { id: "medium", name: "متوسط (40×25 مم)", width: "40mm", height: "25mm", fontSize: 8, barcodeScale: 0.6 },
+  { id: "large", name: "كبير (58×40 مم)", width: "58mm", height: "40mm", fontSize: 10, barcodeScale: 0.8 },
+  { id: "xlarge", name: "كبير جداً (70×50 مم)", width: "70mm", height: "50mm", fontSize: 12, barcodeScale: 1 },
+  { id: "thermal-small", name: "حراري صغير (30×20 مم)", width: "30mm", height: "20mm", fontSize: 7, barcodeScale: 0.5 },
+  { id: "thermal-large", name: "حراري كبير (50×30 مم)", width: "50mm", height: "30mm", fontSize: 9, barcodeScale: 0.7 },
+  { id: "a4-grid", name: "ورقة A4 (65 ملصق)", width: "38.1mm", height: "21.2mm", fontSize: 8, barcodeScale: 0.5 },
+  { id: "custom", name: "مخصص", width: "50mm", height: "30mm", fontSize: 10, barcodeScale: 0.7 },
+];
+
 interface BarcodeStyleSettings {
   barcodeWidth: number;
   barcodeHeight: number;
@@ -69,6 +90,11 @@ interface BarcodeStyleSettings {
   showValue: boolean;
   barcodeBackground: string;
   barcodeLineColor: string;
+  labelSizeId: string;
+  customLabelWidth: string;
+  customLabelHeight: string;
+  showProductName: boolean;
+  showPrice: boolean;
 }
 
 const defaultBarcodeStyle: BarcodeStyleSettings = {
@@ -79,6 +105,11 @@ const defaultBarcodeStyle: BarcodeStyleSettings = {
   showValue: true,
   barcodeBackground: "#ffffff",
   barcodeLineColor: "#000000",
+  labelSizeId: "medium",
+  customLabelWidth: "50mm",
+  customLabelHeight: "30mm",
+  showProductName: true,
+  showPrice: false,
 };
 
 const loadSavedSettings = (): BarcodeStyleSettings => {
@@ -120,6 +151,15 @@ export const BarcodeGenerator = ({
   const [showValue, setShowValue] = useState(savedSettings.showValue);
   const [barcodeBackground, setBarcodeBackground] = useState(savedSettings.barcodeBackground);
   const [barcodeLineColor, setBarcodeLineColor] = useState(savedSettings.barcodeLineColor);
+  
+  // Label settings
+  const [labelSizeId, setLabelSizeId] = useState(savedSettings.labelSizeId);
+  const [customLabelWidth, setCustomLabelWidth] = useState(savedSettings.customLabelWidth);
+  const [customLabelHeight, setCustomLabelHeight] = useState(savedSettings.customLabelHeight);
+  const [showProductName, setShowProductName] = useState(savedSettings.showProductName);
+  const [showPrice, setShowPrice] = useState(savedSettings.showPrice);
+
+  const currentLabelSize = LABEL_SIZES.find(l => l.id === labelSizeId) || LABEL_SIZES[1];
 
   // Save current settings as default
   const saveAsDefault = () => {
@@ -131,6 +171,11 @@ export const BarcodeGenerator = ({
       showValue,
       barcodeBackground,
       barcodeLineColor,
+      labelSizeId,
+      customLabelWidth,
+      customLabelHeight,
+      showProductName,
+      showPrice,
     };
     localStorage.setItem(BARCODE_SETTINGS_KEY, JSON.stringify(settings));
     toast.success("تم حفظ الإعدادات كقالب افتراضي");
@@ -145,6 +190,11 @@ export const BarcodeGenerator = ({
     setShowValue(defaultBarcodeStyle.showValue);
     setBarcodeBackground(defaultBarcodeStyle.barcodeBackground);
     setBarcodeLineColor(defaultBarcodeStyle.barcodeLineColor);
+    setLabelSizeId(defaultBarcodeStyle.labelSizeId);
+    setCustomLabelWidth(defaultBarcodeStyle.customLabelWidth);
+    setCustomLabelHeight(defaultBarcodeStyle.customLabelHeight);
+    setShowProductName(defaultBarcodeStyle.showProductName);
+    setShowPrice(defaultBarcodeStyle.showPrice);
     toast.success("تم إعادة الإعدادات للقيم الافتراضية");
   };
 
@@ -174,11 +224,18 @@ export const BarcodeGenerator = ({
     // Sanitize barcode HTML and product name
     const barcodeHtml = sanitizeForPrint(barcodeRef.current.innerHTML);
     const productName = sanitizeForPrint(product?.name || "");
+    const productPrice = product?.price ? `${product.price.toLocaleString()} ج.م` : "";
+
+    const labelWidth = labelSizeId === "custom" ? customLabelWidth : currentLabelSize.width;
+    const labelHeight = labelSizeId === "custom" ? customLabelHeight : currentLabelSize.height;
+    const labelFontSize = currentLabelSize.fontSize;
+    const scale = currentLabelSize.barcodeScale;
 
     const barcodeItemHtml = `
       <div class="barcode-item">
-        <div class="product-name">${productName}</div>
+        ${showProductName ? `<div class="product-name">${productName}</div>` : ""}
         <div class="barcode-container">${barcodeHtml}</div>
+        ${showPrice && productPrice ? `<div class="product-price">${productPrice}</div>` : ""}
       </div>
     `;
 
@@ -189,31 +246,52 @@ export const BarcodeGenerator = ({
         <title>طباعة الباركود - ${productName}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          @page { margin: 5mm; }
+          @page { 
+            margin: 2mm;
+            size: auto;
+          }
           body { 
             font-family: Arial, sans-serif;
             display: flex;
             flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            padding: 10px;
+            justify-content: flex-start;
+            gap: 2mm;
+            padding: 2mm;
           }
           .barcode-item {
+            width: ${labelWidth};
+            height: ${labelHeight};
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
-            border: 1px dashed #ccc;
+            justify-content: center;
+            padding: 1mm;
+            border: 0.5px dashed #ccc;
             page-break-inside: avoid;
+            overflow: hidden;
           }
           .product-name {
-            font-size: 12px;
+            font-size: ${labelFontSize}px;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 1mm;
             text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .product-price {
+            font-size: ${labelFontSize - 1}px;
+            font-weight: bold;
+            margin-top: 1mm;
+            color: #333;
+          }
+          .barcode-container {
+            transform: scale(${scale});
+            transform-origin: center;
           }
           .barcode-container svg {
-            max-width: 150px;
+            max-width: 100%;
             height: auto;
           }
           @media print {
@@ -233,7 +311,7 @@ export const BarcodeGenerator = ({
       </html>
     `);
     printWindow.document.close();
-  }, [barcode, product, printQuantity]);
+  }, [barcode, product, printQuantity, labelSizeId, customLabelWidth, customLabelHeight, currentLabelSize, showProductName, showPrice]);
 
   const handleSave = () => {
     if (barcode && onBarcodeGenerated) {
@@ -385,8 +463,12 @@ export const BarcodeGenerator = ({
         </DialogHeader>
 
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="basic">الأساسي</TabsTrigger>
+            <TabsTrigger value="label" className="flex items-center gap-1">
+              <Printer size={14} />
+              الملصق
+            </TabsTrigger>
             <TabsTrigger value="style" className="flex items-center gap-1">
               <Settings2 size={14} />
               التصميم
@@ -434,10 +516,116 @@ export const BarcodeGenerator = ({
               <Input
                 type="number"
                 min={1}
-                max={100}
+                max={500}
                 value={printQuantity}
                 onChange={(e) => setPrintQuantity(parseInt(e.target.value) || 1)}
               />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="label" className="space-y-4 mt-4">
+            {/* Label Size */}
+            <div>
+              <Label>حجم الملصق</Label>
+              <Select value={labelSizeId} onValueChange={setLabelSizeId}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LABEL_SIZES.map((size) => (
+                    <SelectItem key={size.id} value={size.id}>
+                      {size.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Custom Size */}
+            {labelSizeId === "custom" && (
+              <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
+                <div>
+                  <Label>العرض (مم)</Label>
+                  <Input
+                    value={customLabelWidth}
+                    onChange={(e) => setCustomLabelWidth(e.target.value)}
+                    placeholder="50mm"
+                  />
+                </div>
+                <div>
+                  <Label>الارتفاع (مم)</Label>
+                  <Input
+                    value={customLabelHeight}
+                    onChange={(e) => setCustomLabelHeight(e.target.value)}
+                    placeholder="30mm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Label Content Options */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+                <Label className="cursor-pointer">إظهار اسم المنتج</Label>
+                <Switch
+                  checked={showProductName}
+                  onCheckedChange={setShowProductName}
+                />
+              </div>
+              <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+                <Label className="cursor-pointer">إظهار السعر</Label>
+                <Switch
+                  checked={showPrice}
+                  onCheckedChange={setShowPrice}
+                />
+              </div>
+            </div>
+
+            {/* Label Preview */}
+            <div className="p-4 border rounded-lg bg-white">
+              <Label className="text-xs text-muted-foreground mb-2 block">معاينة الملصق</Label>
+              <div 
+                className="mx-auto border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center p-2 overflow-hidden"
+                style={{ 
+                  width: labelSizeId === "custom" ? customLabelWidth : currentLabelSize.width,
+                  height: labelSizeId === "custom" ? customLabelHeight : currentLabelSize.height,
+                  maxWidth: "100%",
+                  transform: "scale(0.9)",
+                  transformOrigin: "center",
+                }}
+              >
+                {showProductName && product?.name && (
+                  <div 
+                    className="font-bold text-center truncate w-full"
+                    style={{ fontSize: `${currentLabelSize.fontSize}px` }}
+                  >
+                    {product.name}
+                  </div>
+                )}
+                {barcode && (
+                  <div style={{ transform: `scale(${currentLabelSize.barcodeScale * 0.6})` }}>
+                    <Barcode
+                      value={barcode}
+                      format={barcodeType}
+                      width={barcodeWidth}
+                      height={barcodeHeight * 0.5}
+                      fontSize={barcodeFontSize * 0.7}
+                      margin={2}
+                      displayValue={showValue}
+                      background="transparent"
+                      lineColor={barcodeLineColor}
+                    />
+                  </div>
+                )}
+                {showPrice && product?.price && (
+                  <div 
+                    className="font-bold"
+                    style={{ fontSize: `${currentLabelSize.fontSize - 1}px` }}
+                  >
+                    {product.price.toLocaleString()} ج.م
+                  </div>
+                )}
+              </div>
             </div>
           </TabsContent>
 
