@@ -61,7 +61,7 @@ interface AuthContextType {
   companySettings: CompanySettings | null;
   isLoading: boolean;
   isSystemManager: boolean;
-  login: (code: string) => Promise<{ success: boolean; error?: string }>;
+  login: (code: string, twoFactorCode?: string) => Promise<{ success: boolean; error?: string; requires2FA?: boolean; userId?: string }>;
   logout: () => Promise<void>;
   hasPermission: (requiredRoles: AppRole[]) => boolean;
   updateTenantTheme: (colors: { primary_color?: string; secondary_color?: string }) => Promise<void>;
@@ -243,7 +243,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const login = async (code: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (code: string, twoFactorCode?: string): Promise<{ success: boolean; error?: string; requires2FA?: boolean; userId?: string }> => {
     try {
       const currentDeviceId = generateDeviceId();
       
@@ -262,6 +262,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (!appUser) {
         return { success: false, error: "كود الدخول غير صحيح" };
+      }
+
+      // Check if 2FA is enabled and not yet verified (unless bypassing after verification)
+      if (appUser.two_factor_enabled && !twoFactorCode) {
+        return { 
+          success: false, 
+          requires2FA: true, 
+          userId: appUser.id,
+          error: "يرجى إدخال كود المصادقة الثنائية" 
+        };
+      }
+
+      // Verify 2FA code if required (skip if "bypass" is passed - user already verified in modal)
+      if (appUser.two_factor_enabled && twoFactorCode && twoFactorCode !== "bypass") {
+        const backupCodes = appUser.backup_codes as string[] || [];
+        if (!backupCodes.includes(twoFactorCode)) {
+          return { success: false, error: "كود المصادقة الثنائية غير صحيح" };
+        }
       }
 
       // Check device lock (except for system managers)
