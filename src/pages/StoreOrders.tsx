@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -82,6 +83,7 @@ const orderStatusLabels: Record<string, { label: string; color: string }> = {
 };
 
 const StoreOrders = () => {
+  const navigate = useNavigate();
   const { tenant, user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<StoreOrder | null>(null);
@@ -327,7 +329,8 @@ const StoreOrders = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setSelectedOrder(order)}
+                              onClick={() => navigate(`/order/${order.id}`)}
+                              title="تفاصيل الطلب"
                             >
                               <Eye size={14} />
                             </Button>
