@@ -63,8 +63,8 @@ const SuggestionDropdown = ({
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-64 overflow-hidden"
-      style={{ backgroundColor: 'hsl(var(--card))' }}
+      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-2xl max-h-64 overflow-hidden"
+      style={{ backgroundColor: 'hsl(var(--card))', zIndex: 9999, position: 'absolute' }}
     >
       {/* Category Filter */}
       {categories.length > 0 && (
@@ -273,7 +273,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl shadow-soft border border-border animate-slide-in mt-6">
+    <div className="overflow-x-auto rounded-xl shadow-soft border border-border animate-slide-in mt-6" style={{ overflow: 'visible' }}>
       <table className="w-full border-collapse">
         <thead>
           <tr className="bg-foreground text-background">
@@ -299,7 +299,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
               <td className="px-4 py-3 border-b border-border/50 text-center font-bold text-muted-foreground">
                 {index + 1}
               </td>
-              <td className="px-4 py-3 border-b border-border/50 relative">
+              <td className="px-4 py-3 border-b border-border/50 relative" style={{ overflow: 'visible' }}>
                 <input
                   ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
                   type="text"
@@ -329,7 +329,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem }: InvoiceTable
                   />
                 )}
               </td>
-              <td className="px-4 py-3 border-b border-border/50 relative">
+              <td className="px-4 py-3 border-b border-border/50 relative" style={{ overflow: 'visible' }}>
                 <input
                   ref={(el) => setInputRef(`${item.id}-itemName`, el)}
                   type="text"
