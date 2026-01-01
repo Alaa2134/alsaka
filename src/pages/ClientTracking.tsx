@@ -104,9 +104,9 @@ export default function ClientTracking() {
 
       // Calculate totals
       const invoicesTotal = (invoicesData || [])
-        .filter(inv => inv.payment_method === "آجل")
+        .filter((inv) => inv.payment_method === "آجل")
         .reduce((sum, inv) => sum + Number(inv.total_amount), 0);
-      
+
       const paymentsTotal = (paymentsData || []).reduce((sum, p) => sum + Number(p.amount), 0);
 
       setTotalInvoices(invoicesTotal);
@@ -135,8 +135,8 @@ export default function ClientTracking() {
 
   const handlePrint = () => {
     if (!printRef.current) return;
-    
-    const printWindow = window.open('', '_blank');
+
+    const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("فشل فتح نافذة الطباعة");
       return;
@@ -161,7 +161,7 @@ export default function ClientTracking() {
           .summary-item { padding: 15px 20px; border-radius: 8px; }
           .summary-item.total { background: #e3f2fd; }
           .summary-item.paid { background: #e8f5e9; }
-          .summary-item.balance { background: ${balance > 0 ? '#ffebee' : '#e8f5e9'}; }
+          .summary-item.balance { background: ${balance > 0 ? "#ffebee" : "#e8f5e9"}; }
           .summary-item h3 { font-size: 14px; color: #666; margin-bottom: 5px; }
           .summary-item p { font-size: 20px; font-weight: bold; }
           table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -212,15 +212,19 @@ export default function ClientTracking() {
             </tr>
           </thead>
           <tbody>
-            ${invoices.map(inv => `
+            ${invoices
+              .map(
+                (inv) => `
               <tr>
                 <td>${inv.invoice_number}</td>
                 <td>${new Date(inv.invoice_date).toLocaleDateString("ar-EG")}</td>
                 <td>${inv.payment_method}</td>
                 <td>${Number(inv.total_amount).toFixed(2)} ج.م</td>
-                <td>${inv.status === 'completed' ? 'مكتملة' : 'معلقة'}</td>
+                <td>${inv.status === "completed" ? "مكتملة" : "معلقة"}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
 
@@ -234,13 +238,17 @@ export default function ClientTracking() {
             </tr>
           </thead>
           <tbody>
-            ${payments.map(p => `
+            ${payments
+              .map(
+                (p) => `
               <tr>
                 <td>${new Date(p.payment_date).toLocaleDateString("ar-EG")}</td>
                 <td>${p.payment_method}</td>
                 <td>${Number(p.amount).toFixed(2)} ج.م</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
 
@@ -270,9 +278,9 @@ export default function ClientTracking() {
         <div className="container max-w-2xl mx-auto py-8 px-4">
           {/* Header */}
           <div className="text-center mb-8">
-            <Link to="/login" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
+            <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4">
               <ArrowLeft size={16} />
-              العودة لتسجيل الدخول
+              العودة للصفحه السابقه
             </Link>
             <div className="flex items-center justify-center gap-3 mb-2">
               <Phone className="w-10 h-10 text-primary" />
@@ -356,10 +364,12 @@ export default function ClientTracking() {
                     <p className="text-xl font-bold text-green-600">{totalPaid.toFixed(2)}</p>
                   </CardContent>
                 </Card>
-                <Card className={`${balance > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-green-500/10 border-green-500/20'}`}>
+                <Card
+                  className={`${balance > 0 ? "bg-red-500/10 border-red-500/20" : "bg-green-500/10 border-green-500/20"}`}
+                >
                   <CardContent className="pt-4 text-center">
                     <p className="text-sm text-muted-foreground">المتبقي</p>
-                    <p className={`text-xl font-bold ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <p className={`text-xl font-bold ${balance > 0 ? "text-red-600" : "text-green-600"}`}>
                       {balance.toFixed(2)}
                     </p>
                   </CardContent>
@@ -380,10 +390,7 @@ export default function ClientTracking() {
                   ) : (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {invoices.map((inv) => (
-                        <div
-                          key={inv.id}
-                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                        >
+                        <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                           <div>
                             <p className="font-semibold">فاتورة #{inv.invoice_number}</p>
                             <p className="text-sm text-muted-foreground">
@@ -392,10 +399,14 @@ export default function ClientTracking() {
                           </div>
                           <div className="text-left">
                             <p className="font-bold text-lg">{Number(inv.total_amount).toFixed(2)}</p>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              inv.status === 'completed' ? 'bg-green-500/20 text-green-600' : 'bg-amber-500/20 text-amber-600'
-                            }`}>
-                              {inv.status === 'completed' ? 'مكتملة' : 'معلقة'}
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full ${
+                                inv.status === "completed"
+                                  ? "bg-green-500/20 text-green-600"
+                                  : "bg-amber-500/20 text-amber-600"
+                              }`}
+                            >
+                              {inv.status === "completed" ? "مكتملة" : "معلقة"}
                             </span>
                           </div>
                         </div>
