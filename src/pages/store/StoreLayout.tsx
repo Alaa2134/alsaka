@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { CartProvider, useCart } from "@/contexts/CartContext";
+import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { NotificationsContainer } from "@/components/store/3d/Notification3D";
 import { Helmet } from "react-helmet-async";
 import { Loader2 } from "lucide-react";
@@ -237,9 +238,13 @@ const StoreLayoutInner = () => {
 };
 
 export const StoreLayout = () => {
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  
   return (
     <CartProvider>
-      <StoreLayoutInner />
+      <CustomerAuthProvider tenantId={tenantSlug}>
+        <StoreLayoutInner />
+      </CustomerAuthProvider>
     </CartProvider>
   );
 };

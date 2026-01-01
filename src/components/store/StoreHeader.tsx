@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ShoppingCart, Menu, X, Sparkles } from "lucide-react";
+import { Search, ShoppingCart, Menu, User, LogIn, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
+import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Cart3DDrawer } from "./3d/Cart3DDrawer";
 
@@ -21,6 +22,7 @@ export const StoreHeader = ({ storeName, logoUrl, primaryColor, tenantSlug }: St
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const { totalItems } = useCart();
+  const { customer } = useCustomerAuth();
   const navigate = useNavigate();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -101,6 +103,22 @@ export const StoreHeader = ({ storeName, logoUrl, primaryColor, tenantSlug }: St
 
             {/* Actions */}
             <div className="flex items-center gap-2">
+              {/* Customer Account Button */}
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => navigate(`/store/${tenantSlug}/account`)}
+                  title={customer ? customer.name : "تسجيل الدخول"}
+                >
+                  {customer ? (
+                    <User className="h-5 w-5 text-primary" />
+                  ) : (
+                    <LogIn className="h-5 w-5" />
+                  )}
+                </Button>
+              </motion.div>
+
               {/* Cart Button */}
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button 
@@ -165,6 +183,25 @@ export const StoreHeader = ({ storeName, logoUrl, primaryColor, tenantSlug }: St
                           {link.label}
                         </Link>
                       ))}
+                      
+                      {/* Mobile Account Link */}
+                      <Link
+                        to={`/store/${tenantSlug}/account`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="text-lg font-medium hover:text-primary transition-colors flex items-center gap-2"
+                      >
+                        {customer ? (
+                          <>
+                            <User className="h-4 w-4" style={{ color: primaryColor }} />
+                            حسابي ({customer.name})
+                          </>
+                        ) : (
+                          <>
+                            <LogIn className="h-4 w-4" style={{ color: primaryColor }} />
+                            تسجيل الدخول
+                          </>
+                        )}
+                      </Link>
                     </nav>
                   </div>
                 </SheetContent>
