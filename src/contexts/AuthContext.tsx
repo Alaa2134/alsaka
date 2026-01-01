@@ -245,13 +245,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (code: string, twoFactorCode?: string): Promise<{ success: boolean; error?: string; requires2FA?: boolean; userId?: string }> => {
     try {
+      const trimmedCode = code.trim().toUpperCase();
       const currentDeviceId = generateDeviceId();
       
       // First check if user exists and validate device lock
       const { data: appUser, error: findError } = await supabase
         .from("app_users")
         .select("*")
-        .eq("access_code", code)
+        .eq("access_code", trimmedCode)
         .eq("is_active", true)
         .maybeSingle();
 
@@ -295,7 +296,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Create auth user if doesn't exist
       if (!appUser.auth_id) {
         const response = await supabase.functions.invoke('create-auth-user', {
-          body: { accessCode: code }
+          body: { accessCode: trimmedCode }
         });
 
         if (response.error) {
@@ -305,10 +306,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Login with Supabase Auth
-      const email = `${code}@app.internal`;
+      const email = `${trimmedCode}@app.internal`;
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: code
+        password: trimmedCode
       });
 
       if (signInError) {
