@@ -116,6 +116,16 @@ const App = () => (
                     <TenantsAdmin />
                   </ProtectedRoute>
                 } />
+                
+                {/* Public Store Routes */}
+                <Route path="/store/:tenantSlug" element={<StoreLayout />}>
+                  <Route index element={<StoreHome />} />
+                  <Route path="products" element={<StoreProducts />} />
+                  <Route path="product/:productId" element={<StoreProductDetail />} />
+                  <Route path="cart" element={<StoreCart />} />
+                  <Route path="checkout" element={<StoreCheckout />} />
+                </Route>
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <AIAssistant />
