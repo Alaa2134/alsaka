@@ -282,7 +282,71 @@ export const SalesInvoice = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [items, invoiceNumber, clientId, clientName, date, paymentMethod, notes, editingInvoiceId]);
 
-  const handleNewInvoice = useCallback(() => {
+  const handleNewInvoice = useCallback(async () => {
+    // Check if there are valid items to save
+    const validItems = items.filter(i => i.itemNumber && i.itemName);
+    if (validItems.length > 0) {
+      // Save current invoice first
+      let finalClientId = clientId;
+
+      // Auto-create client if name provided but no existing client
+      if (clientName && !clientId) {
+        try {
+          const newClient = await createClient.mutateAsync({
+            client_number: nextClientNum || String(Date.now()).slice(-6),
+            name: clientName,
+            phone: clientPhone || null,
+            address: null,
+            email: null,
+            notes: "تم إنشاؤه تلقائياً من الفاتورة",
+          });
+          finalClientId = newClient.id;
+        } catch (e) {
+          console.error("Failed to auto-create client:", e);
+        }
+      }
+
+      const invoiceData = {
+        invoice_number: invoiceNumber,
+        client_id: finalClientId,
+        invoice_date: date,
+        payment_method: paymentMethod,
+        total_amount: calculateTotal(validItems),
+        notes: notes || null,
+        status: "completed",
+      };
+
+      const itemsData = validItems.map(item => ({
+        item_number: item.itemNumber,
+        item_name: item.itemName,
+        quantity: item.quantity,
+        price: item.price,
+        min_price: item.minPrice,
+        total: item.total,
+        product_id: products?.find(p => p.item_number === item.itemNumber)?.id || null,
+        warehouse_id: warehouses?.find(w => w.name === item.warehouse)?.id || null,
+      }));
+
+      try {
+        if (editingInvoiceId) {
+          await updateInvoice.mutateAsync({
+            invoiceId: editingInvoiceId,
+            invoice: invoiceData,
+            items: itemsData,
+          });
+        } else {
+          await createInvoice.mutateAsync({
+            invoice: invoiceData,
+            items: itemsData,
+          });
+        }
+        toast.success("تم حفظ الفاتورة الحالية");
+      } catch (e) {
+        console.error("Failed to save invoice:", e);
+      }
+    }
+
+    // Now create new invoice
     if (nextNumber) {
       setInvoiceNumber(nextNumber);
     } else {
@@ -291,6 +355,7 @@ export const SalesInvoice = () => {
     setClientNumber("");
     setClientName("");
     setClientId(null);
+    setClientPhone("");
     setDate(new Date().toISOString().split("T")[0]);
     setPaymentMethod("نقدي");
     setItems([createEmptyItem()]);
@@ -299,7 +364,7 @@ export const SalesInvoice = () => {
     setCurrentInvoiceIndex(-1);
     clearAutosave();
     toast.success("تم إنشاء فاتورة جديدة");
-  }, [clearAutosave, nextNumber]);
+  }, [clearAutosave, nextNumber, items, clientId, clientName, clientPhone, nextClientNum, invoiceNumber, date, paymentMethod, notes, editingInvoiceId, calculateTotal, products, warehouses, createClient, createInvoice, updateInvoice]);
 
   const handleSaveInvoice = async () => {
     const validItems = items.filter(i => i.itemNumber && i.itemName);
