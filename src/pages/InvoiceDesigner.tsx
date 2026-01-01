@@ -402,41 +402,47 @@ const InvoiceDesigner = () => {
                     </div>
 
                     {/* Actions */}
-                    {selectedTemplate && (
-                      <div className="flex gap-2 pt-3 border-t">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleSetDefault}
-                          disabled={selectedTemplate.is_default}
-                        >
-                          <Star size={14} className="ml-1" />
-                          افتراضي
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              <Trash2 size={14} className="ml-1" />
-                              حذف
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>حذف القالب</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                هل أنت متأكد من حذف قالب "{selectedTemplate.name}"؟ لا يمكن التراجع عن هذا الإجراء.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(selectedTemplate.id)}>
+                    <div className="flex gap-2 pt-3 border-t flex-wrap">
+                      {selectedTemplate ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSetDefault}
+                            disabled={selectedTemplate.is_default}
+                          >
+                            <Star size={14} className="ml-1" />
+                            {selectedTemplate.is_default ? "الافتراضي" : "تعيين كافتراضي"}
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 size={14} className="ml-1" />
                                 حذف
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>حذف القالب</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  هل أنت متأكد من حذف قالب "{selectedTemplate.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(selectedTemplate.id)}>
+                                  حذف
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          أنشئ قالب جديد أو اختر قالب من القائمة للتعديل
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
