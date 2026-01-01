@@ -22,72 +22,72 @@ export const InvoiceFooter = ({
   onNotesChange,
 }: InvoiceFooterProps) => {
   return (
-    <div className="mt-6 space-y-4 animate-fade-in">
-      {/* Total and Add Button Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="mt-4 space-y-3">
+      {/* Total and Add Button Row - Compact */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         {/* Total Amount */}
-        <div className="flex items-center gap-3">
-          <span className="font-bold text-foreground">الإجمالي:</span>
-          <div className="bg-primary/10 border-2 border-primary rounded-lg px-6 py-2 min-w-[140px] text-center">
-            <span className="text-2xl font-bold text-primary">{totalAmount.toFixed(2)}</span>
-            <span className="text-sm text-muted-foreground mr-1">ج.م</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-foreground text-sm">الإجمالي:</span>
+          <div className="bg-primary/10 border border-primary rounded px-3 py-1 min-w-[100px] text-center">
+            <span className="text-lg font-bold text-primary">{totalAmount.toFixed(2)}</span>
+            <span className="text-xs text-muted-foreground mr-1">ج.م</span>
           </div>
         </div>
 
         {/* Add Item Button */}
         <button
           onClick={onAddItem}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all text-sm"
+          className="flex items-center gap-1 bg-primary text-primary-foreground px-3 py-1.5 rounded font-medium hover:bg-primary/90 transition-all text-xs"
         >
-          <Plus size={18} />
-          إضافة صنف
+          <Plus size={14} />
+          صنف
         </button>
       </div>
 
       {/* Notes Section - Compact */}
-      <div className="bg-muted/30 rounded-lg p-3">
-        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
-          <MessageSquare size={12} />
+      <div className="bg-muted/30 rounded px-2 py-2">
+        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
+          <MessageSquare size={10} />
           ملاحظات
         </label>
         <textarea
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           placeholder="ملاحظات..."
-          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-sm min-h-[60px] resize-none focus:border-primary focus:outline-none transition-all"
+          className="w-full bg-card border border-border rounded px-2 py-1.5 text-foreground text-xs min-h-[40px] resize-none focus:border-primary focus:outline-none transition-all"
         />
       </div>
 
-      {/* Action Buttons - Simplified */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
+      {/* Action Buttons - Very Compact */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
         {/* Primary Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {onSave && (
             <button
               onClick={onSave}
               disabled={isSaving}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-all text-sm disabled:opacity-50"
+              className="flex items-center gap-1 bg-green-600 text-white px-2.5 py-1.5 rounded font-medium hover:bg-green-700 transition-all text-xs disabled:opacity-50"
             >
-              <Save size={16} />
-              {isSaving ? "جاري الحفظ..." : "حفظ"}
+              <Save size={12} />
+              {isSaving ? "..." : "حفظ"}
             </button>
           )}
 
           <button
             onClick={onNewInvoice}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all text-sm"
+            className="flex items-center gap-1 bg-primary text-primary-foreground px-2.5 py-1.5 rounded font-medium hover:bg-primary/90 transition-all text-xs"
           >
-            <FileText size={16} />
-            فاتورة جديدة
+            <FileText size={12} />
+            جديدة
           </button>
         </div>
 
         {/* Print Button */}
         <button
           onClick={onPrint}
-          className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-medium hover:bg-secondary/80 transition-all text-sm"
+          className="flex items-center gap-1 bg-secondary text-secondary-foreground px-2.5 py-1.5 rounded font-medium hover:bg-secondary/80 transition-all text-xs"
         >
-          <Printer size={16} />
+          <Printer size={12} />
           طباعة
         </button>
       </div>
