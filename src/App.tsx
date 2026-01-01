@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { InactivityLock } from "@/components/auth/InactivityLock";
 import { AIAssistant } from "@/components/shared/AIAssistant";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -51,7 +52,8 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <InactivityLock timeoutMinutes={15}>
+              <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/tracking" element={<ClientTracking />} />
@@ -169,6 +171,7 @@ const App = () => (
               </Routes>
               <AIAssistant />
             </BrowserRouter>
+            </InactivityLock>
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
