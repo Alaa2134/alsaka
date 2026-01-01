@@ -385,10 +385,12 @@ export const SalesInvoice = () => {
             invoiceNumber={invoiceNumber}
             clientNumber={clientNumber}
             clientName={clientName}
+            clientPhone={clientPhone}
             date={date}
             paymentMethod={paymentMethod}
             onClientNumberChange={handleClientNumberChange}
             onClientNameChange={setClientName}
+            onClientPhoneChange={setClientPhone}
             onDateChange={setDate}
             onPaymentMethodChange={setPaymentMethod}
           />

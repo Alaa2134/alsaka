@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
-import { Calendar, User, Hash, CreditCard, Clock, Search } from "lucide-react";
+import { Calendar, User, Hash, CreditCard, Phone, Search } from "lucide-react";
 import { useClients } from "@/hooks/useClients";
 
 interface InvoiceHeaderProps {
   invoiceNumber: string;
   clientNumber: string;
   clientName: string;
+  clientPhone: string;
   date: string;
   paymentMethod: string;
   onClientNumberChange: (value: string) => void;
   onClientNameChange: (value: string) => void;
+  onClientPhoneChange: (value: string) => void;
   onDateChange: (value: string) => void;
   onPaymentMethodChange: (value: string) => void;
   onClientSelect?: (clientId: string | null) => void;
@@ -19,34 +21,19 @@ export const InvoiceHeader = ({
   invoiceNumber,
   clientNumber,
   clientName,
+  clientPhone,
   date,
   paymentMethod,
   onClientNumberChange,
   onClientNameChange,
+  onClientPhoneChange,
   onDateChange,
   onPaymentMethodChange,
   onClientSelect,
 }: InvoiceHeaderProps) => {
   const { data: clients } = useClients();
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [showClientSuggestions, setShowClientSuggestions] = useState(false);
   const [activeField, setActiveField] = useState<"number" | "name" | null>(null);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("ar-EG", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: true,
-    });
-  };
 
   // Filter clients based on input
   const filteredClients = useMemo(() => {
@@ -56,13 +43,15 @@ export const InvoiceHeader = ({
     
     return clients.filter(c => 
       c.client_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 8);
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.phone?.includes(searchTerm)
+    ).slice(0, 6);
   }, [clients, clientNumber, clientName, activeField]);
 
-  const handleClientSelect = (client: { id: string; client_number: string; name: string }) => {
+  const handleClientSelect = (client: { id: string; client_number: string; name: string; phone?: string | null }) => {
     onClientNumberChange(client.client_number);
     onClientNameChange(client.name);
+    onClientPhoneChange(client.phone || "");
     onClientSelect?.(client.id);
     setShowClientSuggestions(false);
     setActiveField(null);
@@ -77,6 +66,7 @@ export const InvoiceHeader = ({
     const exactMatch = clients?.find(c => c.client_number === value);
     if (exactMatch) {
       onClientNameChange(exactMatch.name);
+      onClientPhoneChange(exactMatch.phone || "");
       onClientSelect?.(exactMatch.id);
     } else {
       onClientSelect?.(null);
@@ -91,39 +81,45 @@ export const InvoiceHeader = ({
 
   return (
     <div className="animate-fade-in">
-      {/* Title Banner */}
-      <div className="gradient-primary text-primary-foreground py-5 px-6 text-center mb-6 rounded-xl shadow-glow">
-        <h1 className="text-3xl font-bold tracking-wide">فاتـــورة البيع</h1>
+      {/* Compact Title */}
+      <div className="bg-primary text-primary-foreground py-3 px-6 text-center mb-5 rounded-lg">
+        <h1 className="text-xl font-bold">فاتورة بيع</h1>
       </div>
 
-      {/* Time Display */}
-      <div className="flex justify-end mb-6">
-        <div className="flex items-center gap-2 bg-accent text-accent-foreground px-5 py-3 rounded-xl font-bold text-lg shadow-md">
-          <Clock size={20} />
-          {formatTime(currentTime)}
-        </div>
-      </div>
-
-      {/* Header Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      {/* Header Fields - Compact Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
         {/* Invoice Number */}
-        <div className="bg-muted/50 rounded-xl p-4 space-y-2">
-          <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
-            <Hash size={16} />
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <Hash size={12} />
             رقم الفاتورة
           </label>
           <input
             type="text"
             value={invoiceNumber}
             readOnly
-            className="w-full bg-card border-2 border-primary/30 rounded-lg px-4 py-3 text-foreground font-bold text-center text-lg"
+            className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-foreground font-bold text-center text-sm"
+          />
+        </div>
+
+        {/* Date */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <Calendar size={12} />
+            التاريخ
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => onDateChange(e.target.value)}
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-center text-sm focus:border-primary focus:outline-none transition-all"
           />
         </div>
 
         {/* Client Number with Auto-suggest */}
-        <div className="bg-muted/50 rounded-xl p-4 space-y-2 relative">
-          <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
-            <Hash size={16} />
+        <div className="space-y-1 relative">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <Hash size={12} />
             رقم العميل
           </label>
           <input
@@ -135,50 +131,33 @@ export const InvoiceHeader = ({
               setShowClientSuggestions(true);
             }}
             onBlur={() => setTimeout(() => setShowClientSuggestions(false), 200)}
-            className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground text-center focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-center text-sm focus:border-primary focus:outline-none transition-all"
             autoComplete="off"
+            placeholder="رقم العميل"
           />
           
           {/* Client Suggestions Dropdown */}
           {showClientSuggestions && activeField === "number" && filteredClients.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto animate-scale-in">
-              <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground">
-                <Search size={14} />
-                <span className="text-xs">اختر عميل</span>
-              </div>
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-primary/30 rounded-lg shadow-xl max-h-48 overflow-y-auto" style={{ zIndex: 9999 }}>
               {filteredClients.map((client) => (
                 <button
                   key={client.id}
                   type="button"
                   onClick={() => handleClientSelect(client)}
-                  className="w-full px-4 py-3 text-right hover:bg-primary/10 transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0"
+                  className="w-full px-3 py-2 text-right hover:bg-primary/10 transition-colors flex justify-between items-center text-sm border-b border-border/50 last:border-0"
                 >
-                  <span className="font-semibold text-foreground truncate">{client.name}</span>
-                  <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">{client.client_number}</span>
+                  <span className="font-medium text-foreground truncate">{client.name}</span>
+                  <span className="text-xs text-muted-foreground">{client.client_number}</span>
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        {/* Date */}
-        <div className="bg-muted/50 rounded-xl p-4 space-y-2">
-          <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
-            <Calendar size={16} />
-            التاريخ
-          </label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground text-center focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
-          />
-        </div>
-
         {/* Client Name with Auto-suggest */}
-        <div className="bg-muted/50 rounded-xl p-4 space-y-2 relative">
-          <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2">
-            <User size={16} />
+        <div className="space-y-1 relative">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <User size={12} />
             اسم العميل
           </label>
           <input
@@ -190,50 +169,62 @@ export const InvoiceHeader = ({
               setShowClientSuggestions(true);
             }}
             onBlur={() => setTimeout(() => setShowClientSuggestions(false), 200)}
-            className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:outline-none transition-all"
             autoComplete="off"
+            placeholder="اسم العميل"
           />
           
           {/* Client Suggestions Dropdown */}
           {showClientSuggestions && activeField === "name" && filteredClients.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto animate-scale-in">
-              <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground">
-                <Search size={14} />
-                <span className="text-xs">اختر عميل</span>
-              </div>
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-primary/30 rounded-lg shadow-xl max-h-48 overflow-y-auto" style={{ zIndex: 9999 }}>
               {filteredClients.map((client) => (
                 <button
                   key={client.id}
                   type="button"
                   onClick={() => handleClientSelect(client)}
-                  className="w-full px-4 py-3 text-right hover:bg-primary/10 transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0"
+                  className="w-full px-3 py-2 text-right hover:bg-primary/10 transition-colors flex justify-between items-center text-sm border-b border-border/50 last:border-0"
                 >
-                  <span className="font-semibold text-foreground truncate">{client.name}</span>
-                  <span className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground whitespace-nowrap">{client.client_number}</span>
+                  <span className="font-medium text-foreground truncate">{client.name}</span>
+                  <span className="text-xs text-muted-foreground">{client.client_number}</span>
                 </button>
               ))}
             </div>
           )}
         </div>
-      </div>
 
-      {/* Payment Method */}
-      <div className="bg-muted/50 rounded-xl p-4 max-w-sm">
-        <label className="font-semibold text-muted-foreground text-sm flex items-center gap-2 mb-2">
-          <CreditCard size={16} />
-          طريقة الدفع
-        </label>
-        <select
-          value={paymentMethod}
-          onChange={(e) => onPaymentMethodChange(e.target.value)}
-          className="w-full bg-card border-2 border-border rounded-lg px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer appearance-none"
-          style={{ WebkitAppearance: 'menulist', MozAppearance: 'menulist' }}
-        >
-          <option value="نقدي" className="bg-card text-foreground py-2">نقدي</option>
-          <option value="آجل" className="bg-card text-foreground py-2">آجل</option>
-          <option value="شيك" className="bg-card text-foreground py-2">شيك</option>
-          <option value="تحويل بنكي" className="bg-card text-foreground py-2">تحويل بنكي</option>
-        </select>
+        {/* Client Phone */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <Phone size={12} />
+            هاتف العميل
+          </label>
+          <input
+            type="tel"
+            value={clientPhone}
+            onChange={(e) => onClientPhoneChange(e.target.value)}
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:outline-none transition-all"
+            placeholder="رقم الهاتف"
+            dir="ltr"
+          />
+        </div>
+
+        {/* Payment Method */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <CreditCard size={12} />
+            طريقة الدفع
+          </label>
+          <select
+            value={paymentMethod}
+            onChange={(e) => onPaymentMethodChange(e.target.value)}
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:outline-none transition-all cursor-pointer"
+          >
+            <option value="نقدي">نقدي</option>
+            <option value="آجل">آجل</option>
+            <option value="شيك">شيك</option>
+            <option value="تحويل بنكي">تحويل بنكي</option>
+          </select>
+        </div>
       </div>
     </div>
   );
