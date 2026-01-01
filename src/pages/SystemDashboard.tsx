@@ -14,21 +14,52 @@ import {
   Link2,
   Crown,
   Database,
-  Shield
+  Shield,
+  KeyRound,
+  Receipt,
+  RotateCcw,
+  Warehouse,
+  Calculator,
+  BarChart3,
+  Palette,
+  Settings,
+  CreditCard
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet-async";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { SystemLinkSettings } from "@/components/links/SystemLinkSettings";
 import { SubscriptionManager } from "@/components/system/SubscriptionManager";
 import { DatabaseManager } from "@/components/system/DatabaseManager";
 import { TenantManager } from "@/components/system/TenantManager";
 import { UserManager } from "@/components/system/UserManager";
 import { SecurityManager } from "@/components/system/SecurityManager";
+import { RolePermissionsManager } from "@/components/system/RolePermissionsManager";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+
+// Quick access cards for all system sections
+const quickAccessCards = [
+  { id: 'invoice', title: 'فاتورة البيع', icon: Receipt, path: '/invoice', color: 'from-blue-500 to-blue-600' },
+  { id: 'invoices', title: 'إدارة الفواتير', icon: FileText, path: '/invoices', color: 'from-indigo-500 to-indigo-600' },
+  { id: 'returns', title: 'المرتجعات', icon: RotateCcw, path: '/returns', color: 'from-amber-500 to-amber-600' },
+  { id: 'products', title: 'المنتجات', icon: Package, path: '/products', color: 'from-green-500 to-green-600' },
+  { id: 'clients', title: 'العملاء', icon: Users, path: '/clients', color: 'from-cyan-500 to-cyan-600' },
+  { id: 'tracking', title: 'متابعة العملاء', icon: CreditCard, path: '/tracking', color: 'from-teal-500 to-teal-600' },
+  { id: 'warehouses', title: 'المخازن', icon: Warehouse, path: '/warehouses', color: 'from-orange-500 to-orange-600' },
+  { id: 'store-orders', title: 'طلبات المتجر', icon: ShoppingCart, path: '/store-orders', color: 'from-pink-500 to-pink-600' },
+  { id: 'links', title: 'الروابط', icon: Link2, path: '/links', color: 'from-purple-500 to-purple-600' },
+  { id: 'accounting', title: 'المحاسبة', icon: Calculator, path: '/accounting', color: 'from-red-500 to-red-600' },
+  { id: 'reports', title: 'التقارير', icon: BarChart3, path: '/reports', color: 'from-slate-500 to-slate-600' },
+  { id: 'invoice-designer', title: 'تصميم الفاتورة', icon: Palette, path: '/invoice-designer', color: 'from-fuchsia-500 to-fuchsia-600' },
+  { id: 'company-settings', title: 'إعدادات الشركة', icon: Settings, path: '/company-settings', color: 'from-gray-500 to-gray-600' },
+  { id: 'store-management', title: 'إدارة المتجر', icon: Globe, path: '/store-management', color: 'from-emerald-500 to-emerald-600' },
+];
 
 const SystemDashboard = () => {
   const { user, isSystemManager } = useAuth();
+  const navigate = useNavigate();
 
   if (!isSystemManager) {
     return <Navigate to="/" replace />;
@@ -99,7 +130,7 @@ const SystemDashboard = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold">لوحة تحكم النظام</h1>
-              <p className="text-muted-foreground">إدارة جميع الشركات والمستخدمين</p>
+              <p className="text-muted-foreground">إدارة جميع الشركات والمستخدمين والصلاحيات</p>
             </div>
           </div>
 
@@ -124,10 +155,18 @@ const SystemDashboard = () => {
 
           {/* Tabs for different sections */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="flex-wrap">
+            <TabsList className="flex flex-wrap h-auto gap-1 p-1">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 نظرة عامة
+              </TabsTrigger>
+              <TabsTrigger value="quick-access" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                الوصول السريع
+              </TabsTrigger>
+              <TabsTrigger value="permissions" className="flex items-center gap-2">
+                <KeyRound className="h-4 w-4" />
+                الصلاحيات
               </TabsTrigger>
               <TabsTrigger value="tenants" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
@@ -221,6 +260,46 @@ const SystemDashboard = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* Quick Access Tab */}
+            <TabsContent value="quick-access">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe size={20} />
+                    الوصول السريع لجميع الأقسام
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3">
+                    {quickAccessCards.map((card, index) => (
+                      <motion.div
+                        key={card.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                      >
+                        <Button
+                          variant="outline"
+                          className={`w-full h-auto flex-col gap-2 p-4 hover:scale-105 transition-all group`}
+                          onClick={() => navigate(card.path)}
+                        >
+                          <div className={`p-2 rounded-lg bg-gradient-to-br ${card.color} text-white group-hover:scale-110 transition-transform`}>
+                            <card.icon size={20} />
+                          </div>
+                          <span className="text-xs font-medium text-center">{card.title}</span>
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Permissions Tab */}
+            <TabsContent value="permissions">
+              <RolePermissionsManager />
             </TabsContent>
 
             <TabsContent value="tenants">
