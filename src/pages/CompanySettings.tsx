@@ -66,7 +66,8 @@ interface CompanySettingsData {
 const CompanySettings = () => {
   const { user, tenant, refreshCompanySettings, hasPermission } = useAuth();
   const [settings, setSettings] = useState<CompanySettingsData | null>(null);
-  const [tenantData, setTenantData] = useState<{ name: string; logo_url: string | null } | null>(null);
+  const [tenantData, setTenantData] = useState<{ name: string; logo_url: string | null; slug: string } | null>(null);
+  const [slugError, setSlugError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -99,7 +100,7 @@ const CompanySettings = () => {
     try {
       const { data, error } = await supabase
         .from("tenants")
-        .select("name, logo_url")
+        .select("name, logo_url, slug")
         .eq("id", tenant!.id)
         .single();
 
@@ -110,11 +111,70 @@ const CompanySettings = () => {
     }
   };
 
+  const validateSlug = (slug: string): boolean => {
+    // Only allow lowercase letters, numbers, and hyphens
+    const slugRegex = /^[a-z0-9-]+$/;
+    if (!slug || slug.length < 3) {
+      setSlugError("الـ slug يجب أن يكون 3 أحرف على الأقل");
+      return false;
+    }
+    if (slug.length > 50) {
+      setSlugError("الـ slug يجب أن يكون أقل من 50 حرف");
+      return false;
+    }
+    if (!slugRegex.test(slug)) {
+      setSlugError("الـ slug يجب أن يحتوي فقط على حروف إنجليزية صغيرة وأرقام وشرطات");
+      return false;
+    }
+    if (slug.startsWith('-') || slug.endsWith('-')) {
+      setSlugError("الـ slug لا يمكن أن يبدأ أو ينتهي بشرطة");
+      return false;
+    }
+    setSlugError(null);
+    return true;
+  };
+
+  const checkSlugAvailability = async (slug: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("slug", slug)
+      .neq("id", tenant!.id)
+      .maybeSingle();
+    
+    if (error) {
+      console.error("Error checking slug:", error);
+      return false;
+    }
+    
+    if (data) {
+      setSlugError("هذا الـ slug مستخدم بالفعل");
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSave = async () => {
-    if (!settings) return;
+    if (!settings || !tenantData) return;
+    
+    // Validate slug before saving
+    if (!validateSlug(tenantData.slug)) {
+      toast.error(slugError || "الـ slug غير صالح");
+      return;
+    }
+    
     setIsSaving(true);
 
     try {
+      // Check slug availability
+      const isSlugAvailable = await checkSlugAvailability(tenantData.slug);
+      if (!isSlugAvailable) {
+        toast.error(slugError || "الـ slug مستخدم بالفعل");
+        setIsSaving(false);
+        return;
+      }
+
       // Update company settings
       const { error: settingsError } = await supabase
         .from("company_settings")
@@ -147,15 +207,17 @@ const CompanySettings = () => {
 
       if (settingsError) throw settingsError;
 
-      // Update tenant name if changed
-      if (tenantData) {
-        const { error: tenantError } = await supabase
-          .from("tenants")
-          .update({ name: tenantData.name, logo_url: tenantData.logo_url })
-          .eq("id", tenant!.id);
+      // Update tenant data including slug
+      const { error: tenantError } = await supabase
+        .from("tenants")
+        .update({ 
+          name: tenantData.name, 
+          logo_url: tenantData.logo_url,
+          slug: tenantData.slug 
+        })
+        .eq("id", tenant!.id);
 
-        if (tenantError) throw tenantError;
-      }
+      if (tenantError) throw tenantError;
 
       await refreshCompanySettings();
       toast.success("تم حفظ الإعدادات بنجاح");
@@ -229,6 +291,35 @@ const CompanySettings = () => {
                     onChange={(e) => setTenantData(prev => prev ? { ...prev, name: e.target.value } : null)}
                     placeholder="اسم الشركة"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Store className="h-4 w-4" />
+                    رابط المتجر (Slug)
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground whitespace-nowrap text-sm">/store/</span>
+                    <Input
+                      value={tenantData?.slug || ""}
+                      onChange={(e) => {
+                        const newSlug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                        setTenantData(prev => prev ? { ...prev, slug: newSlug } : null);
+                        validateSlug(newSlug);
+                      }}
+                      placeholder="my-store"
+                      dir="ltr"
+                      className={slugError ? "border-destructive" : ""}
+                    />
+                  </div>
+                  {slugError && (
+                    <p className="text-sm text-destructive">{slugError}</p>
+                  )}
+                  {tenantData?.slug && !slugError && (
+                    <p className="text-sm text-muted-foreground">
+                      رابط المتجر: {window.location.origin}/store/{tenantData.slug}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
