@@ -17,15 +17,18 @@ import {
   Moon,
   Sun,
   Phone,
-  Link2
+  Link2,
+  LayoutDashboard,
+  Receipt
 } from "lucide-react";
 import { useAuth, roleLabels, AppRole } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const navItems: { path: string; label: string; icon: typeof FileText; roles: AppRole[] }[] = [
+  { path: "/", label: "لوحة التحكم", icon: LayoutDashboard, roles: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/system", label: "لوحة تحكم النظام", icon: Shield, roles: ["system_manager"] },
-  { path: "/", label: "فاتورة البيع", icon: FileText, roles: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
+  { path: "/invoice", label: "فاتورة البيع", icon: Receipt, roles: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/invoices", label: "إدارة الفواتير", icon: ClipboardList, roles: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/returns", label: "المرتجعات", icon: RotateCcw, roles: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/products", label: "إدارة المنتجات", icon: Package, roles: ["system_manager", "company_admin", "admin", "manager"] },

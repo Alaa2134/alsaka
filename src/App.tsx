@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AIAssistant } from "@/components/shared/AIAssistant";
 import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Products from "./pages/Products";
 import Clients from "./pages/Clients";
@@ -54,6 +55,11 @@ const App = () => (
                   </ProtectedRoute>
                 } />
                 <Route path="/" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/invoice" element={
                   <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
                     <Index />
                   </ProtectedRoute>
