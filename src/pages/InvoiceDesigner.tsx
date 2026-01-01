@@ -49,6 +49,17 @@ import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 import { DraggableInvoiceCanvas } from "@/components/invoice/DraggableInvoiceCanvas";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const elementLabels: Record<string, string> = {
   header: "ترويسة الشركة",
@@ -107,10 +118,9 @@ const InvoiceDesigner = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedTemplate) return;
-    if (confirm("هل أنت متأكد من حذف هذا القالب؟")) {
-      await deleteTemplate.mutateAsync(selectedTemplate.id);
+  const handleDelete = async (templateId: string) => {
+    await deleteTemplate.mutateAsync(templateId);
+    if (selectedTemplate?.id === templateId) {
       setSelectedTemplate(null);
     }
   };
@@ -181,47 +191,7 @@ const InvoiceDesigner = () => {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-6">
-            {/* Templates List - Left Column */}
-            <div className="xl:col-span-2 bg-card rounded-lg p-3 lg:p-4 shadow-lg border border-border h-fit">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-sm lg:text-base">القوالب</h2>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSelectedTemplate(null)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Plus size={14} />
-                </Button>
-              </div>
-
-              <div className="space-y-2 max-h-[200px] xl:max-h-[400px] overflow-y-auto">
-                {isLoading ? (
-                  <p className="text-muted-foreground text-sm">جاري التحميل...</p>
-                ) : templates?.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">لا توجد قوالب</p>
-                ) : (
-                  templates?.map((template) => (
-                    <div
-                      key={template.id}
-                      onClick={() => setSelectedTemplate(template)}
-                      className={`p-2 lg:p-3 rounded-lg cursor-pointer transition-all text-sm ${
-                        selectedTemplate?.id === template.id
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted hover:bg-muted/80"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium truncate">{template.name}</span>
-                        {template.is_default && <Star size={12} className="fill-current shrink-0" />}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Settings Panel - Middle Column */}
+            {/* Settings Panel - First (Top on mobile, Left on desktop) */}
             <div className="xl:col-span-5 bg-card rounded-lg p-3 lg:p-4 shadow-lg border border-border overflow-y-auto max-h-[calc(100vh-180px)]">
               <Tabs value={designMode} onValueChange={(v) => setDesignMode(v as "settings" | "canvas")}>
                 <TabsList className="grid w-full grid-cols-2 mb-3">
@@ -255,206 +225,298 @@ const InvoiceDesigner = () => {
                 </TabsContent>
 
                 <TabsContent value="settings" className="mt-0">
-              <div className="space-y-3">
-                {/* Template Name */}
-                <div>
-                  <Label className="text-sm">اسم القالب</Label>
-                  <Input
-                    value={templateName}
-                    onChange={(e) => setTemplateName(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
+                  <div className="space-y-3">
+                    {/* Template Name */}
+                    <div>
+                      <Label className="text-sm">اسم القالب</Label>
+                      <Input
+                        value={templateName}
+                        onChange={(e) => setTemplateName(e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
 
-                {/* Company Info */}
-                <div className="p-3 bg-muted/30 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-sm">معلومات الشركة</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <div>
-                      <Label className="text-xs">اسم الشركة</Label>
-                      <Input
-                        value={settings.companyName}
-                        onChange={(e) => updateSetting("companyName", e.target.value)}
-                        className="h-8 text-sm"
-                      />
+                    {/* Company Info */}
+                    <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                      <h3 className="font-semibold text-sm">معلومات الشركة</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-xs">اسم الشركة</Label>
+                          <Input
+                            value={settings.companyName}
+                            onChange={(e) => updateSetting("companyName", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">العنوان</Label>
+                          <Input
+                            value={settings.companyAddress}
+                            onChange={(e) => updateSetting("companyAddress", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">الهاتف</Label>
+                          <Input
+                            value={settings.companyPhone}
+                            onChange={(e) => updateSetting("companyPhone", e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-xs">العنوان</Label>
-                      <Input
-                        value={settings.companyAddress}
-                        onChange={(e) => updateSetting("companyAddress", e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">الهاتف</Label>
-                      <Input
-                        value={settings.companyPhone}
-                        onChange={(e) => updateSetting("companyPhone", e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Display Options */}
-                <div className="p-3 bg-muted/30 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-sm">خيارات العرض</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {[
-                      { key: "showLogo", label: "الشعار" },
-                      { key: "showTime", label: "الوقت" },
-                      { key: "showClientName", label: "العميل" },
-                      { key: "showPaymentMethod", label: "الدفع" },
-                      { key: "showItemNumber", label: "رقم الصنف" },
-                      { key: "showNotes", label: "الملاحظات" },
-                      { key: "showSignatures", label: "التوقيعات" },
-                      { key: "showFooter", label: "التذييل" },
-                    ].map((option) => (
-                      <div key={option.key} className="flex items-center justify-between bg-background rounded p-2">
-                        <Label className="text-xs">{option.label}</Label>
-                        <Switch
-                          checked={settings[option.key as keyof TemplateSettings] as boolean}
-                          onCheckedChange={(checked) =>
-                            updateSetting(option.key as keyof TemplateSettings, checked)
+                    {/* Display Options */}
+                    <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                      <h3 className="font-semibold text-sm">خيارات العرض</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {[
+                          { key: "showLogo", label: "الشعار" },
+                          { key: "showTime", label: "الوقت" },
+                          { key: "showClientName", label: "العميل" },
+                          { key: "showPaymentMethod", label: "الدفع" },
+                          { key: "showItemNumber", label: "رقم الصنف" },
+                          { key: "showNotes", label: "الملاحظات" },
+                          { key: "showSignatures", label: "التوقيعات" },
+                          { key: "showFooter", label: "التذييل" },
+                        ].map((option) => (
+                          <div key={option.key} className="flex items-center justify-between bg-background rounded p-2">
+                            <Label className="text-xs">{option.label}</Label>
+                            <Switch
+                              checked={settings[option.key as keyof TemplateSettings] as boolean}
+                              onCheckedChange={(checked) =>
+                                updateSetting(option.key as keyof TemplateSettings, checked)
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Colors, Size & Paper */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <div>
+                        <Label className="text-xs">اللون الرئيسي</Label>
+                        <div className="flex gap-1">
+                          <Input
+                            type="color"
+                            value={settings.headerColor}
+                            onChange={(e) => updateSetting("headerColor", e.target.value)}
+                            className="w-10 h-8 p-0.5"
+                          />
+                          <Input
+                            value={settings.headerColor}
+                            onChange={(e) => updateSetting("headerColor", e.target.value)}
+                            className="flex-1 h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">اللون الثانوي</Label>
+                        <div className="flex gap-1">
+                          <Input
+                            type="color"
+                            value={settings.accentColor}
+                            onChange={(e) => updateSetting("accentColor", e.target.value)}
+                            className="w-10 h-8 p-0.5"
+                          />
+                          <Input
+                            value={settings.accentColor}
+                            onChange={(e) => updateSetting("accentColor", e.target.value)}
+                            className="flex-1 h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">حجم الخط</Label>
+                        <Select
+                          value={settings.fontSize}
+                          onValueChange={(value: "small" | "medium" | "large") =>
+                            updateSetting("fontSize", value)
                           }
-                        />
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="small">صغير</SelectItem>
+                            <SelectItem value="medium">متوسط</SelectItem>
+                            <SelectItem value="large">كبير</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div>
+                        <Label className="text-xs">حجم الورق</Label>
+                        <Select
+                          value={settings.paperSize}
+                          onValueChange={(value: "a4" | "a5" | "thermal") =>
+                            updateSetting("paperSize", value)
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="a4">A4</SelectItem>
+                            <SelectItem value="a5">A5</SelectItem>
+                            <SelectItem value="thermal">حراري</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-                {/* Colors, Size & Paper */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <div>
-                    <Label className="text-xs">اللون الرئيسي</Label>
-                    <div className="flex gap-1">
-                      <Input
-                        type="color"
-                        value={settings.headerColor}
-                        onChange={(e) => updateSetting("headerColor", e.target.value)}
-                        className="w-10 h-8 p-0.5"
-                      />
-                      <Input
-                        value={settings.headerColor}
-                        onChange={(e) => updateSetting("headerColor", e.target.value)}
-                        className="flex-1 h-8 text-xs"
+                    {/* Footer Text */}
+                    <div>
+                      <Label className="text-xs">نص التذييل</Label>
+                      <Textarea
+                        value={settings.footerText}
+                        onChange={(e) => updateSetting("footerText", e.target.value)}
+                        rows={2}
+                        className="text-sm"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs">اللون الثانوي</Label>
-                    <div className="flex gap-1">
-                      <Input
-                        type="color"
-                        value={settings.accentColor}
-                        onChange={(e) => updateSetting("accentColor", e.target.value)}
-                        className="w-10 h-8 p-0.5"
-                      />
-                      <Input
-                        value={settings.accentColor}
-                        onChange={(e) => updateSetting("accentColor", e.target.value)}
-                        className="flex-1 h-8 text-xs"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs">حجم الخط</Label>
-                    <Select
-                      value={settings.fontSize}
-                      onValueChange={(value: "small" | "medium" | "large") =>
-                        updateSetting("fontSize", value)
-                      }
-                    >
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="small">صغير</SelectItem>
-                        <SelectItem value="medium">متوسط</SelectItem>
-                        <SelectItem value="large">كبير</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs">حجم الورق</Label>
-                    <Select
-                      value={settings.paperSize}
-                      onValueChange={(value: "a4" | "a5" | "thermal") =>
-                        updateSetting("paperSize", value)
-                      }
-                    >
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="a4">A4</SelectItem>
-                        <SelectItem value="a5">A5</SelectItem>
-                        <SelectItem value="thermal">حراري</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
-                {/* Footer Text */}
-                <div>
-                  <Label className="text-xs">نص التذييل</Label>
-                  <Textarea
-                    value={settings.footerText}
-                    onChange={(e) => updateSetting("footerText", e.target.value)}
-                    rows={2}
-                    className="text-sm"
-                  />
-                </div>
-
-                {/* Elements Order */}
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <h3 className="font-semibold text-sm mb-2">ترتيب العناصر (اسحب للترتيب)</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
-                    {settings.elementsOrder.map((element) => (
-                      <div
-                        key={element}
-                        draggable
-                        onDragStart={() => handleDragStart(element)}
-                        onDragOver={(e) => handleDragOver(e, element)}
-                        onDragEnd={handleDragEnd}
-                        className={`flex items-center gap-1 p-2 rounded cursor-move transition-all text-xs ${
-                          draggedElement === element
-                            ? "bg-primary/20 border border-primary"
-                            : "bg-background hover:bg-muted"
-                        }`}
-                      >
-                        <GripVertical size={12} className="text-muted-foreground shrink-0" />
-                        <span className="truncate">{elementLabels[element]}</span>
+                    {/* Elements Order */}
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <h3 className="font-semibold text-sm mb-2">ترتيب العناصر (اسحب للترتيب)</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+                        {settings.elementsOrder.map((element) => (
+                          <div
+                            key={element}
+                            draggable
+                            onDragStart={() => handleDragStart(element)}
+                            onDragOver={(e) => handleDragOver(e, element)}
+                            onDragEnd={handleDragEnd}
+                            className={`flex items-center gap-1 p-2 rounded cursor-move transition-all text-xs ${
+                              draggedElement === element
+                                ? "bg-primary/20 border border-primary"
+                                : "bg-background hover:bg-muted"
+                            }`}
+                          >
+                            <GripVertical size={12} className="text-muted-foreground shrink-0" />
+                            <span className="truncate">{elementLabels[element]}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
 
-                {/* Actions */}
-                {selectedTemplate && (
-                  <div className="flex gap-2 pt-3 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSetDefault}
-                      disabled={selectedTemplate.is_default}
-                    >
-                      <Star size={14} className="ml-1" />
-                      افتراضي
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={handleDelete}>
-                      <Trash2 size={14} className="ml-1" />
-                      حذف
-                    </Button>
+                    {/* Actions */}
+                    {selectedTemplate && (
+                      <div className="flex gap-2 pt-3 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSetDefault}
+                          disabled={selectedTemplate.is_default}
+                        >
+                          <Star size={14} className="ml-1" />
+                          افتراضي
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                              <Trash2 size={14} className="ml-1" />
+                              حذف
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>حذف القالب</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                هل أنت متأكد من حذف قالب "{selectedTemplate.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(selectedTemplate.id)}>
+                                حذف
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
                 </TabsContent>
               </Tabs>
             </div>
 
-            {/* Live Preview - Right Column */}
+            {/* Templates List - Second column */}
+            <div className="xl:col-span-2 bg-card rounded-lg p-3 lg:p-4 shadow-lg border border-border h-fit">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold text-sm lg:text-base">القوالب</h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelectedTemplate(null)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Plus size={14} />
+                </Button>
+              </div>
+
+              <div className="space-y-2 max-h-[200px] xl:max-h-[400px] overflow-y-auto">
+                {isLoading ? (
+                  <p className="text-muted-foreground text-sm">جاري التحميل...</p>
+                ) : templates?.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">لا توجد قوالب</p>
+                ) : (
+                  templates?.map((template) => (
+                    <div
+                      key={template.id}
+                      className={`p-2 lg:p-3 rounded-lg transition-all text-sm ${
+                        selectedTemplate?.id === template.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <div 
+                          className="flex items-center gap-1 flex-1 cursor-pointer"
+                          onClick={() => setSelectedTemplate(template)}
+                        >
+                          <span className="font-medium truncate">{template.name}</span>
+                          {template.is_default && <Star size={12} className="fill-current shrink-0" />}
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`h-6 w-6 p-0 ${
+                                selectedTemplate?.id === template.id 
+                                  ? "hover:bg-primary-foreground/20 text-primary-foreground" 
+                                  : "hover:bg-destructive/20 text-destructive"
+                              }`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 size={12} />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>حذف القالب</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                هل أنت متأكد من حذف قالب "{template.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(template.id)}>
+                                حذف
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Live Preview - Third column */}
             <div className="xl:col-span-5 bg-card rounded-lg p-3 lg:p-4 shadow-lg border border-border">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-bold text-sm lg:text-base flex items-center gap-2">

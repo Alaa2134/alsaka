@@ -263,6 +263,25 @@ export const SalesInvoice = () => {
     });
   }, [warehouses]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+S to save
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        handleSaveInvoice();
+      }
+      // Ctrl+N for new invoice
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        handleNewInvoice();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [items, invoiceNumber, clientId, clientName, date, paymentMethod, notes, editingInvoiceId]);
+
   const handleNewInvoice = useCallback(() => {
     if (nextNumber) {
       setInvoiceNumber(nextNumber);
