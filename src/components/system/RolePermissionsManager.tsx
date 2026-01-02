@@ -429,13 +429,14 @@ export const RolePermissionsManager = () => {
   // Initialize default permissions for system roles
   const initializePermissionsMutation = useMutation({
     mutationFn: async () => {
-      // Check if permissions already exist
-      const { count } = await supabase
-        .from('role_permissions')
-        .select('*', { count: 'exact', head: true });
+      // Delete existing permissions for system roles first
+      const systemRoles = ['system_manager', 'company_admin', 'admin', 'manager', 'cashier'];
       
-      if (count && count > 0) {
-        return; // Already initialized
+      for (const roleName of systemRoles) {
+        await supabase
+          .from('role_permissions')
+          .delete()
+          .eq('role_name', roleName);
       }
 
       // Insert default permissions
@@ -457,15 +458,22 @@ export const RolePermissionsManager = () => {
       queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
       toast.success('تم تهيئة الصلاحيات الافتراضية');
     },
+    onError: () => {
+      toast.error('فشل تهيئة الصلاحيات');
+    },
   });
+
+  // Track if permissions have been initialized in DB
+  const permissionsInitialized = savedPermissions && Object.keys(savedPermissions).length > 0;
 
   // Get permissions for a role
   const getRolePermissions = (roleName: string): string[] => {
-    // If no saved permissions, use defaults
-    if (!savedPermissions || Object.keys(savedPermissions).length === 0) {
-      return defaultPermissions[roleName] || [];
+    // If permissions have been initialized in DB, use saved permissions only
+    if (permissionsInitialized) {
+      return savedPermissions[roleName] || [];
     }
-    return savedPermissions[roleName] || [];
+    // Otherwise use defaults
+    return defaultPermissions[roleName] || [];
   };
 
   const hasPermission = (roleName: string, permissionId: string) => {
