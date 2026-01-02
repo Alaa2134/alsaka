@@ -266,6 +266,8 @@ interface CustomRole {
 export const RolePermissionsManager = () => {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
   const [newRole, setNewRole] = useState({ name: '', description: '', color: '#3b82f6', icon: 'users' });
   const queryClient = useQueryClient();
 
@@ -356,6 +358,40 @@ export const RolePermissionsManager = () => {
       toast.error('فشل حذف الدور');
     },
   });
+
+  // Update role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: async (role: CustomRole) => {
+      const { data, error } = await supabase
+        .from('custom_roles')
+        .update({
+          name: role.name,
+          description: role.description,
+          color: role.color,
+          icon: role.icon,
+        })
+        .eq('id', role.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('تم تحديث الدور بنجاح');
+      setShowEditDialog(false);
+      setEditingRole(null);
+      queryClient.invalidateQueries({ queryKey: ['custom-roles'] });
+    },
+    onError: () => {
+      toast.error('فشل تحديث الدور');
+    },
+  });
+
+  const openEditDialog = (role: CustomRole) => {
+    setEditingRole({ ...role });
+    setShowEditDialog(true);
+  };
 
   // Toggle permission mutation
   const togglePermissionMutation = useMutation({
@@ -567,15 +603,25 @@ export const RolePermissionsManager = () => {
                             <Badge variant="secondary">دور أساسي</Badge>
                           )}
                           {!role.is_system_role && (
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => deleteRoleMutation.mutate(role.id)}
-                              disabled={deleteRoleMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4 ml-1" />
-                              حذف
-                            </Button>
+                            <>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => openEditDialog(role)}
+                              >
+                                <Edit className="h-4 w-4 ml-1" />
+                                تعديل
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                onClick={() => deleteRoleMutation.mutate(role.id)}
+                                disabled={deleteRoleMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 ml-1" />
+                                حذف
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -804,9 +850,118 @@ export const RolePermissionsManager = () => {
               {createRoleMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin ml-2" />
               ) : (
+              <Save className="h-4 w-4 ml-2" />
+            )}
+            حفظ
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تعديل الدور</DialogTitle>
+          </DialogHeader>
+          {editingRole && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>اسم الدور</Label>
+                <Input
+                  value={editingRole.name}
+                  onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
+                  placeholder="مثال: محاسب"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>الوصف</Label>
+                <Textarea
+                  value={editingRole.description || ''}
+                  onChange={(e) => setEditingRole({ ...editingRole, description: e.target.value })}
+                  placeholder="وصف مختصر للدور"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>اللون</Label>
+                  <Select 
+                    value={editingRole.color} 
+                    onValueChange={(value) => setEditingRole({ ...editingRole, color: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colorOptions.map((color) => (
+                        <SelectItem key={color.value} value={color.value}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded-full" 
+                              style={{ backgroundColor: color.value }}
+                            />
+                            {color.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>الأيقونة</Label>
+                  <Select 
+                    value={editingRole.icon} 
+                    onValueChange={(value) => setEditingRole({ ...editingRole, icon: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(availableIcons).map(([key, Icon]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4" />
+                            {key}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {/* Preview */}
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <Label className="text-xs text-muted-foreground mb-2 block">معاينة</Label>
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="p-2 rounded-lg text-white"
+                    style={{ backgroundColor: editingRole.color }}
+                  >
+                    {(() => {
+                      const PreviewIcon = availableIcons[editingRole.icon] || Users;
+                      return <PreviewIcon className="h-5 w-5" />;
+                    })()}
+                  </div>
+                  <div>
+                    <p className="font-medium">{editingRole.name || 'اسم الدور'}</p>
+                    <p className="text-xs text-muted-foreground">{editingRole.description || 'وصف الدور'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>إلغاء</Button>
+            <Button 
+              onClick={() => editingRole && updateRoleMutation.mutate(editingRole)}
+              disabled={!editingRole?.name || updateRoleMutation.isPending}
+            >
+              {updateRoleMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : (
                 <Save className="h-4 w-4 ml-2" />
               )}
-              حفظ
+              حفظ التعديلات
             </Button>
           </DialogFooter>
         </DialogContent>
