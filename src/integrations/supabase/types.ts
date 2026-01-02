@@ -1775,6 +1775,17 @@ export type Database = {
         Args: { hashed_code: string; plain_code: string }
         Returns: boolean
       }
+      verify_user_login: {
+        Args: { p_access_code: string }
+        Returns: {
+          is_active: boolean
+          two_factor_enabled: boolean
+          user_id: string
+          user_name: string
+          user_role: Database["public"]["Enums"]["app_role"]
+          user_tenant_id: string
+        }[]
+      }
     }
     Enums: {
       app_role:
