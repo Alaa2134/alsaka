@@ -31,6 +31,7 @@ import LinksAdmin from "./pages/LinksAdmin";
 import Subscription from "./pages/Subscription";
 import StoreManagement from "./pages/StoreManagement";
 import WhatsAppSettings from "./pages/WhatsAppSettings";
+import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
 import { StoreLayout } from "./pages/store/StoreLayout";
 import { StoreHome } from "./pages/store/StoreHome";
@@ -146,6 +147,11 @@ const App = () => (
                 <Route path="/whatsapp-settings" element={
                   <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
                     <WhatsAppSettings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/audit-logs" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                    <AuditLogs />
                   </ProtectedRoute>
                 } />
                 <Route path="/users" element={
