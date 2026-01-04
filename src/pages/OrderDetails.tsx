@@ -35,6 +35,7 @@ import {
   PackageCheck,
   Navigation
 } from "lucide-react";
+import { sendOrderStatusWhatsApp } from "@/utils/whatsappNotifications";
 
 interface OrderItem {
   id: string;
@@ -165,11 +166,29 @@ const OrderDetails = () => {
         created_by: user?.id,
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["order-details", orderId] });
       queryClient.invalidateQueries({ queryKey: ["order-status-history", orderId] });
       toast.success("تم تحديث الطلب بنجاح");
       setIsEditing(false);
+      
+      // Send WhatsApp notification for status update
+      if (order && tenant) {
+        try {
+          const statusLabel = orderStatusConfig[editForm.order_status as keyof typeof orderStatusConfig]?.label || editForm.order_status;
+          await sendOrderStatusWhatsApp({
+            tenantId: tenant.id,
+            tenantName: tenant.name,
+            clientPhone: order.customer_phone,
+            orderNumber: order.order_number,
+            orderId: order.id,
+            status: editForm.order_status,
+            statusLabel,
+          });
+        } catch (whatsappError) {
+          console.log("WhatsApp notification skipped or failed:", whatsappError);
+        }
+      }
     },
     onError: () => {
       toast.error("فشل في تحديث الطلب");

@@ -21,7 +21,8 @@ import {
   LayoutDashboard,
   Receipt,
   Crown,
-  Store
+  Store,
+  MessageCircle
 } from "lucide-react";
 import { useAuth, roleLabels, AppRole } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -40,6 +41,7 @@ const navItems: { path: string; label: string; icon: typeof FileText; roles: App
   { path: "/store-orders", label: "طلبات المتجر", icon: Package, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/store-management", label: "إدارة المتجر", icon: Store, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/links", label: "إدارة الروابط", icon: Link2, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/whatsapp-settings", label: "إعدادات الواتساب", icon: MessageCircle, roles: ["system_manager", "company_admin", "admin"] },
   { path: "/accounting", label: "المحاسبة", icon: BarChart3, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/reports", label: "التقارير", icon: BarChart3, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/invoice-designer", label: "تصميم الفاتورة", icon: Sparkles, roles: ["system_manager", "company_admin", "admin", "manager"] },
