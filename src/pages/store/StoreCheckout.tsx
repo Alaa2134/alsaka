@@ -23,6 +23,7 @@ import {
   User
 } from "lucide-react";
 import type { StoreContextData } from "./StoreLayout";
+import { sendOrderTrackingWhatsApp } from "@/utils/whatsappNotifications";
 
 export const StoreCheckout = () => {
   const { tenant, settings } = useOutletContext<StoreContextData>();
@@ -160,6 +161,20 @@ export const StoreCheckout = () => {
             .update({ stock_quantity: Math.max(0, product.stock_quantity - item.quantity) })
             .eq("id", item.product_id);
         }
+      }
+
+      // Send WhatsApp notification automatically
+      try {
+        await sendOrderTrackingWhatsApp({
+          tenantId: tenant.id,
+          tenantName: tenant.name,
+          clientPhone: formData.phone,
+          orderNumber: newOrderNumber,
+          orderId: order.id,
+          tenantSlug: tenant.slug,
+        });
+      } catch (whatsappError) {
+        console.log("WhatsApp notification skipped or failed:", whatsappError);
       }
 
       setOrderNumber(newOrderNumber);

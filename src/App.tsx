@@ -30,6 +30,7 @@ import CompanySettings from "./pages/CompanySettings";
 import LinksAdmin from "./pages/LinksAdmin";
 import Subscription from "./pages/Subscription";
 import StoreManagement from "./pages/StoreManagement";
+import WhatsAppSettings from "./pages/WhatsAppSettings";
 import NotFound from "./pages/NotFound";
 import { StoreLayout } from "./pages/store/StoreLayout";
 import { StoreHome } from "./pages/store/StoreHome";
@@ -140,6 +141,11 @@ const App = () => (
                 <Route path="/company-settings" element={
                   <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
                     <CompanySettings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/whatsapp-settings" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                    <WhatsAppSettings />
                   </ProtectedRoute>
                 } />
                 <Route path="/users" element={

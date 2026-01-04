@@ -1603,6 +1603,104 @@ export type Database = {
           },
         ]
       }
+      whatsapp_notifications_log: {
+        Row: {
+          client_id: string | null
+          client_phone: string
+          id: string
+          message_content: string
+          notification_type: string
+          reference_id: string | null
+          sent_at: string
+          status: string | null
+          tenant_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_phone: string
+          id?: string
+          message_content: string
+          notification_type: string
+          reference_id?: string | null
+          sent_at?: string
+          status?: string | null
+          tenant_id: string
+        }
+        Update: {
+          client_id?: string | null
+          client_phone?: string
+          id?: string
+          message_content?: string
+          notification_type?: string
+          reference_id?: string | null
+          sent_at?: string
+          status?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_notifications_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_notifications_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_settings: {
+        Row: {
+          auto_send_invoices: boolean | null
+          auto_send_order_notifications: boolean | null
+          auto_send_order_tracking: boolean | null
+          bot_phone: string | null
+          created_at: string
+          id: string
+          is_verified: boolean | null
+          tenant_id: string
+          updated_at: string
+          whatsapp_number: string
+        }
+        Insert: {
+          auto_send_invoices?: boolean | null
+          auto_send_order_notifications?: boolean | null
+          auto_send_order_tracking?: boolean | null
+          bot_phone?: string | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          tenant_id: string
+          updated_at?: string
+          whatsapp_number: string
+        }
+        Update: {
+          auto_send_invoices?: boolean | null
+          auto_send_order_notifications?: boolean | null
+          auto_send_order_tracking?: boolean | null
+          bot_phone?: string | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          tenant_id?: string
+          updated_at?: string
+          whatsapp_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       public_store_settings: {

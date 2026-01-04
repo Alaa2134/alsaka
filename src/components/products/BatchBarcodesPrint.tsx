@@ -1,47 +1,21 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Printer, Settings } from "lucide-react";
+import { Printer, Settings, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/hooks/useProducts";
+import { LabelTemplateManager } from "./LabelTemplateManager";
+import { useDefaultLabelTemplate, LabelSettings, defaultLabelSettings } from "@/hooks/useLabelTemplates";
 
 interface BatchBarcodesPrintProps {
   open: boolean;
   onClose: () => void;
   products: Product[];
 }
-
-interface LabelSettings {
-  labelWidth: number;
-  labelHeight: number;
-  fontSize: number;
-  barcodeHeight: number;
-  barcodeWidth: number;
-  showProductName: boolean;
-  showProductNumber: boolean;
-  showPrice: boolean;
-  showBarcodeText: boolean;
-  columns: number;
-  gap: number;
-}
-
-const defaultSettings: LabelSettings = {
-  labelWidth: 50,
-  labelHeight: 30,
-  fontSize: 10,
-  barcodeHeight: 40,
-  barcodeWidth: 1.5,
-  showProductName: true,
-  showProductNumber: true,
-  showPrice: false,
-  showBarcodeText: true,
-  columns: 4,
-  gap: 5,
-};
 
 const presetTemplates = {
   small: { labelWidth: 40, labelHeight: 25, fontSize: 8, barcodeHeight: 30, columns: 5 },
@@ -53,8 +27,17 @@ const presetTemplates = {
 export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPrintProps) => {
   const [copiesPerProduct, setCopiesPerProduct] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState<LabelSettings>(defaultSettings);
+  const [settings, setSettings] = useState<LabelSettings>(defaultLabelSettings);
   const previewRef = useRef<HTMLDivElement>(null);
+  
+  // Load default template on mount
+  const { data: defaultTemplate } = useDefaultLabelTemplate();
+  
+  useEffect(() => {
+    if (defaultTemplate?.settings) {
+      setSettings(defaultTemplate.settings);
+    }
+  }, [defaultTemplate]);
 
   const updateSetting = <K extends keyof LabelSettings>(key: K, value: LabelSettings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -62,6 +45,14 @@ export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPri
 
   const applyPreset = (preset: keyof typeof presetTemplates) => {
     setSettings(prev => ({ ...prev, ...presetTemplates[preset] }));
+  };
+  
+  const handleLoadTemplate = (templateSettings: LabelSettings) => {
+    setSettings(templateSettings);
+  };
+  
+  const handleSaveCurrentAsTemplate = (): LabelSettings => {
+    return settings;
   };
 
   const handlePrint = () => {
@@ -192,14 +183,21 @@ export const BatchBarcodesPrint = ({ open, onClose, products }: BatchBarcodesPri
               <Printer size={20} />
               طباعة ملصقات الباركود ({products.length} منتج)
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-            >
-              <Settings size={16} className="ml-1" />
-              {showSettings ? "إخفاء" : "إعدادات"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <LabelTemplateManager
+                currentSettings={settings}
+                onLoadTemplate={handleLoadTemplate}
+                onSaveCurrentAsTemplate={handleSaveCurrentAsTemplate}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSettings(!showSettings)}
+              >
+                <Settings size={16} className="ml-1" />
+                {showSettings ? "إخفاء" : "إعدادات"}
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
