@@ -245,23 +245,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (code: string, twoFactorCode?: string): Promise<{ success: boolean; error?: string; requires2FA?: boolean; userId?: string }> => {
     try {
-      const trimmedCode = code.trim().toUpperCase();
+      const trimmedCode = code.trim();
       const currentDeviceId = generateDeviceId();
       
-      // First check if user exists and validate device lock
-      const { data: appUser, error: findError } = await supabase
-        .from("app_users")
-        .select("*")
-        .eq("access_code", trimmedCode)
-        .eq("is_active", true)
-        .maybeSingle();
+      // Use the secure verify_user_login function instead of direct query
+      const { data: verifyResult, error: verifyError } = await supabase
+        .rpc('verify_user_login', { p_access_code: trimmedCode });
 
-      if (findError) {
-        console.error("Login error:", findError);
+      if (verifyError) {
+        console.error("Login error:", verifyError);
         return { success: false, error: "حدث خطأ في الاتصال" };
       }
 
-      if (!appUser) {
+      const userData = verifyResult?.[0];
+      if (!userData || !userData.is_active) {
+        return { success: false, error: "كود الدخول غير صحيح" };
+      }
+      
+      // Fetch the full app_user record for device validation
+      const { data: appUser, error: findError } = await supabase
+        .from("app_users")
+        .select("*")
+        .eq("id", userData.user_id)
+        .maybeSingle();
+
+      if (findError || !appUser) {
         return { success: false, error: "كود الدخول غير صحيح" };
       }
 
