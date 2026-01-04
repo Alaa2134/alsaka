@@ -33,7 +33,7 @@ const Login = () => {
         .eq("is_active", true)
         .limit(1)
         .maybeSingle();
-      
+
       if (data) {
         setTenantInfo(data);
       }
@@ -44,7 +44,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!code.trim()) {
       setError("الرجاء إدخال كود الدخول");
       return;
@@ -70,7 +70,7 @@ const Login = () => {
     // Re-login with 2FA bypassed (user already verified)
     const result = await login(code, "bypass");
     setIsLoading(false);
-    
+
     if (result.success) {
       navigate("/");
     } else {
@@ -100,8 +100,8 @@ const Login = () => {
             {/* Logo */}
             <div className="text-center mb-8">
               {tenantInfo?.logo_url ? (
-                <img 
-                  src={tenantInfo.logo_url} 
+                <img
+                  src={tenantInfo.logo_url}
                   alt={companyName}
                   className="w-20 h-20 mx-auto mb-6 rounded-2xl object-contain shadow-glow"
                 />
@@ -171,7 +171,7 @@ const Login = () => {
 
               <div className="mt-6 pt-6 border-t border-border">
                 <p className="text-center text-sm text-muted-foreground">
-                  للحصول على كود الدخول، تواصل مع مدير النظام
+                  01065316500 للحصول على كود الدخول، تواصل مع مدير النظام
                 </p>
               </div>
             </div>
@@ -183,19 +183,20 @@ const Login = () => {
           {/* Background decorations */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-white/10 rounded-full blur-3xl animate-float" />
-            <div className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-white/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+            <div
+              className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 bg-white/5 rounded-full blur-3xl animate-float"
+              style={{ animationDelay: "3s" }}
+            />
           </div>
 
           <div className="relative z-10 text-primary-foreground max-w-lg">
             <h2 className="text-4xl font-bold mb-6">نظام فواتير متكامل</h2>
-            <p className="text-xl text-primary-foreground/80 mb-12">
-              إدارة فواتيرك ومبيعاتك بكل سهولة واحترافية
-            </p>
+            <p className="text-xl text-primary-foreground/80 mb-12">إدارة فواتيرك ومبيعاتك بكل سهولة واحترافية</p>
 
             <div className="space-y-6">
               {features.map((feature, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="flex items-center gap-4 bg-white/10 rounded-xl p-5 backdrop-blur-sm animate-slide-in"
                   style={{ animationDelay: `${index * 150}ms` }}
                 >
