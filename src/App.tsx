@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { InactivityLock } from "@/components/auth/InactivityLock";
+import { SessionWrapper } from "@/components/auth/SessionWrapper";
 import { AIAssistant } from "@/components/shared/AIAssistant";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -32,6 +33,7 @@ import Subscription from "./pages/Subscription";
 import StoreManagement from "./pages/StoreManagement";
 import WhatsAppSettings from "./pages/WhatsAppSettings";
 import AuditLogs from "./pages/AuditLogs";
+import SecurityEvents from "./pages/SecurityEvents";
 import NotFound from "./pages/NotFound";
 import { StoreLayout } from "./pages/store/StoreLayout";
 import { StoreHome } from "./pages/store/StoreHome";
@@ -55,6 +57,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <InactivityLock>
+              <SessionWrapper>
               <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<Login />} />
@@ -154,6 +157,11 @@ const App = () => (
                     <AuditLogs />
                   </ProtectedRoute>
                 } />
+                <Route path="/security-events" element={
+                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                    <SecurityEvents />
+                  </ProtectedRoute>
+                } />
                 <Route path="/users" element={
                   <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
                     <UsersAdmin />
@@ -183,6 +191,7 @@ const App = () => (
               </Routes>
               <AIAssistant />
             </BrowserRouter>
+            </SessionWrapper>
             </InactivityLock>
           </TooltipProvider>
         </AuthProvider>
