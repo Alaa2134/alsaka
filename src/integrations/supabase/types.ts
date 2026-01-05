@@ -1705,107 +1705,41 @@ export type Database = {
     Views: {
       public_store_settings: {
         Row: {
-          accounting_enabled: boolean | null
-          allowed_link_types: string[] | null
-          animation_speed: string | null
-          created_at: string | null
           currency: string | null
           custom_domain: string | null
           depth_intensity: number | null
           enable_3d_effects: boolean | null
           enable_glassmorphism: boolean | null
           enable_particles: boolean | null
-          inventory_enabled: boolean | null
-          link_default_expiry_days: number | null
-          links_enabled: boolean | null
-          max_links_per_month: number | null
           payment_bank_enabled: boolean | null
           payment_cod_enabled: boolean | null
           payment_stripe_enabled: boolean | null
           payment_vodafone_enabled: boolean | null
-          sound_alerts_enabled: boolean | null
           store_access_blocked: boolean | null
           store_enabled: boolean | null
           subdomain: string | null
           subscription_active: boolean | null
-          subscription_expires_at: string | null
-          subscription_type: string | null
           tax_percentage: number | null
+          tenant_id: string | null
+        }
+        Relationships: []
+      }
+      safe_app_users: {
+        Row: {
+          created_at: string | null
+          device_locked_at: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
           tenant_id: string | null
           updated_at: string | null
         }
-        Insert: {
-          accounting_enabled?: boolean | null
-          allowed_link_types?: string[] | null
-          animation_speed?: string | null
-          created_at?: string | null
-          currency?: string | null
-          custom_domain?: string | null
-          depth_intensity?: number | null
-          enable_3d_effects?: boolean | null
-          enable_glassmorphism?: boolean | null
-          enable_particles?: boolean | null
-          inventory_enabled?: boolean | null
-          link_default_expiry_days?: number | null
-          links_enabled?: boolean | null
-          max_links_per_month?: number | null
-          payment_bank_enabled?: boolean | null
-          payment_cod_enabled?: boolean | null
-          payment_stripe_enabled?: boolean | null
-          payment_vodafone_enabled?: boolean | null
-          sound_alerts_enabled?: boolean | null
-          store_access_blocked?: boolean | null
-          store_enabled?: boolean | null
-          subdomain?: string | null
-          subscription_active?: never
-          subscription_expires_at?: string | null
-          subscription_type?: string | null
-          tax_percentage?: number | null
-          tenant_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          accounting_enabled?: boolean | null
-          allowed_link_types?: string[] | null
-          animation_speed?: string | null
-          created_at?: string | null
-          currency?: string | null
-          custom_domain?: string | null
-          depth_intensity?: number | null
-          enable_3d_effects?: boolean | null
-          enable_glassmorphism?: boolean | null
-          enable_particles?: boolean | null
-          inventory_enabled?: boolean | null
-          link_default_expiry_days?: number | null
-          links_enabled?: boolean | null
-          max_links_per_month?: number | null
-          payment_bank_enabled?: boolean | null
-          payment_cod_enabled?: boolean | null
-          payment_stripe_enabled?: boolean | null
-          payment_vodafone_enabled?: boolean | null
-          sound_alerts_enabled?: boolean | null
-          store_access_blocked?: boolean | null
-          store_enabled?: boolean | null
-          subdomain?: string | null
-          subscription_active?: never
-          subscription_expires_at?: string | null
-          subscription_type?: string | null
-          tax_percentage?: number | null
-          tenant_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_settings_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: true
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
+      auth_can_view_orders: { Args: never; Returns: boolean }
       auth_has_role: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
@@ -1841,16 +1775,129 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      get_clients_secure: {
+        Args: never
+        Returns: {
+          address: string
+          client_number: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          notes: string
+          phone: string
+          tenant_id: string
+          updated_at: string
+        }[]
+      }
       get_next_journal_entry_number: {
         Args: { _tenant_id: string }
         Returns: string
       }
       get_next_order_number: { Args: { _tenant_id: string }; Returns: string }
+      get_public_store_settings: {
+        Args: { tenant_slug?: string }
+        Returns: {
+          currency: string
+          custom_domain: string
+          depth_intensity: number
+          enable_3d_effects: boolean
+          enable_glassmorphism: boolean
+          enable_particles: boolean
+          payment_bank_enabled: boolean
+          payment_cod_enabled: boolean
+          payment_stripe_enabled: boolean
+          payment_vodafone_enabled: boolean
+          store_access_blocked: boolean
+          store_enabled: boolean
+          subdomain: string
+          subscription_active: boolean
+          tax_percentage: number
+          tenant_id: string
+        }[]
+      }
+      get_safe_app_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          device_locked_at: string
+          id: string
+          is_active: boolean
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          updated_at: string
+        }[]
+      }
+      get_safe_user_profile: {
+        Args: never
+        Returns: {
+          created_at: string
+          device_locked_at: string
+          id: string
+          is_active: boolean
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          two_factor_enabled: boolean
+          updated_at: string
+        }[]
+      }
+      get_store_orders_secure: {
+        Args: never
+        Returns: {
+          created_at: string
+          customer_address: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          notes: string
+          order_number: string
+          order_status: string
+          payment_method: string
+          payment_status: string
+          shipping_status: string
+          tenant_id: string
+          total_amount: number
+          updated_at: string
+        }[]
+      }
+      get_tenant_clients: {
+        Args: { tenant_id_param: string }
+        Returns: {
+          address: string
+          client_number: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          notes: string
+          phone: string
+        }[]
+      }
+      get_user_for_login: {
+        Args: { user_uuid: string }
+        Returns: {
+          auth_id: string
+          backup_codes: string[]
+          device_id: string
+          device_locked_at: string
+          id: string
+          is_active: boolean
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          two_factor_enabled: boolean
+          two_factor_secret: string
+        }[]
+      }
       get_user_tenant_id: {
         Args: { user_access_code: string }
         Returns: string
       }
       hash_access_code: { Args: { plain_code: string }; Returns: string }
+      hash_backup_code: { Args: { plain_code: string }; Returns: string }
       is_admin_user: { Args: never; Returns: boolean }
       is_authenticated_user: { Args: never; Returns: boolean }
       is_system_manager: { Args: { _access_code: string }; Returns: boolean }
@@ -1871,6 +1918,10 @@ export type Database = {
       }
       verify_access_code: {
         Args: { hashed_code: string; plain_code: string }
+        Returns: boolean
+      }
+      verify_backup_code: {
+        Args: { plain_code: string; user_id_param: string }
         Returns: boolean
       }
       verify_user_login: {
