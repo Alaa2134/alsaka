@@ -278,16 +278,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, error: "كود الدخول غير صحيح" };
       }
       
-      // Fetch the full app_user record for device validation
-      const { data: appUser, error: findError } = await supabase
-        .from("app_users")
-        .select("*")
-        .eq("id", userData.user_id)
-        .maybeSingle();
+      // Fetch the full app_user record for device validation using secure function
+      const { data: userForLogin, error: findError } = await supabase
+        .rpc('get_user_for_login', { user_uuid: userData.user_id });
 
-      if (findError || !appUser) {
+      if (findError || !userForLogin || userForLogin.length === 0) {
+        console.error("Get user for login error:", findError);
         return { success: false, error: "كود الدخول غير صحيح" };
       }
+      
+      const appUser = userForLogin[0];
 
       // Check if 2FA is enabled and not yet verified (unless bypassing after verification)
       if (appUser.two_factor_enabled && !twoFactorCode) {
