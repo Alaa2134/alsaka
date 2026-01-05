@@ -73,6 +73,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEY = "app_user_session";
 const TENANT_KEY = "app_tenant_session";
+const SESSION_ACTIVE_KEY = "app_session_active";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -94,6 +95,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [tenant]);
 
+  // Handle browser/tab close - auto logout
+  useEffect(() => {
+    // Check if this is a new session (browser was closed)
+    const wasActive = sessionStorage.getItem(SESSION_ACTIVE_KEY);
+    
+    if (!wasActive) {
+      // New browser session - clear any stored auth data for security
+      const storedSession = localStorage.getItem(STORAGE_KEY);
+      if (storedSession) {
+        // Clear local storage but will try to revalidate with Supabase
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TENANT_KEY);
+      }
+    }
+    
+    // Mark session as active in sessionStorage (cleared when browser closes)
+    sessionStorage.setItem(SESSION_ACTIVE_KEY, 'true');
+    
+    // Handle page visibility and beforeunload
+    const handleBeforeUnload = () => {
+      // This runs when tab/browser is closing
+      // sessionStorage will be automatically cleared when browser closes
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   // Set up Supabase Auth listener
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -113,6 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCompanySettings(null);
           localStorage.removeItem(STORAGE_KEY);
           localStorage.removeItem(TENANT_KEY);
+          sessionStorage.removeItem(SESSION_ACTIVE_KEY);
         }
       }
     );
@@ -125,25 +158,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (existingSession?.user) {
         loadAppUserFromAuth(existingSession.user.id);
       } else {
-        // Fall back to localStorage check for backward compatibility
-        const storedSession = localStorage.getItem(STORAGE_KEY);
-        if (storedSession) {
-          try {
-            const parsedUser = JSON.parse(storedSession);
-            // Try to login with stored access code
-            if (parsedUser.access_code) {
-              migrateAndLogin(parsedUser.access_code);
-            } else {
-              setIsLoading(false);
-            }
-          } catch {
-            localStorage.removeItem(STORAGE_KEY);
-            localStorage.removeItem(TENANT_KEY);
-            setIsLoading(false);
-          }
-        } else {
-          setIsLoading(false);
-        }
+        // No valid Supabase session - user needs to login
+        setIsLoading(false);
       }
     });
 
@@ -352,6 +368,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCompanySettings(null);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(TENANT_KEY);
+    sessionStorage.removeItem(SESSION_ACTIVE_KEY);
     document.documentElement.style.removeProperty('--primary');
     document.documentElement.style.removeProperty('--accent');
     document.documentElement.style.removeProperty('--gradient-start');
