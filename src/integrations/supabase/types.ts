@@ -1758,8 +1758,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      decrypt_company_data: {
+        Args: { encrypted_text: string; tenant_uuid: string }
+        Returns: string
+      }
       decrypt_sensitive_data: {
         Args: { encrypted_text: string; encryption_key: string }
+        Returns: string
+      }
+      encrypt_company_data: {
+        Args: { plain_text: string; tenant_uuid: string }
         Returns: string
       }
       encrypt_sensitive_data: {
@@ -1788,6 +1796,30 @@ export type Database = {
           phone: string
           tenant_id: string
           updated_at: string
+        }[]
+      }
+      get_decrypted_company_settings: {
+        Args: { tenant_uuid: string }
+        Returns: {
+          bank_account_name: string
+          bank_account_number: string
+          bank_name: string
+          currency: string
+          custom_domain: string
+          id: string
+          payment_bank_enabled: boolean
+          payment_cod_enabled: boolean
+          payment_stripe_enabled: boolean
+          payment_vodafone_enabled: boolean
+          store_access_blocked: boolean
+          store_enabled: boolean
+          stripe_account_id: string
+          subdomain: string
+          subscription_expires_at: string
+          subscription_type: string
+          tax_percentage: number
+          tenant_id: string
+          vodafone_number: string
         }[]
       }
       get_next_journal_entry_number: {
