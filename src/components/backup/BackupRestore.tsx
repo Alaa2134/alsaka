@@ -8,11 +8,16 @@ import { toast } from "sonner";
 interface BackupData {
   version: string;
   createdAt: string;
-  products: any[];
-  clients: any[];
-  invoices: any[];
-  invoiceItems: any[];
-  warehouses: any[];
+  products: Record<string, unknown>[];
+  clients: Record<string, unknown>[];
+  invoices: Record<string, unknown>[];
+  invoiceItems: Record<string, unknown>[];
+  warehouses: Record<string, unknown>[];
+  payments?: Record<string, unknown>[];
+  storeOrders?: Record<string, unknown>[];
+  storeOrderItems?: Record<string, unknown>[];
+  returns?: Record<string, unknown>[];
+  returnItems?: Record<string, unknown>[];
 }
 
 interface BackupRestoreProps {
@@ -29,22 +34,32 @@ export const BackupRestore = ({ open, onClose }: BackupRestoreProps) => {
 
     try {
       // Fetch all data
-      const [products, clients, invoices, invoiceItems, warehouses] = await Promise.all([
+      const [products, clients, invoices, invoiceItems, warehouses, payments, storeOrders, storeOrderItems, returns, returnItems] = await Promise.all([
         supabase.from("products").select("*"),
         supabase.from("clients").select("*"),
         supabase.from("invoices").select("*"),
         supabase.from("invoice_items").select("*"),
         supabase.from("warehouses").select("*"),
+        supabase.from("payments").select("*"),
+        supabase.from("store_orders").select("*"),
+        supabase.from("store_order_items").select("*"),
+        supabase.from("returns").select("*"),
+        supabase.from("return_items").select("*"),
       ]);
 
       const backupData: BackupData = {
-        version: "1.0",
+        version: "2.0",
         createdAt: new Date().toISOString(),
-        products: products.data || [],
-        clients: clients.data || [],
-        invoices: invoices.data || [],
-        invoiceItems: invoiceItems.data || [],
-        warehouses: warehouses.data || [],
+        products: (products.data || []) as Record<string, unknown>[],
+        clients: (clients.data || []) as Record<string, unknown>[],
+        invoices: (invoices.data || []) as Record<string, unknown>[],
+        invoiceItems: (invoiceItems.data || []) as Record<string, unknown>[],
+        warehouses: (warehouses.data || []) as Record<string, unknown>[],
+        payments: (payments.data || []) as Record<string, unknown>[],
+        storeOrders: (storeOrders.data || []) as Record<string, unknown>[],
+        storeOrderItems: (storeOrderItems.data || []) as Record<string, unknown>[],
+        returns: (returns.data || []) as Record<string, unknown>[],
+        returnItems: (returnItems.data || []) as Record<string, unknown>[],
       };
 
       const blob = new Blob([JSON.stringify(backupData, null, 2)], { 
@@ -97,13 +112,14 @@ export const BackupRestore = ({ open, onClose }: BackupRestoreProps) => {
         return;
       }
 
-      let stats = { products: 0, clients: 0, warehouses: 0 };
+      const stats = { products: 0, clients: 0, warehouses: 0 };
 
       // Import warehouses first
       for (const warehouse of backupData.warehouses) {
-        const { id, created_at, updated_at, tenant_id, ...data } = warehouse;
+        const warehouseData = warehouse as Record<string, unknown>;
+        const { id: _id, created_at: _createdAt, updated_at: _updatedAt, tenant_id: _tenantId, ...data } = warehouseData;
         try {
-          await supabase.from("warehouses").upsert(data, { onConflict: "name" });
+          await supabase.from("warehouses").upsert(data as { name: string }, { onConflict: "name" });
           stats.warehouses++;
         } catch (e) {
           console.warn("Warehouse import skipped:", data.name);
@@ -112,9 +128,10 @@ export const BackupRestore = ({ open, onClose }: BackupRestoreProps) => {
 
       // Import clients
       for (const client of backupData.clients) {
-        const { id, created_at, updated_at, tenant_id, ...data } = client;
+        const clientData = client as Record<string, unknown>;
+        const { id: _id, created_at: _createdAt, updated_at: _updatedAt, tenant_id: _tenantId, ...data } = clientData;
         try {
-          await supabase.from("clients").upsert(data, { onConflict: "client_number" });
+          await supabase.from("clients").upsert(data as { name: string; client_number: string }, { onConflict: "client_number" });
           stats.clients++;
         } catch (e) {
           console.warn("Client import skipped:", data.client_number);
@@ -123,9 +140,10 @@ export const BackupRestore = ({ open, onClose }: BackupRestoreProps) => {
 
       // Import products
       for (const product of backupData.products) {
-        const { id, created_at, updated_at, tenant_id, warehouse_id, ...data } = product;
+        const productData = product as Record<string, unknown>;
+        const { id: _id, created_at: _createdAt, updated_at: _updatedAt, tenant_id: _tenantId, warehouse_id: _warehouseId, ...data } = productData;
         try {
-          await supabase.from("products").upsert(data, { onConflict: "item_number" });
+          await supabase.from("products").upsert(data as { name: string; item_number: string }, { onConflict: "item_number" });
           stats.products++;
         } catch (e) {
           console.warn("Product import skipped:", data.item_number);
