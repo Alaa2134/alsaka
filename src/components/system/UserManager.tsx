@@ -43,7 +43,7 @@ import {
 interface AppUser {
   id: string;
   name: string;
-  access_code: string;
+  access_code_hash: string | null;
   role: string;
   is_active: boolean;
   device_id: string | null;
@@ -178,8 +178,7 @@ export const UserManager = () => {
 
   const filteredUsers = users?.filter(u => {
     const matchesSearch = 
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.access_code.toLowerCase().includes(searchTerm.toLowerCase());
+      u.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || u.role === filterRole;
     return matchesSearch && matchesRole;
   });
@@ -279,7 +278,7 @@ export const UserManager = () => {
                         <p className="font-medium">{user.name}</p>
                         <Badge variant="outline" className="font-mono text-xs">
                           <Key className="h-3 w-3 ml-1" />
-                          {user.access_code}
+                          ******
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-1">

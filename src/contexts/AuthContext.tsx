@@ -30,11 +30,11 @@ export interface CompanySettings {
   payment_stripe_enabled: boolean;
   payment_bank_enabled: boolean;
   payment_vodafone_enabled: boolean;
-  stripe_account_id: string | null;
+  stripe_account_id_encrypted: string | null;
   bank_account_name: string | null;
-  bank_account_number: string | null;
+  bank_account_number_encrypted: string | null;
   bank_name: string | null;
-  vodafone_number: string | null;
+  vodafone_number_encrypted: string | null;
   tax_percentage: number;
   currency: string;
 }
@@ -42,7 +42,7 @@ export interface CompanySettings {
 export interface AppUser {
   id: string;
   name: string;
-  access_code: string;
+  access_code_hash: string | null;
   role: AppRole;
   is_active: boolean;
   tenant_id: string | null;

@@ -108,8 +108,11 @@ export const InactivityLock = ({ children }: InactivityLockProps) => {
       return;
     }
 
-    // Check if code matches current user
-    if (code !== user?.access_code) {
+    // Use verify_user_login function to verify code
+    const { data: verifyResult, error: verifyError } = await supabase
+      .rpc('verify_user_login', { p_access_code: code.trim() });
+    
+    if (verifyError || !verifyResult?.[0] || verifyResult[0].user_id !== user?.id) {
       setError("كود الدخول غير صحيح");
       return;
     }

@@ -12,12 +12,15 @@ import {
   Info,
   RefreshCw,
   Download,
+  MapPin,
+  Mail,
 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -42,6 +45,8 @@ import {
   getEventLabel,
   getSeverityLabel,
 } from "@/hooks/useSecurityEvents";
+import { SecurityGeoMap } from "@/components/security/SecurityGeoMap";
+import { EmailNotificationSettings } from "@/components/security/EmailNotificationSettings";
 
 const SecurityEvents = () => {
   const { hasPermission } = useAuth();
@@ -138,8 +143,7 @@ const SecurityEvents = () => {
         <title>الأحداث الأمنية | النظام</title>
       </Helmet>
 
-      <div className="space-y-6">
-        {/* Header */}
+      <Tabs defaultValue="events" className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-500/10 rounded-lg">
@@ -153,45 +157,50 @@ const SecurityEvents = () => {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4 ml-2" />
-              تحديث
-            </Button>
-            <Button variant="outline" size="sm" onClick={exportEvents}>
-              <Download className="h-4 w-4 ml-2" />
-              تصدير
-            </Button>
-          </div>
+          <TabsList>
+            <TabsTrigger value="events">
+              <Shield className="h-4 w-4 ml-2" />
+              الأحداث
+            </TabsTrigger>
+            <TabsTrigger value="map">
+              <MapPin className="h-4 w-4 ml-2" />
+              الخريطة
+            </TabsTrigger>
+            <TabsTrigger value="notifications">
+              <Mail className="h-4 w-4 ml-2" />
+              الإشعارات
+            </TabsTrigger>
+          </TabsList>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">{events?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">إجمالي الأحداث</p>
-            </CardContent>
-          </Card>
-          <Card className="border-red-200 dark:border-red-800">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-red-600">{criticalCount}</div>
-              <p className="text-xs text-muted-foreground">أحداث حرجة</p>
-            </CardContent>
-          </Card>
-          <Card className="border-yellow-200 dark:border-yellow-800">
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-yellow-600">{warningCount}</div>
-              <p className="text-xs text-muted-foreground">تحذيرات</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-orange-600">{failedLogins}</div>
-              <p className="text-xs text-muted-foreground">محاولات دخول فاشلة</p>
-            </CardContent>
-          </Card>
-        </div>
+        <TabsContent value="events" className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold">{events?.length || 0}</div>
+                <p className="text-xs text-muted-foreground">إجمالي الأحداث</p>
+              </CardContent>
+            </Card>
+            <Card className="border-red-200 dark:border-red-800">
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold text-red-600">{criticalCount}</div>
+                <p className="text-xs text-muted-foreground">أحداث حرجة</p>
+              </CardContent>
+            </Card>
+            <Card className="border-yellow-200 dark:border-yellow-800">
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold text-yellow-600">{warningCount}</div>
+                <p className="text-xs text-muted-foreground">تحذيرات</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold text-orange-600">{failedLogins}</div>
+                <p className="text-xs text-muted-foreground">محاولات دخول فاشلة</p>
+              </CardContent>
+            </Card>
+          </div>
 
         {/* Filters */}
         <Card>
@@ -338,7 +347,16 @@ const SecurityEvents = () => {
             </ScrollArea>
           </CardContent>
         </Card>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="map">
+          <SecurityGeoMap />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <EmailNotificationSettings />
+        </TabsContent>
+      </Tabs>
     </MainLayout>
   );
 };
