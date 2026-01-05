@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.create-auth-user]
 verify_jwt = false
+
+[functions.security-email-notifications]
+verify_jwt = false
+
+[functions.weekly-security-report]
+verify_jwt = false
+
+[functions.get-ip-location]
+verify_jwt = false

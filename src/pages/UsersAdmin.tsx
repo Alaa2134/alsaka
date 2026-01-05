@@ -17,7 +17,7 @@ import { Navigate } from "react-router-dom";
 interface AppUser {
   id: string;
   name: string;
-  access_code: string;
+  access_code_hash: string | null;
   role: AppRole;
   is_active: boolean;
   tenant_id: string | null;
@@ -177,7 +177,7 @@ const UsersAdmin = () => {
     setEditingUser(user);
     setFormData({
       name: user.name,
-      access_code: user.access_code,
+      access_code: "", // Access code is hashed, generate new one for edit
       role: user.role,
       is_active: user.is_active,
       tenant_id: user.tenant_id,
@@ -467,8 +467,8 @@ const UsersAdmin = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <code className="bg-muted px-3 py-1 rounded font-mono tracking-wider">
-                          {user.access_code}
+                        <code className="bg-muted px-3 py-1 rounded font-mono tracking-wider text-muted-foreground">
+                          ******
                         </code>
                       </td>
                       <td className="px-4 py-3 text-center">

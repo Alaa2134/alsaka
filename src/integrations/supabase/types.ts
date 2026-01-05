@@ -70,7 +70,6 @@ export type Database = {
       }
       app_users: {
         Row: {
-          access_code: string
           access_code_hash: string | null
           auth_id: string | null
           backup_codes: string[] | null
@@ -92,7 +91,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          access_code: string
           access_code_hash?: string | null
           auth_id?: string | null
           backup_codes?: string[] | null
@@ -114,7 +112,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          access_code?: string
           access_code_hash?: string | null
           auth_id?: string | null
           backup_codes?: string[] | null
@@ -255,7 +252,6 @@ export type Database = {
           allowed_link_types: string[] | null
           animation_speed: string | null
           bank_account_name: string | null
-          bank_account_number: string | null
           bank_account_number_encrypted: string | null
           bank_name: string | null
           created_at: string
@@ -277,7 +273,6 @@ export type Database = {
           sound_alerts_enabled: boolean | null
           store_access_blocked: boolean | null
           store_enabled: boolean | null
-          stripe_account_id: string | null
           stripe_account_id_encrypted: string | null
           subdomain: string | null
           subscription_expires_at: string | null
@@ -285,7 +280,6 @@ export type Database = {
           tax_percentage: number | null
           tenant_id: string
           updated_at: string
-          vodafone_number: string | null
           vodafone_number_encrypted: string | null
         }
         Insert: {
@@ -293,7 +287,6 @@ export type Database = {
           allowed_link_types?: string[] | null
           animation_speed?: string | null
           bank_account_name?: string | null
-          bank_account_number?: string | null
           bank_account_number_encrypted?: string | null
           bank_name?: string | null
           created_at?: string
@@ -315,7 +308,6 @@ export type Database = {
           sound_alerts_enabled?: boolean | null
           store_access_blocked?: boolean | null
           store_enabled?: boolean | null
-          stripe_account_id?: string | null
           stripe_account_id_encrypted?: string | null
           subdomain?: string | null
           subscription_expires_at?: string | null
@@ -323,7 +315,6 @@ export type Database = {
           tax_percentage?: number | null
           tenant_id: string
           updated_at?: string
-          vodafone_number?: string | null
           vodafone_number_encrypted?: string | null
         }
         Update: {
@@ -331,7 +322,6 @@ export type Database = {
           allowed_link_types?: string[] | null
           animation_speed?: string | null
           bank_account_name?: string | null
-          bank_account_number?: string | null
           bank_account_number_encrypted?: string | null
           bank_name?: string | null
           created_at?: string
@@ -353,7 +343,6 @@ export type Database = {
           sound_alerts_enabled?: boolean | null
           store_access_blocked?: boolean | null
           store_enabled?: boolean | null
-          stripe_account_id?: string | null
           stripe_account_id_encrypted?: string | null
           subdomain?: string | null
           subscription_expires_at?: string | null
@@ -361,7 +350,6 @@ export type Database = {
           tax_percentage?: number | null
           tenant_id?: string
           updated_at?: string
-          vodafone_number?: string | null
           vodafone_number_encrypted?: string | null
         }
         Relationships: [
@@ -460,6 +448,60 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_notification_settings: {
+        Row: {
+          created_at: string
+          email_address: string
+          id: string
+          notify_on_account_lock: boolean | null
+          notify_on_critical_events: boolean | null
+          notify_on_failed_logins: boolean | null
+          tenant_id: string
+          updated_at: string
+          user_id: string | null
+          weekly_report_enabled: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          email_address: string
+          id?: string
+          notify_on_account_lock?: boolean | null
+          notify_on_critical_events?: boolean | null
+          notify_on_failed_logins?: boolean | null
+          tenant_id: string
+          updated_at?: string
+          user_id?: string | null
+          weekly_report_enabled?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          email_address?: string
+          id?: string
+          notify_on_account_lock?: boolean | null
+          notify_on_critical_events?: boolean | null
+          notify_on_failed_logins?: boolean | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string | null
+          weekly_report_enabled?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_notification_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_notification_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
             referencedColumns: ["id"]
           },
         ]
@@ -1233,33 +1275,45 @@ export type Database = {
       }
       security_events: {
         Row: {
+          city: string | null
+          country: string | null
           created_at: string
           details: Json | null
           event_type: string
           id: string
           ip_address: string | null
+          latitude: number | null
+          longitude: number | null
           severity: string
           tenant_id: string | null
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           details?: Json | null
           event_type: string
           id?: string
           ip_address?: string | null
+          latitude?: number | null
+          longitude?: number | null
           severity?: string
           tenant_id?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           details?: Json | null
           event_type?: string
           id?: string
           ip_address?: string | null
+          latitude?: number | null
+          longitude?: number | null
           severity?: string
           tenant_id?: string | null
           user_agent?: string | null
@@ -1278,6 +1332,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_reports: {
+        Row: {
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          report_data: Json
+          report_type: string
+          sent_at: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          report_data?: Json
+          report_type?: string
+          sent_at?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          report_data?: Json
+          report_type?: string
+          sent_at?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_reports_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1785,7 +1880,15 @@ export type Database = {
           tax_percentage: number | null
           tenant_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       safe_app_users: {
         Row: {
@@ -1836,6 +1939,10 @@ export type Database = {
       }
       encrypt_sensitive_data: {
         Args: { encryption_key: string; plain_text: string }
+        Returns: string
+      }
+      generate_weekly_security_report: {
+        Args: { _tenant_id: string }
         Returns: string
       }
       get_app_user_from_auth: {
@@ -2005,6 +2112,19 @@ export type Database = {
             Args: { _details?: Json; _event_type: string; _severity?: string }
             Returns: string
           }
+      log_security_event_with_location: {
+        Args: {
+          _city?: string
+          _country?: string
+          _details?: Json
+          _event_type: string
+          _ip_address?: string
+          _latitude?: number
+          _longitude?: number
+          _severity?: string
+        }
+        Returns: string
+      }
       record_failed_login: {
         Args: { _access_code: string; _ip_address?: string }
         Returns: Json

@@ -45,10 +45,10 @@ interface CompanySettingsData {
   payment_stripe_enabled: boolean;
   payment_bank_enabled: boolean;
   payment_vodafone_enabled: boolean;
-  vodafone_number: string | null;
+  vodafone_number_encrypted: string | null;
   bank_name: string | null;
   bank_account_name: string | null;
-  bank_account_number: string | null;
+  bank_account_number_encrypted: string | null;
   tax_percentage: number;
   currency: string;
   // 3D Settings
@@ -177,7 +177,6 @@ const CompanySettings = () => {
         return;
       }
 
-      // Update company settings
       const { error: settingsError } = await supabase
         .from("company_settings")
         .update({
@@ -190,10 +189,8 @@ const CompanySettings = () => {
           payment_stripe_enabled: settings.payment_stripe_enabled,
           payment_bank_enabled: settings.payment_bank_enabled,
           payment_vodafone_enabled: settings.payment_vodafone_enabled,
-          vodafone_number: settings.vodafone_number,
           bank_name: settings.bank_name,
           bank_account_name: settings.bank_account_name,
-          bank_account_number: settings.bank_account_number,
           tax_percentage: settings.tax_percentage,
           currency: settings.currency,
           // 3D Settings
@@ -665,13 +662,13 @@ const CompanySettings = () => {
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-sm">رقم الحساب / IBAN</Label>
+                          <Label className="text-sm">رقم الحساب / IBAN (مشفر)</Label>
                           <Input
-                            value={settings?.bank_account_number || ""}
-                            onChange={(e) => updateSetting("bank_account_number", e.target.value)}
-                            placeholder="EG1234567890123456789"
-                            dir="ltr"
+                            placeholder="سيتم تشفير البيانات تلقائياً"
+                            disabled
+                            className="bg-muted"
                           />
+                          <p className="text-xs text-muted-foreground">البيانات الحساسة مشفرة للأمان</p>
                         </div>
                       </div>
                     )}
@@ -694,13 +691,13 @@ const CompanySettings = () => {
                     </div>
                     {settings?.payment_vodafone_enabled && (
                       <div className="space-y-1 pt-2 border-t">
-                        <Label className="text-sm">رقم فودافون كاش</Label>
+                        <Label className="text-sm">رقم فودافون كاش (مشفر)</Label>
                         <Input
-                          value={settings?.vodafone_number || ""}
-                          onChange={(e) => updateSetting("vodafone_number", e.target.value)}
-                          placeholder="01xxxxxxxxx"
-                          dir="ltr"
+                          placeholder="سيتم تشفير البيانات تلقائياً"
+                          disabled
+                          className="bg-muted"
                         />
+                        <p className="text-xs text-muted-foreground">البيانات الحساسة مشفرة للأمان</p>
                       </div>
                     )}
                   </div>

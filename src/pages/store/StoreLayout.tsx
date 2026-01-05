@@ -32,8 +32,8 @@ interface CompanySettings {
   payment_vodafone_enabled: boolean;
   bank_name: string | null;
   bank_account_name: string | null;
-  bank_account_number: string | null;
-  vodafone_number: string | null;
+  bank_account_number_encrypted: string | null;
+  vodafone_number_encrypted: string | null;
   // 3D Settings
   enable_3d_effects: boolean;
   animation_speed: string;
@@ -140,8 +140,8 @@ const StoreLayoutInner = () => {
           payment_vodafone_enabled: false,
           bank_name: null,
           bank_account_name: null,
-          bank_account_number: null,
-          vodafone_number: null,
+          bank_account_number_encrypted: null,
+          vodafone_number_encrypted: null,
           enable_3d_effects: true,
           animation_speed: "normal",
           enable_particles: true,

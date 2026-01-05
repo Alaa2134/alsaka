@@ -403,20 +403,18 @@ export const StoreCheckout = () => {
                     <p className="font-medium">بيانات التحويل البنكي:</p>
                     <p>البنك: {settings.bank_name}</p>
                     {settings.bank_account_name && <p>اسم الحساب: {settings.bank_account_name}</p>}
-                    {settings.bank_account_number && <p>رقم الحساب: {settings.bank_account_number}</p>}
                     <p className="text-muted-foreground mt-2">
-                      * سيتم تأكيد الطلب بعد التحقق من التحويل
+                      * سيتم إرسال بيانات الحساب بعد تأكيد الطلب
                     </p>
                   </div>
                 )}
 
                 {/* Vodafone Cash Info */}
-                {formData.paymentMethod === "vodafone" && settings?.vodafone_number && (
+                {formData.paymentMethod === "vodafone" && (
                   <div className="mt-4 p-4 bg-muted rounded-lg space-y-2 text-sm">
-                    <p className="font-medium">رقم فودافون كاش:</p>
-                    <p className="text-lg font-bold" dir="ltr">{settings.vodafone_number}</p>
+                    <p className="font-medium">فودافون كاش:</p>
                     <p className="text-muted-foreground mt-2">
-                      * سيتم تأكيد الطلب بعد التحقق من الدفع
+                      * سيتم إرسال رقم فودافون كاش بعد تأكيد الطلب
                     </p>
                   </div>
                 )}

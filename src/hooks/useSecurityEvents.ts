@@ -14,6 +14,10 @@ export interface SecurityEvent {
   user_agent: string | null;
   details: Record<string, unknown>;
   created_at: string;
+  country: string | null;
+  city: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export const useSecurityEvents = (filters?: {

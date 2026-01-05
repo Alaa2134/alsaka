@@ -24,8 +24,11 @@ export const DeleteAllProducts = () => {
       return;
     }
 
-    // Verify the code matches user's access code
-    if (confirmCode !== user?.access_code) {
+    // Use verify_user_login function to verify code
+    const { data: verifyResult, error: verifyError } = await supabase
+      .rpc('verify_user_login', { p_access_code: confirmCode.trim() });
+    
+    if (verifyError || !verifyResult?.[0] || verifyResult[0].user_id !== user?.id) {
       setError("كود التأكيد غير صحيح");
       return;
     }
