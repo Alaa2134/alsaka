@@ -301,9 +301,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Verify 2FA code if required (skip if "bypass" is passed - user already verified in modal)
       if (appUser.two_factor_enabled && twoFactorCode && twoFactorCode !== "bypass") {
-        const backupCodes = appUser.backup_codes as string[] || [];
-        if (!backupCodes.includes(twoFactorCode)) {
+        // Use the secure verify_backup_code function
+        const { data: isValidCode, error: verifyError } = await supabase
+          .rpc('verify_backup_code', { 
+            plain_code: twoFactorCode, 
+            user_id_param: appUser.id 
+          });
+        
+        if (verifyError || !isValidCode) {
+          // Record failed 2FA attempt
+          await supabase.rpc('record_failed_login', { 
+            _access_code: trimmedCode,
+            _ip_address: null 
+          });
           return { success: false, error: "كود المصادقة الثنائية غير صحيح" };
+        }
+      }
+
+      // Check if account is locked
+      if (appUser.locked_until) {
+        const lockedUntil = new Date(appUser.locked_until);
+        if (lockedUntil > new Date()) {
+          const remainingMinutes = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
+          return { 
+            success: false, 
+            error: `الحساب مقفل. حاول بعد ${remainingMinutes} دقيقة` 
+          };
         }
       }
 
@@ -338,8 +361,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (signInError) {
         console.error("Sign in error:", signInError);
+        // Record failed login
+        await supabase.rpc('record_failed_login', { 
+          _access_code: trimmedCode,
+          _ip_address: null 
+        });
         return { success: false, error: "فشل في تسجيل الدخول" };
       }
+
+      // Record successful login
+      await supabase.rpc('record_successful_login', { 
+        _user_id: appUser.id,
+        _ip_address: null 
+      });
 
       // Update device lock if needed
       if (appUser.role !== 'system_manager' && !appUser.device_id) {
@@ -360,6 +394,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    // Record logout event
+    try {
+      await supabase.rpc('record_logout');
+    } catch (e) {
+      console.error("Failed to record logout:", e);
+    }
+    
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

@@ -77,10 +77,14 @@ export type Database = {
           created_at: string
           device_id: string | null
           device_locked_at: string | null
+          failed_login_attempts: number | null
           id: string
           is_active: boolean
+          last_activity_at: string | null
+          locked_until: string | null
           name: string
           role: Database["public"]["Enums"]["app_role"]
+          session_expires_at: string | null
           tenant_id: string | null
           two_factor_enabled: boolean | null
           two_factor_secret: string | null
@@ -95,10 +99,14 @@ export type Database = {
           created_at?: string
           device_id?: string | null
           device_locked_at?: string | null
+          failed_login_attempts?: number | null
           id?: string
           is_active?: boolean
+          last_activity_at?: string | null
+          locked_until?: string | null
           name: string
           role?: Database["public"]["Enums"]["app_role"]
+          session_expires_at?: string | null
           tenant_id?: string | null
           two_factor_enabled?: boolean | null
           two_factor_secret?: string | null
@@ -113,10 +121,14 @@ export type Database = {
           created_at?: string
           device_id?: string | null
           device_locked_at?: string | null
+          failed_login_attempts?: number | null
           id?: string
           is_active?: boolean
+          last_activity_at?: string | null
+          locked_until?: string | null
           name?: string
           role?: Database["public"]["Enums"]["app_role"]
+          session_expires_at?: string | null
           tenant_id?: string | null
           two_factor_enabled?: boolean | null
           two_factor_secret?: string | null
@@ -1219,6 +1231,57 @@ export type Database = {
           },
         ]
       }
+      security_events: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          severity: string
+          tenant_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          tenant_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          tenant_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "security_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_links: {
         Row: {
           created_at: string
@@ -1758,6 +1821,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_session_valid: { Args: never; Returns: boolean }
       decrypt_company_data: {
         Args: { encrypted_text: string; tenant_uuid: string }
         Returns: string
@@ -1915,8 +1979,10 @@ export type Database = {
           backup_codes: string[]
           device_id: string
           device_locked_at: string
+          failed_login_attempts: number
           id: string
           is_active: boolean
+          locked_until: string
           name: string
           role: Database["public"]["Enums"]["app_role"]
           tenant_id: string
@@ -1933,10 +1999,22 @@ export type Database = {
       is_admin_user: { Args: never; Returns: boolean }
       is_authenticated_user: { Args: never; Returns: boolean }
       is_system_manager: { Args: { _access_code: string }; Returns: boolean }
-      log_security_event: {
-        Args: { _action: string; _details?: Json }
+      log_security_event:
+        | { Args: { _action: string; _details?: Json }; Returns: undefined }
+        | {
+            Args: { _details?: Json; _event_type: string; _severity?: string }
+            Returns: string
+          }
+      record_failed_login: {
+        Args: { _access_code: string; _ip_address?: string }
+        Returns: Json
+      }
+      record_logout: { Args: never; Returns: undefined }
+      record_successful_login: {
+        Args: { _ip_address?: string; _user_id: string }
         Returns: undefined
       }
+      update_session_activity: { Args: never; Returns: undefined }
       user_has_role: {
         Args: {
           _access_code: string
