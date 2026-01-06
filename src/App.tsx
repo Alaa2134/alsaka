@@ -48,6 +48,7 @@ const StoreProductDetail = lazy(() => import("./pages/store/StoreProductDetail")
 const StoreCart = lazy(() => import("./pages/store/StoreCart").then(m => ({ default: m.StoreCart })));
 const StoreCheckout = lazy(() => import("./pages/store/StoreCheckout").then(m => ({ default: m.StoreCheckout })));
 const StoreLinkPage = lazy(() => import("./pages/store/StoreLinkPage").then(m => ({ default: m.StoreLinkPage })));
+const StoreAddProduct = lazy(() => import("./pages/store/StoreAddProduct").then(m => ({ default: m.StoreAddProduct })));
 const CustomerLogin = lazy(() => import("./pages/store/CustomerLogin"));
 const CustomerOrders = lazy(() => import("./pages/store/CustomerOrders"));
 const CustomerWishlist = lazy(() => import("./pages/store/CustomerWishlist"));
@@ -280,6 +281,11 @@ const App = () => (
                       <Route path="link/:linkCode" element={
                         <Suspense fallback={<FormSkeleton />}>
                           <StoreLinkPage />
+                        </Suspense>
+                      } />
+                      <Route path="add-product" element={
+                        <Suspense fallback={<FormSkeleton />}>
+                          <StoreAddProduct />
                         </Suspense>
                       } />
                       <Route path="login" element={

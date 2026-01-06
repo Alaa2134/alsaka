@@ -35,6 +35,7 @@ export const StoreHeader = ({ storeName, logoUrl, primaryColor, tenantSlug }: St
   const navLinks = [
     { label: "الرئيسية", href: `/store/${tenantSlug}` },
     { label: "المنتجات", href: `/store/${tenantSlug}/products` },
+    { label: "إضافة منتج", href: `/store/${tenantSlug}/add-product` },
   ];
 
   return (
