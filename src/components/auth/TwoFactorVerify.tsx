@@ -25,34 +25,35 @@ export const TwoFactorVerify = ({ open, userId, onSuccess, onCancel }: TwoFactor
 
     setIsLoading(true);
 
-    // Get user's backup codes
-    const { data: userData, error: userError } = await supabase
-      .from('app_users')
-      .select('backup_codes')
-      .eq('id', userId)
-      .single();
+    try {
+      // Use the secure verify_backup_code function
+      const { data: isValid, error } = await supabase
+        .rpc('verify_backup_code', { 
+          user_id_param: userId,
+          plain_code: code 
+        });
 
-    if (userError || !userData) {
-      toast.error('حدث خطأ في التحقق');
+      if (error) {
+        console.error('Verification error:', error);
+        toast.error('حدث خطأ في التحقق');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!isValid) {
+        toast.error('كود غير صحيح');
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success('تم التحقق بنجاح');
       setIsLoading(false);
-      return;
-    }
-
-    const backupCodes = userData.backup_codes as string[] || [];
-    
-    if (!backupCodes.includes(code)) {
-      toast.error('كود غير صحيح');
+      onSuccess();
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast.error('حدث خطأ غير متوقع');
       setIsLoading(false);
-      return;
     }
-
-    // Remove used code (optional - for single-use codes)
-    // const updatedCodes = backupCodes.filter(c => c !== code);
-    // await supabase.from('app_users').update({ backup_codes: updatedCodes }).eq('id', userId);
-
-    toast.success('تم التحقق بنجاح');
-    setIsLoading(false);
-    onSuccess();
   };
 
   return (
