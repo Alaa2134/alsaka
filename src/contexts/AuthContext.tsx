@@ -340,7 +340,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Create auth user if doesn't exist
+      // Ensure auth user exists (or is synced) before trying to sign in
       if (!appUser.auth_id) {
         const response = await supabase.functions.invoke('create-auth-user', {
           body: { accessCode: trimmedCode }
@@ -352,12 +352,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Login with Supabase Auth
+      // Login with Auth
       const email = `${trimmedCode}@app.internal`;
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      let { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: trimmedCode
       });
+
+      // If credentials are invalid, the auth password/email may be out of sync (legacy users)
+      if (signInError?.message?.toLowerCase().includes('invalid login credentials')) {
+        const ensure = await supabase.functions.invoke('create-auth-user', {
+          body: { accessCode: trimmedCode }
+        });
+
+        if (!ensure.error) {
+          const retry = await supabase.auth.signInWithPassword({
+            email,
+            password: trimmedCode
+          });
+          signInError = retry.error;
+        }
+      }
 
       if (signInError) {
         console.error("Sign in error:", signInError);

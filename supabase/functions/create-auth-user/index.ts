@@ -29,14 +29,25 @@ Deno.serve(async (req) => {
 
     // If admin is creating user, verify admin permissions
     if (adminAccessCode) {
+      const { data: adminVerify, error: adminVerifyError } = await supabaseAdmin
+        .rpc('verify_user_login', { p_access_code: String(adminAccessCode).trim() });
+
+      const adminUserId = adminVerify?.[0]?.user_id as string | undefined;
+
+      if (adminVerifyError || !adminUserId) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const { data: adminUser } = await supabaseAdmin
         .from("app_users")
-        .select("*")
-        .eq("access_code", adminAccessCode)
-        .eq("is_active", true)
-        .single();
+        .select("id, role, is_active")
+        .eq("id", adminUserId)
+        .maybeSingle();
 
-      if (!adminUser || !["admin", "company_admin", "system_manager"].includes(adminUser.role)) {
+      if (!adminUser || !adminUser.is_active || !["admin", "company_admin", "system_manager"].includes(adminUser.role)) {
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -44,13 +55,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Find the app_user by access code
+    // Find the app_user by access code (secure verification)
+    const normalizedCode = String(accessCode).trim();
+    const { data: verify, error: verifyError } = await supabaseAdmin
+      .rpc('verify_user_login', { p_access_code: normalizedCode });
+
+    const userId = verify?.[0]?.user_id as string | undefined;
+
+    if (verifyError || !userId) {
+      return new Response(
+        JSON.stringify({ error: "User not found or inactive" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { data: appUser, error: findError } = await supabaseAdmin
       .from("app_users")
       .select("*")
-      .eq("access_code", accessCode)
-      .eq("is_active", true)
-      .single();
+      .eq("id", userId)
+      .maybeSingle();
 
     if (findError || !appUser) {
       return new Response(
@@ -59,25 +82,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if user already has auth_id
+    // If user already has auth_id, ensure the auth account is synced (legacy password/email mismatches)
+    const email = `${normalizedCode}@app.internal`;
+
     if (appUser.auth_id) {
+      const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(appUser.auth_id, {
+        email,
+        password: normalizedCode,
+        email_confirm: true,
+      });
+
+      if (updateAuthError) {
+        console.error("Auth update error:", updateAuthError);
+        return new Response(
+          JSON.stringify({ error: "Failed to update auth user", details: updateAuthError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "User already has auth account",
+          message: "Auth user synced",
           authId: appUser.auth_id 
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create email from access code (internal format)
-    const email = `${accessCode}@app.internal`;
-
     // Create auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password: accessCode,
+      password: normalizedCode,
       email_confirm: true,
       user_metadata: {
         app_user_id: appUser.id,
