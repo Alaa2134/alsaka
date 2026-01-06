@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,44 +10,64 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { InactivityLock } from "@/components/auth/InactivityLock";
 import { SessionWrapper } from "@/components/auth/SessionWrapper";
-import { AIAssistant } from "@/components/shared/AIAssistant";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import Products from "./pages/Products";
-import Clients from "./pages/Clients";
-import Reports from "./pages/Reports";
-import Warehouses from "./pages/Warehouses";
-import Returns from "./pages/Returns";
-import InvoiceDesigner from "./pages/InvoiceDesigner";
-import InvoicesAdmin from "./pages/InvoicesAdmin";
-import UsersAdmin from "./pages/UsersAdmin";
-import TenantsAdmin from "./pages/TenantsAdmin";
-import ClientTracking from "./pages/ClientTracking";
-import SystemDashboard from "./pages/SystemDashboard";
-import Accounting from "./pages/Accounting";
-import StoreOrders from "./pages/StoreOrders";
-import OrderDetails from "./pages/OrderDetails";
-import CompanySettings from "./pages/CompanySettings";
-import LinksAdmin from "./pages/LinksAdmin";
-import Subscription from "./pages/Subscription";
-import StoreManagement from "./pages/StoreManagement";
-import WhatsAppSettings from "./pages/WhatsAppSettings";
-import AuditLogs from "./pages/AuditLogs";
-import SecurityEvents from "./pages/SecurityEvents";
-import NotFound from "./pages/NotFound";
-import { StoreLayout } from "./pages/store/StoreLayout";
-import { StoreHome } from "./pages/store/StoreHome";
-import { StoreProducts } from "./pages/store/StoreProducts";
-import { StoreProductDetail } from "./pages/store/StoreProductDetail";
-import { StoreCart } from "./pages/store/StoreCart";
-import { StoreCheckout } from "./pages/store/StoreCheckout";
-import { StoreLinkPage } from "./pages/store/StoreLinkPage";
-import CustomerLogin from "./pages/store/CustomerLogin";
-import CustomerOrders from "./pages/store/CustomerOrders";
-import CustomerWishlist from "./pages/store/CustomerWishlist";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
 
-const queryClient = new QueryClient();
+// Lazy load pages for code splitting
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Index = lazy(() => import("./pages/Index"));
+const Products = lazy(() => import("./pages/Products"));
+const Clients = lazy(() => import("./pages/Clients"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Warehouses = lazy(() => import("./pages/Warehouses"));
+const Returns = lazy(() => import("./pages/Returns"));
+const InvoiceDesigner = lazy(() => import("./pages/InvoiceDesigner"));
+const InvoicesAdmin = lazy(() => import("./pages/InvoicesAdmin"));
+const UsersAdmin = lazy(() => import("./pages/UsersAdmin"));
+const TenantsAdmin = lazy(() => import("./pages/TenantsAdmin"));
+const ClientTracking = lazy(() => import("./pages/ClientTracking"));
+const SystemDashboard = lazy(() => import("./pages/SystemDashboard"));
+const Accounting = lazy(() => import("./pages/Accounting"));
+const StoreOrders = lazy(() => import("./pages/StoreOrders"));
+const OrderDetails = lazy(() => import("./pages/OrderDetails"));
+const CompanySettings = lazy(() => import("./pages/CompanySettings"));
+const LinksAdmin = lazy(() => import("./pages/LinksAdmin"));
+const Subscription = lazy(() => import("./pages/Subscription"));
+const StoreManagement = lazy(() => import("./pages/StoreManagement"));
+const WhatsAppSettings = lazy(() => import("./pages/WhatsAppSettings"));
+const AuditLogs = lazy(() => import("./pages/AuditLogs"));
+const SecurityEvents = lazy(() => import("./pages/SecurityEvents"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AIAssistant = lazy(() => import("@/components/shared/AIAssistant").then(m => ({ default: m.AIAssistant })));
+
+// Store pages
+const StoreLayout = lazy(() => import("./pages/store/StoreLayout").then(m => ({ default: m.StoreLayout })));
+const StoreHome = lazy(() => import("./pages/store/StoreHome").then(m => ({ default: m.StoreHome })));
+const StoreProducts = lazy(() => import("./pages/store/StoreProducts").then(m => ({ default: m.StoreProducts })));
+const StoreProductDetail = lazy(() => import("./pages/store/StoreProductDetail").then(m => ({ default: m.StoreProductDetail })));
+const StoreCart = lazy(() => import("./pages/store/StoreCart").then(m => ({ default: m.StoreCart })));
+const StoreCheckout = lazy(() => import("./pages/store/StoreCheckout").then(m => ({ default: m.StoreCheckout })));
+const StoreLinkPage = lazy(() => import("./pages/store/StoreLinkPage").then(m => ({ default: m.StoreLinkPage })));
+const CustomerLogin = lazy(() => import("./pages/store/CustomerLogin"));
+const CustomerOrders = lazy(() => import("./pages/store/CustomerOrders"));
+const CustomerWishlist = lazy(() => import("./pages/store/CustomerWishlist"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+// Skeleton wrappers for different page types
+const DashboardSkeleton = () => <PageSkeleton variant="dashboard" />;
+const TableSkeleton = () => <PageSkeleton variant="table" />;
+const FormSkeleton = () => <PageSkeleton variant="form" />;
+const CardsSkeleton = () => <PageSkeleton variant="cards" />;
+const LoginSkeleton = () => <PageSkeleton variant="login" />;
 
 const App = () => (
   <HelmetProvider>
@@ -58,140 +79,242 @@ const App = () => (
             <Sonner />
             <InactivityLock>
               <SessionWrapper>
-              <BrowserRouter>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/tracking" element={<ClientTracking />} />
-                <Route path="/system" element={
-                  <ProtectedRoute requiredRoles={["system_manager"]}>
-                    <SystemDashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/invoice" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
-                    <Index />
-                  </ProtectedRoute>
-                } />
-                <Route path="/invoices" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
-                    <InvoicesAdmin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/products" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <Products />
-                  </ProtectedRoute>
-                } />
-                <Route path="/clients" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <Clients />
-                  </ProtectedRoute>
-                } />
-                <Route path="/reports" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <Reports />
-                  </ProtectedRoute>
-                } />
-                <Route path="/warehouses" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <Warehouses />
-                  </ProtectedRoute>
-                } />
-                <Route path="/returns" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
-                    <Returns />
-                  </ProtectedRoute>
-                } />
-                <Route path="/invoice-designer" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <InvoiceDesigner />
-                  </ProtectedRoute>
-                } />
-                <Route path="/accounting" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <Accounting />
-                  </ProtectedRoute>
-                } />
-                <Route path="/store-orders" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <StoreOrders />
-                  </ProtectedRoute>
-                } />
-                <Route path="/order/:orderId" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <OrderDetails />
-                  </ProtectedRoute>
-                } />
-                <Route path="/subscription" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
-                    <Subscription />
-                  </ProtectedRoute>
-                } />
-                <Route path="/links" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <LinksAdmin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/store-management" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
-                    <StoreManagement />
-                  </ProtectedRoute>
-                } />
-                <Route path="/company-settings" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
-                    <CompanySettings />
-                  </ProtectedRoute>
-                } />
-                <Route path="/whatsapp-settings" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
-                    <WhatsAppSettings />
-                  </ProtectedRoute>
-                } />
-                <Route path="/audit-logs" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
-                    <AuditLogs />
-                  </ProtectedRoute>
-                } />
-                <Route path="/security-events" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
-                    <SecurityEvents />
-                  </ProtectedRoute>
-                } />
-                <Route path="/users" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
-                    <UsersAdmin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/tenants" element={
-                  <ProtectedRoute requiredRoles={["system_manager", "admin"]}>
-                    <TenantsAdmin />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Public Store Routes */}
-                <Route path="/store/:tenantSlug" element={<StoreLayout />}>
-                  <Route index element={<StoreHome />} />
-                  <Route path="products" element={<StoreProducts />} />
-                  <Route path="product/:productId" element={<StoreProductDetail />} />
-                  <Route path="cart" element={<StoreCart />} />
-                  <Route path="checkout" element={<StoreCheckout />} />
-                  <Route path="link/:linkCode" element={<StoreLinkPage />} />
-                  <Route path="login" element={<CustomerLogin />} />
-                  <Route path="account" element={<CustomerLogin />} />
-                  <Route path="orders" element={<CustomerOrders />} />
-                  <Route path="wishlist" element={<CustomerWishlist />} />
-                </Route>
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <AIAssistant />
-            </BrowserRouter>
-            </SessionWrapper>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/login" element={
+                      <Suspense fallback={<LoginSkeleton />}>
+                        <Login />
+                      </Suspense>
+                    } />
+                    <Route path="/tracking" element={
+                      <Suspense fallback={<FormSkeleton />}>
+                        <ClientTracking />
+                      </Suspense>
+                    } />
+                    <Route path="/system" element={
+                      <ProtectedRoute requiredRoles={["system_manager"]}>
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <SystemDashboard />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <Dashboard />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/invoice" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <Index />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/invoices" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <InvoicesAdmin />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/products" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<CardsSkeleton />}>
+                          <Products />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/clients" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <Clients />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/reports" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <Reports />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/warehouses" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<CardsSkeleton />}>
+                          <Warehouses />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/returns" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <Returns />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/invoice-designer" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <InvoiceDesigner />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/accounting" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <Accounting />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/store-orders" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <StoreOrders />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/order/:orderId" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <OrderDetails />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/subscription" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                        <Suspense fallback={<CardsSkeleton />}>
+                          <Subscription />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/links" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <LinksAdmin />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/store-management" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <StoreManagement />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/company-settings" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <CompanySettings />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/whatsapp-settings" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <WhatsAppSettings />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/audit-logs" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <AuditLogs />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/security-events" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <SecurityEvents />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/users" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <UsersAdmin />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tenants" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "admin"]}>
+                        <Suspense fallback={<TableSkeleton />}>
+                          <TenantsAdmin />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Public Store Routes */}
+                    <Route path="/store/:tenantSlug" element={
+                      <Suspense fallback={<CardsSkeleton />}>
+                        <StoreLayout />
+                      </Suspense>
+                    }>
+                      <Route index element={
+                        <Suspense fallback={<CardsSkeleton />}>
+                          <StoreHome />
+                        </Suspense>
+                      } />
+                      <Route path="products" element={
+                        <Suspense fallback={<CardsSkeleton />}>
+                          <StoreProducts />
+                        </Suspense>
+                      } />
+                      <Route path="product/:productId" element={
+                        <Suspense fallback={<FormSkeleton />}>
+                          <StoreProductDetail />
+                        </Suspense>
+                      } />
+                      <Route path="cart" element={
+                        <Suspense fallback={<TableSkeleton />}>
+                          <StoreCart />
+                        </Suspense>
+                      } />
+                      <Route path="checkout" element={
+                        <Suspense fallback={<FormSkeleton />}>
+                          <StoreCheckout />
+                        </Suspense>
+                      } />
+                      <Route path="link/:linkCode" element={
+                        <Suspense fallback={<FormSkeleton />}>
+                          <StoreLinkPage />
+                        </Suspense>
+                      } />
+                      <Route path="login" element={
+                        <Suspense fallback={<LoginSkeleton />}>
+                          <CustomerLogin />
+                        </Suspense>
+                      } />
+                      <Route path="account" element={
+                        <Suspense fallback={<FormSkeleton />}>
+                          <CustomerLogin />
+                        </Suspense>
+                      } />
+                      <Route path="orders" element={
+                        <Suspense fallback={<TableSkeleton />}>
+                          <CustomerOrders />
+                        </Suspense>
+                      } />
+                      <Route path="wishlist" element={
+                        <Suspense fallback={<CardsSkeleton />}>
+                          <CustomerWishlist />
+                        </Suspense>
+                      } />
+                    </Route>
+
+                    <Route path="*" element={
+                      <Suspense fallback={<DashboardSkeleton />}>
+                        <NotFound />
+                      </Suspense>
+                    } />
+                  </Routes>
+                  <Suspense fallback={null}>
+                    <AIAssistant />
+                  </Suspense>
+                </BrowserRouter>
+              </SessionWrapper>
             </InactivityLock>
           </TooltipProvider>
         </AuthProvider>
