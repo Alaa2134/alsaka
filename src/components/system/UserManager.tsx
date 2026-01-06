@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface AppUser {
   id: string;
   name: string;
-  access_code: string | null;
+  access_code_hash: string | null;
   role: string;
   is_active: boolean;
   device_id: string | null;
@@ -118,10 +118,17 @@ export const UserManager = () => {
   // Create user
   const createUser = useMutation({
     mutationFn: async (data: typeof newUser) => {
+      // Hash the access code before storing
+      const { data: hashData, error: hashError } = await supabase.rpc('hash_access_code', {
+        plain_code: data.access_code
+      });
+      
+      if (hashError) throw hashError;
+      
       const { error } = await supabase.from("app_users").insert([
         {
           name: data.name,
-          access_code: data.access_code,
+          access_code_hash: hashData,
           role: data.role as any,
           tenant_id: data.tenant_id || null,
           is_active: true,
