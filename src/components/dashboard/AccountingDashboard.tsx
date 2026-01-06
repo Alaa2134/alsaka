@@ -17,6 +17,7 @@ import {
   Palette,
   Settings,
   Shield,
+  PlusCircle,
 } from "lucide-react";
 import { DashboardCard3D } from "./DashboardCard3D";
 import { motion } from "framer-motion";
@@ -61,6 +62,15 @@ const dashboardItems: DashboardItem[] = [
     color: "warning",
     roles: ["system_manager", "company_admin", "admin", "manager", "cashier"],
     notificationKey: "pendingReturns",
+  },
+  {
+    id: "add-product",
+    title: "إضافة منتج",
+    description: "إضافة منتج جديد بسرعة",
+    icon: PlusCircle,
+    path: "/store-management",
+    color: "success",
+    roles: ["system_manager", "company_admin", "admin", "manager"],
   },
   {
     id: "products",
