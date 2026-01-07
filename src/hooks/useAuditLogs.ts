@@ -140,6 +140,7 @@ export const getActionLabel = (action: string): string => {
     EXPORT: "تصدير",
     IMPORT: "استيراد",
     PRINT: "طباعة",
+    APPROVE_INVOICE: "اعتماد فاتورة",
   };
   
   if (action.startsWith("SECURITY:")) {
