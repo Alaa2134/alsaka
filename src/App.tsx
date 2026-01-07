@@ -56,9 +56,11 @@ const CustomerWishlist = lazy(() => import("./pages/store/CustomerWishlist"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+      staleTime: 1000 * 60 * 10, // 10 minutes - reduce refetches
+      gcTime: 1000 * 60 * 60, // 1 hour cache
       refetchOnWindowFocus: false,
+      refetchOnMount: false, // Don't refetch on mount if data is fresh
+      retry: 1, // Reduce retries
     },
   },
 });

@@ -86,8 +86,8 @@ const InvoiceDesigner = () => {
   const [draggedElement, setDraggedElement] = useState<string | null>(null);
   const [designMode, setDesignMode] = useState<"settings" | "canvas">("settings");
 
-  // Check permissions
-  if (!hasPermission(["admin", "manager"])) {
+  // Check permissions - align with route permissions
+  if (!hasPermission(["system_manager", "company_admin", "admin", "manager"])) {
     return <Navigate to="/" replace />;
   }
 

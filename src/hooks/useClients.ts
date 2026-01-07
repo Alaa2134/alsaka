@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Client {
   id: string;
@@ -10,22 +11,33 @@ export interface Client {
   address: string | null;
   email: string | null;
   notes: string | null;
+  tenant_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export const useClients = () => {
+  const { tenant } = useAuth();
+  
   return useQuery({
-    queryKey: ["clients"],
+    queryKey: ["clients", tenant?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("clients")
         .select("*")
         .order("client_number");
       
+      if (tenant?.id) {
+        query = query.eq("tenant_id", tenant.id);
+      }
+      
+      const { data, error } = await query;
+      
       if (error) throw error;
       return data as Client[];
     },
+    enabled: !!tenant?.id,
+    staleTime: 1000 * 60 * 10, // 10 minutes cache
   });
 };
 
@@ -72,13 +84,18 @@ export const useNextClientNumber = () => {
 
 export const useCreateClient = (options?: { showToast?: boolean }) => {
   const queryClient = useQueryClient();
+  const { tenant } = useAuth();
   const showToast = options?.showToast ?? true;
   
   return useMutation({
-    mutationFn: async (client: Omit<Client, "id" | "created_at" | "updated_at">) => {
+    mutationFn: async (client: Omit<Client, "id" | "created_at" | "updated_at" | "tenant_id">) => {
+      if (!tenant?.id) {
+        throw new Error("يجب تسجيل الدخول أولاً");
+      }
+      
       const { data, error } = await supabase
         .from("clients")
-        .insert(client)
+        .insert({ ...client, tenant_id: tenant.id })
         .select()
         .single();
       

@@ -1,27 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Warehouse {
   id: string;
   name: string;
   address: string | null;
+  tenant_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export const useWarehouses = () => {
+  const { tenant } = useAuth();
+  
   return useQuery({
-    queryKey: ["warehouses"],
+    queryKey: ["warehouses", tenant?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("warehouses")
         .select("*")
         .order("name");
       
+      if (tenant?.id) {
+        query = query.eq("tenant_id", tenant.id);
+      }
+      
+      const { data, error } = await query;
+      
       if (error) throw error;
       return data as Warehouse[];
     },
+    enabled: !!tenant?.id,
+    staleTime: 1000 * 60 * 15, // 15 minutes cache
   });
 };
 

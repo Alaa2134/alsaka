@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Product {
   id: string;
@@ -13,22 +14,33 @@ export interface Product {
   category: string | null;
   barcode: string | null;
   image_url: string | null;
+  tenant_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export const useProducts = () => {
+  const { tenant } = useAuth();
+  
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", tenant?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
         .select("*")
         .order("item_number");
       
+      // Filter by tenant if available
+      if (tenant?.id) {
+        query = query.eq("tenant_id", tenant.id);
+      }
+      
+      const { data, error } = await query;
+      
       if (error) throw error;
       return data as Product[];
     },
+    enabled: !!tenant?.id,
   });
 };
 
@@ -112,12 +124,17 @@ export const useProductByBarcode = (barcode: string) => {
 
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();
+  const { tenant } = useAuth();
   
   return useMutation({
-    mutationFn: async (product: Omit<Product, "id" | "created_at" | "updated_at">) => {
+    mutationFn: async (product: Omit<Product, "id" | "created_at" | "updated_at" | "tenant_id">) => {
+      if (!tenant?.id) {
+        throw new Error("يجب تسجيل الدخول أولاً");
+      }
+      
       const { data, error } = await supabase
         .from("products")
-        .insert(product)
+        .insert({ ...product, tenant_id: tenant.id })
         .select()
         .single();
       
