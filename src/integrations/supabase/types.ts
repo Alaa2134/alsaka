@@ -618,6 +618,7 @@ export type Database = {
           notes: string | null
           payment_method: string
           status: string
+          store_order_id: string | null
           tenant_id: string | null
           total_amount: number
           updated_at: string
@@ -631,6 +632,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           status?: string
+          store_order_id?: string | null
           tenant_id?: string | null
           total_amount?: number
           updated_at?: string
@@ -644,6 +646,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string
           status?: string
+          store_order_id?: string | null
           tenant_id?: string | null
           total_amount?: number
           updated_at?: string
@@ -654,6 +657,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_store_order_id_fkey"
+            columns: ["store_order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
             referencedColumns: ["id"]
           },
           {
@@ -1510,6 +1520,9 @@ export type Database = {
           discount_amount: number | null
           estimated_delivery: string | null
           id: string
+          invoice_approved_at: string | null
+          invoice_approved_by: string | null
+          invoice_id: string | null
           notes: string | null
           order_number: string
           order_status: string | null
@@ -1538,6 +1551,9 @@ export type Database = {
           discount_amount?: number | null
           estimated_delivery?: string | null
           id?: string
+          invoice_approved_at?: string | null
+          invoice_approved_by?: string | null
+          invoice_id?: string | null
           notes?: string | null
           order_number: string
           order_status?: string | null
@@ -1566,6 +1582,9 @@ export type Database = {
           discount_amount?: number | null
           estimated_delivery?: string | null
           id?: string
+          invoice_approved_at?: string | null
+          invoice_approved_by?: string | null
+          invoice_id?: string | null
           notes?: string | null
           order_number?: string
           order_status?: string | null
@@ -1588,6 +1607,20 @@ export type Database = {
             columns: ["confirmed_by"]
             isOneToOne: false
             referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_orders_invoice_approved_by_fkey"
+            columns: ["invoice_approved_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_orders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
           {

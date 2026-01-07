@@ -19,8 +19,10 @@ import {
   Loader2,
   CreditCard,
   Banknote,
-  Smartphone
+  Smartphone,
+  FileText
 } from "lucide-react";
+import { useLogActivity } from "@/hooks/useAuditLogs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,6 +50,9 @@ interface StoreOrder {
   notes: string | null;
   payment_proof_url: string | null;
   created_at: string;
+  invoice_id: string | null;
+  invoice_approved_by: string | null;
+  invoice_approved_at: string | null;
 }
 
 interface OrderItem {
@@ -84,10 +89,12 @@ const orderStatusLabels: Record<string, { label: string; color: string }> = {
 
 const StoreOrders = () => {
   const navigate = useNavigate();
-  const { tenant, user } = useAuth();
+  const { tenant, user, hasPermission } = useAuth();
   const queryClient = useQueryClient();
+  const logActivity = useLogActivity();
   const [selectedOrder, setSelectedOrder] = useState<StoreOrder | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [creatingInvoice, setCreatingInvoice] = useState<string | null>(null);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["store-orders", tenant?.id, statusFilter],
@@ -147,6 +154,111 @@ const StoreOrders = () => {
       toast.error(`خطأ: ${error.message}`);
     },
   });
+
+  // Create invoice from store order
+  const createInvoiceFromOrder = async (order: StoreOrder) => {
+    if (!tenant?.id || !user?.id) {
+      toast.error("يجب تسجيل الدخول أولاً");
+      return;
+    }
+
+    // Check permission
+    if (!hasPermission(["admin", "company_admin", "manager", "system_manager"])) {
+      toast.error("ليس لديك صلاحية لإنشاء فاتورة");
+      return;
+    }
+
+    if (order.invoice_id) {
+      toast.error("تم إنشاء فاتورة لهذا الطلب مسبقاً");
+      return;
+    }
+
+    setCreatingInvoice(order.id);
+
+    try {
+      // Get order items
+      const { data: items, error: itemsError } = await supabase
+        .from("store_order_items")
+        .select("*")
+        .eq("order_id", order.id);
+
+      if (itemsError) throw itemsError;
+
+      // Generate invoice number
+      const invoiceNumber = `INV-${order.order_number}`;
+
+      // Create invoice
+      const { data: invoice, error: invoiceError } = await supabase
+        .from("invoices")
+        .insert({
+          invoice_number: invoiceNumber,
+          invoice_date: new Date().toISOString().split("T")[0],
+          payment_method: order.payment_method === "cod" ? "cash" : order.payment_method,
+          total_amount: order.total_amount,
+          notes: `فاتورة من طلب المتجر رقم: ${order.order_number}\nالعميل: ${order.customer_name}\nالهاتف: ${order.customer_phone}`,
+          status: order.payment_status === "confirmed" ? "paid" : "pending",
+          tenant_id: tenant.id,
+          store_order_id: order.id,
+        })
+        .select()
+        .single();
+
+      if (invoiceError) throw invoiceError;
+
+      // Create invoice items
+      if (items && items.length > 0) {
+        const invoiceItems = items.map((item: any) => ({
+          invoice_id: invoice.id,
+          product_id: item.product_id,
+          item_number: item.product_id || invoice.id,
+          item_name: item.product_name,
+          quantity: item.quantity,
+          price: item.unit_price,
+          min_price: item.unit_price,
+          total: item.total_price,
+        }));
+
+        const { error: itemsInsertError } = await supabase
+          .from("invoice_items")
+          .insert(invoiceItems);
+
+        if (itemsInsertError) throw itemsInsertError;
+      }
+
+      // Update store order with invoice reference
+      const { error: updateError } = await supabase
+        .from("store_orders")
+        .update({
+          invoice_id: invoice.id,
+          invoice_approved_by: user.id,
+          invoice_approved_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      if (updateError) throw updateError;
+
+      // Log audit
+      logActivity.mutate({
+        action: "INSERT",
+        tableName: "invoices",
+        recordId: invoice.id,
+        newData: {
+          invoice_number: invoiceNumber,
+          store_order_id: order.id,
+          total_amount: order.total_amount,
+          approved_by: user.name || user.id,
+        },
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["store-orders"] });
+      toast.success(`تم إنشاء الفاتورة رقم ${invoiceNumber} بنجاح`);
+    } catch (error: any) {
+      console.error("Error creating invoice:", error);
+      toast.error(`فشل في إنشاء الفاتورة: ${error?.message || "خطأ غير معروف"}`);
+    } finally {
+      setCreatingInvoice(null);
+    }
+  };
 
   // Calculate stats
   const stats = {
@@ -325,7 +437,7 @@ const StoreOrders = () => {
                           {new Date(order.created_at).toLocaleDateString("ar-EG")}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <Button
                               size="sm"
                               variant="outline"
@@ -343,6 +455,29 @@ const StoreOrders = () => {
                               >
                                 <Check size={14} />
                               </Button>
+                            )}
+                            {/* Create Invoice Button - only for managers+ and confirmed orders without invoice */}
+                            {hasPermission(["admin", "company_admin", "manager", "system_manager"]) && 
+                             order.order_status !== 'cancelled' && 
+                             !order.invoice_id && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => createInvoiceFromOrder(order)}
+                                disabled={creatingInvoice === order.id}
+                                title="إنشاء فاتورة بيع"
+                              >
+                                {creatingInvoice === order.id ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <FileText size={14} />
+                                )}
+                              </Button>
+                            )}
+                            {order.invoice_id && (
+                              <Badge variant="outline" className="text-green-600 border-green-600">
+                                تم إنشاء فاتورة
+                              </Badge>
                             )}
                           </div>
                         </TableCell>

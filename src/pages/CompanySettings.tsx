@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogActivity } from "@/hooks/useAuditLogs";
 import { Helmet } from "react-helmet-async";
 import { 
   Store, 
@@ -69,11 +70,14 @@ interface CompanySettingsData {
 
 const CompanySettings = () => {
   const { user, tenant, refreshCompanySettings, hasPermission } = useAuth();
+  const logActivity = useLogActivity();
   const [settings, setSettings] = useState<CompanySettingsData | null>(null);
   const [tenantData, setTenantData] = useState<{ name: string; logo_url: string | null; slug: string } | null>(null);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [originalSettings, setOriginalSettings] = useState<CompanySettingsData | null>(null);
+  const [originalTenantData, setOriginalTenantData] = useState<{ name: string; logo_url: string | null; slug: string } | null>(null);
 
   useEffect(() => {
     // Don't try to hit backend until user + tenant are loaded
@@ -127,10 +131,11 @@ const CompanySettings = () => {
         });
       } else {
         setSettings(data);
+        setOriginalSettings(data);
       }
     } catch (error: any) {
       console.error("Error fetching settings:", error);
-      toast.error(`فشل في تحميل الإعدادات: ${error?.message || "غير معروف"}`);
+      toast.error(`فشل في تحميل الإعدادات: ${error?.message || "خطأ غير معروف"}`);
     } finally {
       setIsLoading(false);
     }
@@ -146,6 +151,7 @@ const CompanySettings = () => {
 
       if (error) throw error;
       setTenantData(data);
+      setOriginalTenantData(data);
     } catch (error) {
       console.error("Error fetching tenant:", error);
     }
@@ -260,12 +266,38 @@ const CompanySettings = () => {
 
       if (tenantError) throw tenantError;
 
+      // Log audit for settings changes
+      if (originalSettings) {
+        logActivity.mutate({
+          action: "UPDATE",
+          tableName: "company_settings",
+          recordId: settings.id || tenant!.id,
+          oldData: originalSettings as unknown as Record<string, unknown>,
+          newData: settings as unknown as Record<string, unknown>,
+        });
+      }
+      
+      // Log audit for tenant changes
+      if (originalTenantData && (
+        originalTenantData.name !== tenantData.name ||
+        originalTenantData.slug !== tenantData.slug ||
+        originalTenantData.logo_url !== tenantData.logo_url
+      )) {
+        logActivity.mutate({
+          action: "UPDATE",
+          tableName: "tenants",
+          recordId: tenant!.id,
+          oldData: originalTenantData as Record<string, unknown>,
+          newData: tenantData as Record<string, unknown>,
+        });
+      }
+
       await refreshCompanySettings();
       await fetchSettings();
       toast.success("تم حفظ الإعدادات بنجاح");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving settings:", error);
-      toast.error("فشل في حفظ الإعدادات");
+      toast.error(`فشل في حفظ الإعدادات: ${error?.message || "خطأ غير معروف"}`);
     } finally {
       setIsSaving(false);
     }
