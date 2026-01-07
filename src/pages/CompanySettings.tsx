@@ -29,9 +29,11 @@ import {
   Layers,
   Zap,
   Volume2,
-  VolumeX
+  VolumeX,
+  MessageCircle
 } from "lucide-react";
 import { LogoUploader } from "@/components/shared/LogoUploader";
+import { WhatsAppQRRegistration } from "@/components/whatsapp/WhatsAppQRRegistration";
 
 interface CompanySettingsData {
   id: string;
@@ -702,6 +704,20 @@ const CompanySettings = () => {
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* WhatsApp Integration */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-green-500" />
+                  ربط الواتساب
+                </CardTitle>
+                <CardDescription>إعداد إشعارات الواتساب التلقائية للعملاء</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WhatsAppQRRegistration />
               </CardContent>
             </Card>
           </div>
