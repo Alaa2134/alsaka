@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { DashboardCard3D } from "./DashboardCard3D";
 import { motion } from "framer-motion";
+import { AccessCodeVerify } from "@/components/auth/AccessCodeVerify";
 
 interface DashboardItem {
   id: string;
@@ -31,6 +33,7 @@ interface DashboardItem {
   color: "primary" | "accent" | "success" | "warning" | "destructive";
   roles: ("system_manager" | "company_admin" | "admin" | "manager" | "cashier")[];
   notificationKey?: string;
+  requiresVerification?: boolean; // New: whether this item requires code verification
 }
 
 const dashboardItems: DashboardItem[] = [
@@ -42,6 +45,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/invoice",
     color: "primary",
     roles: ["system_manager", "company_admin", "admin", "manager", "cashier"],
+    requiresVerification: false, // Sales invoice does NOT require verification
   },
   {
     id: "invoices",
@@ -52,6 +56,7 @@ const dashboardItems: DashboardItem[] = [
     color: "accent",
     roles: ["system_manager", "company_admin", "admin", "manager", "cashier"],
     notificationKey: "unpaidInvoices",
+    requiresVerification: true,
   },
   {
     id: "returns",
@@ -62,6 +67,7 @@ const dashboardItems: DashboardItem[] = [
     color: "warning",
     roles: ["system_manager", "company_admin", "admin", "manager", "cashier"],
     notificationKey: "pendingReturns",
+    requiresVerification: true,
   },
   {
     id: "add-product",
@@ -71,6 +77,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/store-management",
     color: "success",
     roles: ["system_manager", "company_admin", "admin", "manager"],
+    requiresVerification: true,
   },
   {
     id: "products",
@@ -80,6 +87,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/products",
     color: "success",
     roles: ["system_manager", "company_admin", "admin", "manager"],
+    requiresVerification: true,
   },
   {
     id: "clients",
@@ -89,6 +97,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/clients",
     color: "primary",
     roles: ["system_manager", "company_admin", "admin", "manager"],
+    requiresVerification: true,
   },
   {
     id: "tracking",
@@ -98,6 +107,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/tracking",
     color: "accent",
     roles: ["system_manager", "company_admin", "admin", "manager"],
+    requiresVerification: true,
   },
   {
     id: "warehouses",
@@ -108,6 +118,7 @@ const dashboardItems: DashboardItem[] = [
     color: "warning",
     roles: ["system_manager", "company_admin", "admin", "manager"],
     notificationKey: "lowStock",
+    requiresVerification: true,
   },
   {
     id: "store-orders",
@@ -118,6 +129,7 @@ const dashboardItems: DashboardItem[] = [
     color: "success",
     roles: ["system_manager", "company_admin", "admin", "manager"],
     notificationKey: "pendingOrders",
+    requiresVerification: true,
   },
   {
     id: "links",
@@ -127,6 +139,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/links",
     color: "accent",
     roles: ["system_manager", "company_admin", "admin", "manager"],
+    requiresVerification: true,
   },
   {
     id: "accounting",
@@ -136,6 +149,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/accounting",
     color: "primary",
     roles: ["system_manager", "company_admin", "admin"],
+    requiresVerification: true,
   },
   {
     id: "reports",
@@ -145,6 +159,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/reports",
     color: "accent",
     roles: ["system_manager", "company_admin", "admin", "manager"],
+    requiresVerification: true,
   },
   {
     id: "invoice-designer",
@@ -153,7 +168,8 @@ const dashboardItems: DashboardItem[] = [
     icon: Palette,
     path: "/invoice-designer",
     color: "accent",
-    roles: ["system_manager", "company_admin", "admin"],
+    roles: ["system_manager", "company_admin", "admin", "manager"],
+    requiresVerification: true,
   },
   {
     id: "company-settings",
@@ -163,6 +179,7 @@ const dashboardItems: DashboardItem[] = [
     path: "/company-settings",
     color: "primary",
     roles: ["system_manager", "company_admin", "admin"],
+    requiresVerification: true,
   },
   {
     id: "system",
@@ -172,12 +189,18 @@ const dashboardItems: DashboardItem[] = [
     path: "/system",
     color: "destructive",
     roles: ["system_manager"],
+    requiresVerification: true,
   },
 ];
 
 export const AccountingDashboard = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
+  const [showVerify, setShowVerify] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  
+  // Session-based verification cache (cleared on page refresh)
+  const [verifiedPaths, setVerifiedPaths] = useState<Set<string>>(new Set());
 
   // Fetch notification counts
   const { data: notifications } = useQuery({
@@ -209,6 +232,7 @@ export const AccountingDashboard = () => {
         pendingReturns: pendingReturns.count || 0,
       };
     },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
   const filteredItems = dashboardItems.filter((item) =>
@@ -220,18 +244,36 @@ export const AccountingDashboard = () => {
     return notifications[key as keyof typeof notifications];
   };
 
+  const handleCardClick = useCallback((item: DashboardItem) => {
+    // If verification is required and not yet verified for this session
+    if (item.requiresVerification && !verifiedPaths.has(item.path)) {
+      setPendingPath(item.path);
+      setShowVerify(true);
+    } else {
+      navigate(item.path);
+    }
+  }, [navigate, verifiedPaths]);
+
+  const handleVerified = useCallback(() => {
+    if (pendingPath) {
+      setVerifiedPaths(prev => new Set(prev).add(pendingPath));
+      navigate(pendingPath);
+      setPendingPath(null);
+    }
+  }, [pendingPath, navigate]);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.05,
+        staggerChildren: 0.03, // Faster stagger
       },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    hidden: { opacity: 0, y: 15, scale: 0.97 },
     visible: { opacity: 1, y: 0, scale: 1 },
   };
 
@@ -264,13 +306,22 @@ export const AccountingDashboard = () => {
               title={item.title}
               description={item.description}
               icon={item.icon}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleCardClick(item)}
               color={item.color}
               notificationCount={getNotificationCount(item.notificationKey)}
             />
           </motion.div>
         ))}
       </motion.div>
+
+      {/* Access Code Verification Dialog */}
+      <AccessCodeVerify
+        open={showVerify}
+        onOpenChange={setShowVerify}
+        onVerified={handleVerified}
+        title="تأكيد الهوية"
+        description="أدخل كود الدخول للوصول لهذا القسم"
+      />
     </div>
   );
 };

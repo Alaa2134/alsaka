@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface ElementPosition {
   x: number;
@@ -83,13 +84,21 @@ export const defaultTemplateSettings: TemplateSettings = {
 };
 
 export const useInvoiceTemplates = () => {
+  const { tenant } = useAuth();
+  
   return useQuery({
-    queryKey: ["invoice_templates"],
+    queryKey: ["invoice_templates", tenant?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("invoice_templates")
         .select("*")
         .order("created_at", { ascending: false });
+      
+      if (tenant?.id) {
+        query = query.eq("tenant_id", tenant.id);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data.map(t => ({
@@ -97,18 +106,28 @@ export const useInvoiceTemplates = () => {
         settings: (t.settings || defaultTemplateSettings) as TemplateSettings
       })) as InvoiceTemplate[];
     },
+    enabled: !!tenant?.id,
+    staleTime: 1000 * 60 * 15, // 15 minutes cache
   });
 };
 
 export const useDefaultTemplate = () => {
+  const { tenant } = useAuth();
+  
   return useQuery({
-    queryKey: ["default_invoice_template"],
+    queryKey: ["default_invoice_template", tenant?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("invoice_templates")
         .select("*")
         .eq("is_default", true)
         .limit(1);
+      
+      if (tenant?.id) {
+        query = query.eq("tenant_id", tenant.id);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -121,6 +140,8 @@ export const useDefaultTemplate = () => {
       
       return null;
     },
+    enabled: !!tenant?.id,
+    staleTime: 1000 * 60 * 15,
   });
 };
 
