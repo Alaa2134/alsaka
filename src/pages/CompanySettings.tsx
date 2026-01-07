@@ -88,10 +88,43 @@ const CompanySettings = () => {
         .from("company_settings")
         .select("*")
         .eq("tenant_id", tenant!.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setSettings(data);
+
+      // If settings row doesn't exist yet for this tenant, initialize defaults
+      if (!data) {
+        setSettings({
+          id: "",
+          tenant_id: tenant!.id,
+          subdomain: null,
+          custom_domain: null,
+          store_enabled: true,
+          accounting_enabled: true,
+          inventory_enabled: true,
+          payment_cod_enabled: true,
+          payment_stripe_enabled: false,
+          payment_bank_enabled: false,
+          payment_vodafone_enabled: false,
+          vodafone_number_encrypted: null,
+          bank_name: null,
+          bank_account_name: null,
+          bank_account_number_encrypted: null,
+          tax_percentage: 0,
+          currency: "EGP",
+          enable_3d_effects: false,
+          animation_speed: "normal",
+          enable_particles: false,
+          enable_glassmorphism: false,
+          depth_intensity: 15,
+          sound_alerts_enabled: true,
+          subscription_type: "free",
+          subscription_expires_at: null,
+          store_access_blocked: false,
+        });
+      } else {
+        setSettings(data);
+      }
     } catch (error) {
       console.error("Error fetching settings:", error);
       toast.error("فشل في تحميل الإعدادات");
@@ -161,13 +194,13 @@ const CompanySettings = () => {
 
   const handleSave = async () => {
     if (!settings || !tenantData) return;
-    
+
     // Validate slug before saving
     if (!validateSlug(tenantData.slug)) {
       toast.error(slugError || "الـ slug غير صالح");
       return;
     }
-    
+
     setIsSaving(true);
 
     try {
@@ -181,46 +214,51 @@ const CompanySettings = () => {
 
       const { error: settingsError } = await supabase
         .from("company_settings")
-        .update({
-          subdomain: settings.subdomain,
-          custom_domain: settings.custom_domain,
-          store_enabled: settings.store_enabled,
-          accounting_enabled: settings.accounting_enabled,
-          inventory_enabled: settings.inventory_enabled,
-          payment_cod_enabled: settings.payment_cod_enabled,
-          payment_stripe_enabled: settings.payment_stripe_enabled,
-          payment_bank_enabled: settings.payment_bank_enabled,
-          payment_vodafone_enabled: settings.payment_vodafone_enabled,
-          bank_name: settings.bank_name,
-          bank_account_name: settings.bank_account_name,
-          tax_percentage: settings.tax_percentage,
-          currency: settings.currency,
-          // 3D Settings
-          enable_3d_effects: settings.enable_3d_effects,
-          animation_speed: settings.animation_speed,
-          enable_particles: settings.enable_particles,
-          enable_glassmorphism: settings.enable_glassmorphism,
-          depth_intensity: settings.depth_intensity,
-          // Sound Settings
-          sound_alerts_enabled: settings.sound_alerts_enabled,
-        })
-        .eq("id", settings.id);
+        .upsert(
+          {
+            tenant_id: tenant!.id,
+            subdomain: settings.subdomain,
+            custom_domain: settings.custom_domain,
+            store_enabled: settings.store_enabled,
+            accounting_enabled: settings.accounting_enabled,
+            inventory_enabled: settings.inventory_enabled,
+            payment_cod_enabled: settings.payment_cod_enabled,
+            payment_stripe_enabled: settings.payment_stripe_enabled,
+            payment_bank_enabled: settings.payment_bank_enabled,
+            payment_vodafone_enabled: settings.payment_vodafone_enabled,
+            bank_name: settings.bank_name,
+            bank_account_name: settings.bank_account_name,
+            tax_percentage: settings.tax_percentage,
+            currency: settings.currency,
+            // 3D Settings
+            enable_3d_effects: settings.enable_3d_effects,
+            animation_speed: settings.animation_speed,
+            enable_particles: settings.enable_particles,
+            enable_glassmorphism: settings.enable_glassmorphism,
+            depth_intensity: settings.depth_intensity,
+            // Sound Settings
+            sound_alerts_enabled: settings.sound_alerts_enabled,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "tenant_id" }
+        );
 
       if (settingsError) throw settingsError;
 
       // Update tenant data including slug
       const { error: tenantError } = await supabase
         .from("tenants")
-        .update({ 
-          name: tenantData.name, 
+        .update({
+          name: tenantData.name,
           logo_url: tenantData.logo_url,
-          slug: tenantData.slug 
+          slug: tenantData.slug,
         })
         .eq("id", tenant!.id);
 
       if (tenantError) throw tenantError;
 
       await refreshCompanySettings();
+      await fetchSettings();
       toast.success("تم حفظ الإعدادات بنجاح");
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -353,6 +391,7 @@ const CompanySettings = () => {
                 <div className="space-y-2">
                   <Label>شعار الشركة</Label>
                   <LogoUploader
+                    tenantId={tenant?.id}
                     currentLogo={tenantData?.logo_url || ""}
                     onLogoChange={(url) => setTenantData(prev => prev ? { ...prev, logo_url: url } : null)}
                   />
