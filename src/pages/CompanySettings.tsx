@@ -76,18 +76,21 @@ const CompanySettings = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (tenant?.id) {
+    // Don't try to hit backend until user + tenant are loaded
+    if (user?.id && tenant?.id) {
       fetchSettings();
       fetchTenantData();
     }
-  }, [tenant?.id]);
+  }, [user?.id, tenant?.id]);
 
   const fetchSettings = async () => {
     try {
+      if (!tenant?.id) return;
+
       const { data, error } = await supabase
         .from("company_settings")
         .select("*")
-        .eq("tenant_id", tenant!.id)
+        .eq("tenant_id", tenant.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -96,7 +99,7 @@ const CompanySettings = () => {
       if (!data) {
         setSettings({
           id: "",
-          tenant_id: tenant!.id,
+          tenant_id: tenant.id,
           subdomain: null,
           custom_domain: null,
           store_enabled: true,
@@ -125,9 +128,9 @@ const CompanySettings = () => {
       } else {
         setSettings(data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching settings:", error);
-      toast.error("فشل في تحميل الإعدادات");
+      toast.error(`فشل في تحميل الإعدادات: ${error?.message || "غير معروف"}`);
     } finally {
       setIsLoading(false);
     }
