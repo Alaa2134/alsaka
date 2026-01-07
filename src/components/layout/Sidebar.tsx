@@ -24,7 +24,8 @@ import {
   Store,
   MessageCircle,
   Activity,
-  ShieldAlert
+  ShieldAlert,
+  Settings
 } from "lucide-react";
 import { useAuth, roleLabels, AppRole } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -51,6 +52,7 @@ const navItems: { path: string; label: string; icon: typeof FileText; roles: App
   { path: "/subscription", label: "الاشتراك", icon: Crown, roles: ["system_manager", "company_admin", "admin"] },
   { path: "/audit-logs", label: "سجل النشاطات", icon: Activity, roles: ["system_manager", "company_admin", "admin"] },
   { path: "/security-events", label: "الأحداث الأمنية", icon: ShieldAlert, roles: ["system_manager", "company_admin", "admin"] },
+  { path: "/account-settings", label: "إعدادات الحساب", icon: Settings, roles: ["system_manager", "company_admin", "admin", "manager", "cashier", "viewer"] },
   { path: "/users", label: "إدارة المستخدمين", icon: Shield, roles: ["system_manager", "company_admin", "admin"] },
   { path: "/tenants", label: "إدارة الشركات", icon: Building2, roles: ["system_manager", "admin"] },
 ];

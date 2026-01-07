@@ -37,6 +37,7 @@ const StoreManagement = lazy(() => import("./pages/StoreManagement"));
 const WhatsAppSettings = lazy(() => import("./pages/WhatsAppSettings"));
 const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 const SecurityEvents = lazy(() => import("./pages/SecurityEvents"));
+const AccountSettings = lazy(() => import("./pages/AccountSettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AIAssistant = lazy(() => import("@/components/shared/AIAssistant").then(m => ({ default: m.AIAssistant })));
 
@@ -245,6 +246,13 @@ const App = () => (
                       <ProtectedRoute requiredRoles={["system_manager", "admin"]}>
                         <Suspense fallback={<TableSkeleton />}>
                           <TenantsAdmin />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/account-settings" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager", "cashier", "viewer"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <AccountSettings />
                         </Suspense>
                       </ProtectedRoute>
                     } />
