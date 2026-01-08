@@ -7,7 +7,7 @@ import { Carousel3D } from "@/components/store/3d/Carousel3D";
 import { FloatingPlatform, GradientBackground } from "@/components/store/3d/Backgrounds";
 import { GlassCard } from "@/components/store/3d/GlassCard";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package, Truck, Shield, HeadphonesIcon, Sparkles } from "lucide-react";
+import { ArrowLeft, Package, Truck, Shield, HeadphonesIcon, Sparkles, FolderTree } from "lucide-react";
 import type { StoreContextData } from "./StoreLayout";
 
 interface Product {
@@ -17,19 +17,30 @@ interface Product {
   min_price: number;
   stock_quantity: number;
   category: string | null;
+  category_id: string | null;
   barcode: string | null;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  parent_id: string | null;
+  products_count?: number;
 }
 
 export const StoreHome = () => {
   const { tenant, settings } = useOutletContext<StoreContextData>();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [latestProducts, setLatestProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch featured products
         const { data: featured } = await supabase
           .from("products")
           .select("*")
@@ -37,6 +48,7 @@ export const StoreHome = () => {
           .gt("stock_quantity", 0)
           .limit(8);
 
+        // Fetch latest products
         const { data: latest } = await supabase
           .from("products")
           .select("*")
@@ -44,25 +56,44 @@ export const StoreHome = () => {
           .order("created_at", { ascending: false })
           .limit(8);
 
-        const { data: allProducts } = await supabase
-          .from("products")
-          .select("category")
+        // Fetch categories from categories table with product count
+        const { data: categoriesData } = await supabase
+          .from("categories")
+          .select("*")
           .eq("tenant_id", tenant.id)
-          .not("category", "is", null);
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true });
 
-        const uniqueCategories = [...new Set(allProducts?.map((p) => p.category).filter(Boolean))] as string[];
+        // Count products per category
+        const { data: productCounts } = await supabase
+          .from("products")
+          .select("category_id")
+          .eq("tenant_id", tenant.id)
+          .not("category_id", "is", null);
+
+        const countMap: Record<string, number> = {};
+        productCounts?.forEach(p => {
+          if (p.category_id) {
+            countMap[p.category_id] = (countMap[p.category_id] || 0) + 1;
+          }
+        });
+
+        const categoriesWithCount = (categoriesData || []).map(cat => ({
+          ...cat,
+          products_count: countMap[cat.id] || 0
+        }));
 
         setFeaturedProducts(featured || []);
         setLatestProducts(latest || []);
-        setCategories(uniqueCategories);
+        setCategories(categoriesWithCount);
       } catch (err) {
-        console.error("Error fetching products:", err);
+        console.error("Error fetching data:", err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, [tenant.id]);
 
   const features = [
@@ -204,7 +235,7 @@ export const StoreHome = () => {
           </motion.div>
         </section>
 
-        {/* Categories */}
+        {/* Categories with Images */}
         {categories.length > 0 && (
           <section className="container mx-auto px-4">
             <motion.div
@@ -213,31 +244,64 @@ export const StoreHome = () => {
               viewport={{ once: true }}
               className="flex items-center justify-between mb-8"
             >
-              <h2 className="text-3xl font-bold">الأقسام</h2>
+              <h2 className="text-3xl font-bold flex items-center gap-3">
+                <FolderTree className="h-8 w-8" style={{ color: tenant.primary_color }} />
+                الأقسام
+              </h2>
             </motion.div>
             <motion.div
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              className="flex flex-wrap gap-3"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
             >
-              {categories.map((category, index) => (
-                <motion.div key={category} variants={itemVariants}>
+              {categories.map((category) => (
+                <motion.div key={category.id} variants={itemVariants}>
                   <Link
-                    to={`/store/${tenant.slug}/products?category=${encodeURIComponent(category)}`}
+                    to={`/store/${tenant.slug}/products?category=${category.id}`}
                   >
                     <motion.div
-                      whileHover={{ scale: 1.05, y: -5 }}
-                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.03, y: -8 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="group"
                     >
-                      <Button 
-                        variant="outline" 
-                        className="rounded-full px-6 py-3 text-base backdrop-blur-sm border-2"
-                        style={{ borderColor: tenant.primary_color }}
-                      >
-                        {category}
-                      </Button>
+                      <GlassCard className="overflow-hidden">
+                        {/* Category Image */}
+                        <div className="aspect-square relative overflow-hidden">
+                          {category.image_url ? (
+                            <img
+                              src={category.image_url}
+                              alt={category.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div 
+                              className="w-full h-full flex items-center justify-center"
+                              style={{ backgroundColor: `${tenant.primary_color}20` }}
+                            >
+                              <FolderTree 
+                                className="h-16 w-16 opacity-50" 
+                                style={{ color: tenant.primary_color }}
+                              />
+                            </div>
+                          )}
+                          {/* Gradient overlay */}
+                          <div 
+                            className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"
+                          />
+                          {/* Category info */}
+                          <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                            <h3 className="font-bold text-lg">{category.name}</h3>
+                            {category.description && (
+                              <p className="text-sm opacity-80 line-clamp-1">{category.description}</p>
+                            )}
+                            <p className="text-xs mt-1 opacity-70">
+                              {category.products_count || 0} منتج
+                            </p>
+                          </div>
+                        </div>
+                      </GlassCard>
                     </motion.div>
                   </Link>
                 </motion.div>

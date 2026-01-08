@@ -61,6 +61,7 @@ const StoreManagement = () => {
           ...formData,
           image_url: formData.image_url || null,
           category: formData.category || null,
+          category_id: null,
           warehouse_id: null,
           barcode: null,
         });

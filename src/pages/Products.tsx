@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useNextProductNumber, useProductCategories, Product } from "@/hooks/useProducts";
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useNextProductNumber, useProductCategories, useCategories, Product } from "@/hooks/useProducts";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer, RefreshCw, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Database, Tag, X, ScanBarcode, Printer, RefreshCw, AlertTriangle, FolderTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -26,6 +26,7 @@ const Products = () => {
   const { data: warehouses } = useWarehouses();
   const { data: nextProductNumber } = useNextProductNumber();
   const { data: existingCategories } = useProductCategories();
+  const { data: categoriesFromTable } = useCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
@@ -51,6 +52,7 @@ const Products = () => {
     stock_quantity: 0,
     warehouse_id: "",
     category: "",
+    category_id: "",
     barcode: "",
   });
 
@@ -96,6 +98,7 @@ const Products = () => {
         ...formData,
         barcode: formData.barcode || null,
         category: finalCategory || null,
+        category_id: formData.category_id || null,
         warehouse_id: formData.warehouse_id || null,
         image_url: null,
       });
@@ -115,6 +118,7 @@ const Products = () => {
       stock_quantity: product.stock_quantity,
       warehouse_id: product.warehouse_id || "",
       category: product.category || "",
+      category_id: product.category_id || "",
       barcode: product.barcode || "",
     });
     setNewCategory("");
@@ -161,6 +165,7 @@ const Products = () => {
       stock_quantity: 0,
       warehouse_id: "",
       category: "",
+      category_id: "",
       barcode: "",
     });
   };
@@ -373,7 +378,37 @@ const Products = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="category">التصنيف</Label>
+                    <Label htmlFor="category_id" className="flex items-center gap-2">
+                      <FolderTree size={14} />
+                      الفئة
+                    </Label>
+                    <Select
+                      value={formData.category_id}
+                      onValueChange={(value) => {
+                        const cat = categoriesFromTable?.find(c => c.id === value);
+                        setFormData({ 
+                          ...formData, 
+                          category_id: value === "none" ? "" : value,
+                          category: cat?.name || ""
+                        });
+                        setNewCategory("");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر فئة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">بدون فئة</SelectItem>
+                        {categoriesFromTable?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="category">التصنيف (نص حر)</Label>
                     <div className="space-y-2">
                       <Select
                         value={formData.category}

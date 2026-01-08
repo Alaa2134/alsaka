@@ -12,11 +12,22 @@ export interface Product {
   stock_quantity: number;
   warehouse_id: string | null;
   category: string | null;
+  category_id: string | null;
   barcode: string | null;
   image_url: string | null;
   tenant_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  parent_id: string | null;
+  sort_order: number;
+  is_active: boolean;
 }
 
 export const useProducts = () => {
@@ -81,6 +92,27 @@ export const useProductCategories = () => {
       const categories = [...new Set(data.map(p => p.category).filter(Boolean))] as string[];
       return categories.sort();
     },
+  });
+};
+
+// New hook for categories from the categories table
+export const useCategories = () => {
+  const { tenant } = useAuth();
+  
+  return useQuery({
+    queryKey: ["categories", tenant?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("tenant_id", tenant?.id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      
+      if (error) throw error;
+      return data as Category[];
+    },
+    enabled: !!tenant?.id,
   });
 };
 

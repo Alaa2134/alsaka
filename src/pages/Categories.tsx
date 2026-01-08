@@ -44,6 +44,8 @@ import {
   Loader2,
   Package,
   ChevronRight,
+  ImagePlus,
+  X,
 } from "lucide-react";
 
 interface Category {
@@ -71,10 +73,13 @@ const Categories = () => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    image_url: "",
     parent_id: "",
     is_active: true,
     sort_order: 0,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Fetch categories
   const { data: categories = [], isLoading } = useQuery({
@@ -121,6 +126,7 @@ const Categories = () => {
         tenant_id: user?.tenant_id,
         name: data.name,
         description: data.description || null,
+        image_url: data.image_url || null,
         parent_id: data.parent_id || null,
         is_active: data.is_active,
         sort_order: data.sort_order,
@@ -145,6 +151,7 @@ const Categories = () => {
         .update({
           name: data.name,
           description: data.description || null,
+          image_url: data.image_url || null,
           parent_id: data.parent_id || null,
           is_active: data.is_active,
           sort_order: data.sort_order,
@@ -182,10 +189,12 @@ const Categories = () => {
     setFormData({
       name: "",
       description: "",
+      image_url: "",
       parent_id: "",
       is_active: true,
       sort_order: 0,
     });
+    setImageFile(null);
     setEditingCategory(null);
     setIsDialogOpen(false);
   };
@@ -195,10 +204,12 @@ const Categories = () => {
     setFormData({
       name: category.name,
       description: category.description || "",
+      image_url: category.image_url || "",
       parent_id: category.parent_id || "",
       is_active: category.is_active,
       sort_order: category.sort_order,
     });
+    setImageFile(null);
     setIsDialogOpen(true);
   };
 
@@ -337,6 +348,46 @@ const Categories = () => {
                     placeholder="وصف مختصر للفئة"
                     rows={3}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>صورة الفئة</Label>
+                  <div className="flex items-center gap-4">
+                    {formData.image_url ? (
+                      <div className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                        <img
+                          src={formData.image_url}
+                          alt="صورة الفئة"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, image_url: "" })}
+                          className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground">
+                        <ImagePlus className="h-8 w-8" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <Input
+                        type="url"
+                        value={formData.image_url}
+                        onChange={(e) =>
+                          setFormData({ ...formData, image_url: e.target.value })
+                        }
+                        placeholder="رابط الصورة (URL)"
+                        className="text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        أدخل رابط صورة من الإنترنت
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
