@@ -20,7 +20,8 @@ import {
   CreditCard,
   Banknote,
   Smartphone,
-  FileText
+  FileText,
+  MessageCircle
 } from "lucide-react";
 import { useLogActivity } from "@/hooks/useAuditLogs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
+import { sendInvoiceWhatsApp } from "@/utils/whatsappNotifications";
 
 interface StoreOrder {
   id: string;
@@ -249,6 +251,24 @@ const StoreOrders = () => {
           approved_by: user.name || user.id,
         },
       });
+
+      // Send WhatsApp notification to customer
+      if (order.customer_phone) {
+        try {
+          await sendInvoiceWhatsApp({
+            tenantId: tenant.id,
+            tenantName: tenant.name || "المتجر",
+            clientPhone: order.customer_phone,
+            clientName: order.customer_name,
+            invoiceNumber: invoiceNumber,
+            invoiceId: invoice.id,
+            totalAmount: order.total_amount,
+          });
+        } catch (whatsappError) {
+          console.warn("WhatsApp notification failed:", whatsappError);
+          // Don't fail the whole operation for WhatsApp
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey: ["store-orders"] });
       toast.success(`تم إنشاء الفاتورة رقم ${invoiceNumber} بنجاح`);
