@@ -209,6 +209,7 @@ export const ProductImportExport = () => {
           min_price: product.min_price,
           stock_quantity: product.stock_quantity,
           category: product.category,
+          category_id: null,
           barcode: product.barcode,
           warehouse_id: null,
           image_url: null,
