@@ -14,11 +14,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCreateInvoice, useUpdateInvoice, useInvoices, useNextInvoiceNumber } from "@/hooks/useInvoices";
 import { useAuth } from "@/contexts/AuthContext";
 import { TemplateType } from "./templates/types";
-import { Save, Search, ChevronRight, ChevronLeft, Edit } from "lucide-react";
+import { Save, Search, ChevronRight, ChevronLeft, Edit, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const AUTOSAVE_KEY = "invoice_autosave";
-const AUTOSAVE_INTERVAL = 3000; // 3 seconds
+const AUTOSAVE_KEY = "commission_invoice_autosave";
+const AUTOSAVE_INTERVAL = 3000;
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -42,10 +45,11 @@ interface AutosaveData {
   paymentMethod: string;
   items: InvoiceItem[];
   notes: string;
+  commissionPercentage: number;
   savedAt: string;
 }
 
-export const SalesInvoice = () => {
+export const CommissionSalesInvoice = () => {
   const { tenant } = useAuth();
   const { data: nextNumber } = useNextInvoiceNumber();
   const { data: nextClientNum } = useNextClientNumber();
@@ -58,7 +62,6 @@ export const SalesInvoice = () => {
   const createClient = useCreateClient({ showToast: false });
 
   const [clientPhone, setClientPhone] = useState("");
-
   const [invoiceNumber, setInvoiceNumber] = useState("1");
   const [clientNumber, setClientNumber] = useState("");
   const [clientName, setClientName] = useState("");
@@ -75,9 +78,11 @@ export const SalesInvoice = () => {
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [currentInvoiceIndex, setCurrentInvoiceIndex] = useState<number>(-1);
   
+  // Commission percentage - added to each item's price invisibly
+  const [commissionPercentage, setCommissionPercentage] = useState<number>(0);
+
   const isInitialized = useRef(false);
 
-  // Sorted invoices for navigation (newest first)
   const sortedInvoices = useMemo(() => {
     if (!allInvoices) return [];
     return [...allInvoices].sort((a, b) => 
@@ -85,7 +90,6 @@ export const SalesInvoice = () => {
     );
   }, [allInvoices]);
 
-  // Load autosaved data on mount
   useEffect(() => {
     if (isInitialized.current) return;
     isInitialized.current = true;
@@ -98,7 +102,6 @@ export const SalesInvoice = () => {
         const now = new Date();
         const hoursDiff = (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60);
         
-        // Only restore if saved within last 24 hours and has valid items
         if (hoursDiff < 24 && data.items.some(i => i.itemNumber || i.itemName)) {
           setInvoiceNumber(data.invoiceNumber);
           setClientNumber(data.clientNumber);
@@ -108,6 +111,7 @@ export const SalesInvoice = () => {
           setPaymentMethod(data.paymentMethod);
           setItems(data.items.length > 0 ? data.items : [createEmptyItem()]);
           setNotes(data.notes);
+          setCommissionPercentage(data.commissionPercentage || 0);
           setHasRestoredData(true);
           
           toast.success("تم استعادة الفاتورة المحفوظة تلقائياً", {
@@ -121,12 +125,10 @@ export const SalesInvoice = () => {
     }
   }, []);
 
-  // Set invoice number from server
   useEffect(() => {
     if (nextNumber && !hasRestoredData) setInvoiceNumber(nextNumber);
   }, [nextNumber, hasRestoredData]);
 
-  // Autosave effect
   useEffect(() => {
     const hasContent = items.some(i => i.itemNumber || i.itemName) || clientNumber || clientName || notes;
     if (!hasContent) return;
@@ -141,6 +143,7 @@ export const SalesInvoice = () => {
         paymentMethod,
         items,
         notes,
+        commissionPercentage,
         savedAt: new Date().toISOString(),
       };
       
@@ -149,18 +152,35 @@ export const SalesInvoice = () => {
     }, AUTOSAVE_INTERVAL);
 
     return () => clearTimeout(timer);
-  }, [invoiceNumber, clientNumber, clientName, clientId, date, paymentMethod, items, notes]);
+  }, [invoiceNumber, clientNumber, clientName, clientId, date, paymentMethod, items, notes, commissionPercentage]);
 
-  // Clear autosave when invoice is saved successfully
   const clearAutosave = useCallback(() => {
     localStorage.removeItem(AUTOSAVE_KEY);
     setLastSaved(null);
     setHasRestoredData(false);
   }, []);
 
-  const calculateTotal = useCallback((items: InvoiceItem[]) => {
-    return items.reduce((sum, item) => sum + item.total, 0);
-  }, []);
+  // Calculate total with commission applied (but commission doesn't show on invoice)
+  const calculateTotalWithCommission = useCallback((items: InvoiceItem[]) => {
+    const baseTotal = items.reduce((sum, item) => sum + item.total, 0);
+    const commissionAmount = baseTotal * (commissionPercentage / 100);
+    return baseTotal + commissionAmount;
+  }, [commissionPercentage]);
+
+  // Apply commission to items for saving (invisibly adds to price)
+  const applyCommissionToItems = useCallback((items: InvoiceItem[]): InvoiceItem[] => {
+    if (commissionPercentage === 0) return items;
+    
+    return items.map(item => {
+      const commissionMultiplier = 1 + (commissionPercentage / 100);
+      const newPrice = Math.round(item.price * commissionMultiplier * 100) / 100;
+      return {
+        ...item,
+        price: newPrice,
+        total: item.quantity * newPrice,
+      };
+    });
+  }, [commissionPercentage]);
 
   const handleClientNumberChange = (value: string) => {
     setClientNumber(value);
@@ -218,16 +238,13 @@ export const SalesInvoice = () => {
     setItems((prevItems) => [...prevItems, createEmptyItem()]);
   }, []);
 
-  // Handle barcode scan - add product to invoice
   const handleBarcodeProduct = useCallback((product: Product) => {
     setItems((prevItems) => {
-      // Check if product already exists in invoice
       const existingIndex = prevItems.findIndex(
         item => item.itemNumber === product.item_number
       );
 
       if (existingIndex >= 0) {
-        // Increase quantity if exists
         return prevItems.map((item, index) => {
           if (index === existingIndex) {
             const newQty = item.quantity + 1;
@@ -237,7 +254,6 @@ export const SalesInvoice = () => {
         });
       }
 
-      // Add new item
       const wh = warehouses?.find(w => w.id === product.warehouse_id);
       const newItem: InvoiceItem = {
         id: generateId(),
@@ -250,7 +266,6 @@ export const SalesInvoice = () => {
         warehouse: wh?.name || "",
       };
 
-      // Replace empty item or add new
       const hasEmptyItem = prevItems.some(i => !i.itemNumber && !i.itemName);
       if (hasEmptyItem) {
         const firstEmptyIndex = prevItems.findIndex(i => !i.itemNumber && !i.itemName);
@@ -263,33 +278,11 @@ export const SalesInvoice = () => {
     });
   }, [warehouses]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+S to save
-      if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        handleSaveInvoice();
-      }
-      // Ctrl+N for new invoice
-      if (e.ctrlKey && e.key === 'n') {
-        e.preventDefault();
-        handleNewInvoice();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [items, invoiceNumber, clientId, clientName, date, paymentMethod, notes, editingInvoiceId]);
-
   const handleNewInvoice = useCallback(async () => {
-    // Check if there are valid items to save
     const validItems = items.filter(i => i.itemNumber && i.itemName);
     if (validItems.length > 0) {
-      // Save current invoice first
       let finalClientId = clientId;
 
-      // Auto-create client if name provided but no existing client
       if (clientName && !clientId) {
         try {
           const newClient = await createClient.mutateAsync({
@@ -298,7 +291,7 @@ export const SalesInvoice = () => {
             phone: clientPhone || null,
             address: null,
             email: null,
-            notes: "تم إنشاؤه تلقائياً من الفاتورة",
+            notes: "تم إنشاؤه تلقائياً من فاتورة بعمولة",
           });
           finalClientId = newClient.id;
         } catch (e) {
@@ -306,17 +299,20 @@ export const SalesInvoice = () => {
         }
       }
 
+      // Apply commission to items before saving
+      const itemsWithCommission = applyCommissionToItems(validItems);
+
       const invoiceData = {
         invoice_number: invoiceNumber,
         client_id: finalClientId,
         invoice_date: date,
         payment_method: paymentMethod,
-        total_amount: calculateTotal(validItems),
+        total_amount: itemsWithCommission.reduce((sum, item) => sum + item.total, 0),
         notes: notes || null,
         status: "completed",
       };
 
-      const itemsData = validItems.map(item => ({
+      const itemsData = itemsWithCommission.map(item => ({
         item_number: item.itemNumber,
         item_name: item.itemName,
         quantity: item.quantity,
@@ -346,7 +342,6 @@ export const SalesInvoice = () => {
       }
     }
 
-    // Now create new invoice
     if (nextNumber) {
       setInvoiceNumber(nextNumber);
     } else {
@@ -364,7 +359,7 @@ export const SalesInvoice = () => {
     setCurrentInvoiceIndex(-1);
     clearAutosave();
     toast.success("تم إنشاء فاتورة جديدة");
-  }, [clearAutosave, nextNumber, items, clientId, clientName, clientPhone, nextClientNum, invoiceNumber, date, paymentMethod, notes, editingInvoiceId, calculateTotal, products, warehouses, createClient, createInvoice, updateInvoice]);
+  }, [clearAutosave, nextNumber, items, clientId, clientName, clientPhone, nextClientNum, invoiceNumber, date, paymentMethod, notes, editingInvoiceId, products, warehouses, createClient, createInvoice, updateInvoice, applyCommissionToItems]);
 
   const handleSaveInvoice = async () => {
     const validItems = items.filter(i => i.itemNumber && i.itemName);
@@ -375,7 +370,6 @@ export const SalesInvoice = () => {
 
     let finalClientId = clientId;
 
-    // Auto-create client if name provided but no existing client
     if (clientName && !clientId) {
       try {
         const newClient = await createClient.mutateAsync({
@@ -384,7 +378,7 @@ export const SalesInvoice = () => {
           phone: clientPhone || null,
           address: null,
           email: null,
-          notes: "تم إنشاؤه تلقائياً من الفاتورة",
+          notes: "تم إنشاؤه تلقائياً من فاتورة بعمولة",
         });
         finalClientId = newClient.id;
         toast.info(`تم إنشاء عميل جديد: ${clientName}`);
@@ -393,17 +387,20 @@ export const SalesInvoice = () => {
       }
     }
 
+    // Apply commission to items before saving
+    const itemsWithCommission = applyCommissionToItems(validItems);
+
     const invoiceData = {
       invoice_number: invoiceNumber,
       client_id: finalClientId,
       invoice_date: date,
       payment_method: paymentMethod,
-      total_amount: calculateTotal(validItems),
+      total_amount: itemsWithCommission.reduce((sum, item) => sum + item.total, 0),
       notes: notes || null,
       status: "completed",
     };
 
-    const itemsData = validItems.map(item => ({
+    const itemsData = itemsWithCommission.map(item => ({
       item_number: item.itemNumber,
       item_name: item.itemName,
       quantity: item.quantity,
@@ -415,14 +412,12 @@ export const SalesInvoice = () => {
     }));
 
     if (editingInvoiceId) {
-      // Update existing invoice
       await updateInvoice.mutateAsync({
         invoiceId: editingInvoiceId,
         invoice: invoiceData,
         items: itemsData,
       });
     } else {
-      // Create new invoice
       await createInvoice.mutateAsync({
         invoice: invoiceData,
         items: itemsData,
@@ -437,16 +432,13 @@ export const SalesInvoice = () => {
     setShowPreview(true);
   }, []);
 
-  // Navigate to previous invoice
   const handlePrevInvoice = useCallback(async () => {
     if (!sortedInvoices.length) return;
     
     let newIndex: number;
     if (currentInvoiceIndex === -1) {
-      // First navigation - go to most recent invoice
       newIndex = 0;
     } else if (currentInvoiceIndex < sortedInvoices.length - 1) {
-      // Go to older invoice
       newIndex = currentInvoiceIndex + 1;
     } else {
       toast.info("هذه أقدم فاتورة");
@@ -460,7 +452,6 @@ export const SalesInvoice = () => {
   const handleNextInvoice = useCallback(async () => {
     if (!sortedInvoices.length || currentInvoiceIndex <= 0) {
       if (currentInvoiceIndex === 0) {
-        // Create new invoice
         handleNewInvoice();
       } else {
         toast.info("لا توجد فواتير أحدث");
@@ -494,7 +485,6 @@ export const SalesInvoice = () => {
     setEditingInvoiceId(invoice.id);
     setCurrentInvoiceIndex(index);
     
-    // Find client
     if (invoice.clients?.name) {
       setClientName(invoice.clients.name);
       const client = clients?.find(c => c.name === invoice.clients.name);
@@ -510,7 +500,6 @@ export const SalesInvoice = () => {
       setClientPhone("");
     }
     
-    // Load items
     if (invoiceItems && invoiceItems.length > 0) {
       setItems(invoiceItems.map(item => ({
         id: generateId(),
@@ -524,23 +513,39 @@ export const SalesInvoice = () => {
       })));
     }
     
-    toast.success(`الفاتورة رقم ${invoice.invoice_number}`);
+    toast.success(`تم تحميل الفاتورة رقم ${invoice.invoice_number}`);
   };
 
-  // Prepare invoice data for preview
+  // Calculate base total (without commission)
+  const baseTotal = useMemo(() => {
+    return items.reduce((sum, item) => sum + item.total, 0);
+  }, [items]);
+
+  // Calculate commission amount
+  const commissionAmount = useMemo(() => {
+    return baseTotal * (commissionPercentage / 100);
+  }, [baseTotal, commissionPercentage]);
+
+  // Total with commission
+  const totalWithCommission = useMemo(() => {
+    return baseTotal + commissionAmount;
+  }, [baseTotal, commissionAmount]);
+
+  // Prepare invoice data for preview (shows total WITH commission but without showing commission line)
   const previewInvoice = {
     id: "preview",
     invoice_number: invoiceNumber,
     invoice_date: date,
     payment_method: paymentMethod,
-    total_amount: calculateTotal(items),
+    total_amount: totalWithCommission,
     notes: notes || null,
     clients: clientName ? { name: clientName } : null,
   };
 
-  const previewItems = items
-    .filter(i => i.itemNumber && i.itemName)
-    .map(item => ({
+  // Items with commission applied (for preview and saving)
+  const previewItems = useMemo(() => {
+    const validItems = items.filter(i => i.itemNumber && i.itemName);
+    return applyCommissionToItems(validItems).map(item => ({
       id: item.id,
       item_number: item.itemNumber,
       item_name: item.itemName,
@@ -549,6 +554,7 @@ export const SalesInvoice = () => {
       min_price: item.minPrice,
       total: item.total,
     }));
+  }, [items, applyCommissionToItems]);
 
   const tenantData = tenant ? {
     id: tenant.id,
@@ -558,7 +564,6 @@ export const SalesInvoice = () => {
     secondary_color: tenant.secondary_color,
   } : null;
 
-  // Handle loading invoice from search
   const handleLoadInvoice = useCallback((invoice: any, invoiceItems: any[]) => {
     setInvoiceNumber(invoice.invoice_number);
     setDate(invoice.invoice_date);
@@ -566,11 +571,9 @@ export const SalesInvoice = () => {
     setNotes(invoice.notes || "");
     setEditingInvoiceId(invoice.id);
     
-    // Find index in sorted invoices
     const index = sortedInvoices.findIndex(i => i.id === invoice.id);
     setCurrentInvoiceIndex(index);
     
-    // Find client
     if (invoice.clients?.name) {
       setClientName(invoice.clients.name);
       const client = clients?.find(c => c.name === invoice.clients.name);
@@ -586,7 +589,6 @@ export const SalesInvoice = () => {
       setClientPhone("");
     }
     
-    // Load items
     if (invoiceItems.length > 0) {
       setItems(invoiceItems.map(item => ({
         id: generateId(),
@@ -608,7 +610,6 @@ export const SalesInvoice = () => {
       <div className="h-full flex flex-col">
         {/* Header with navigation and search */}
         <div className="flex items-center justify-between mb-2 gap-2">
-          {/* Navigation arrows */}
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
@@ -639,7 +640,22 @@ export const SalesInvoice = () => {
             </Button>
           </div>
           
-          {/* Editing indicator and autosave */}
+          {/* Commission input */}
+          <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800">
+            <Percent size={16} className="text-amber-600" />
+            <Label className="text-sm text-amber-700 dark:text-amber-400 whitespace-nowrap">نسبة العمولة:</Label>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              value={commissionPercentage}
+              onChange={(e) => setCommissionPercentage(parseFloat(e.target.value) || 0)}
+              className="w-20 h-7 text-center bg-white dark:bg-background"
+            />
+            <span className="text-sm text-amber-600">%</span>
+          </div>
+          
           <div className="flex items-center gap-2">
             {editingInvoiceId && (
               <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">
@@ -655,6 +671,18 @@ export const SalesInvoice = () => {
             )}
           </div>
         </div>
+        
+        {/* Commission summary - only visible to admin */}
+        {commissionPercentage > 0 && (
+          <div className="mb-2 p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800 flex items-center justify-between text-sm">
+            <span className="text-amber-700 dark:text-amber-400">
+              💰 العمولة المضافة: {commissionPercentage}% = {commissionAmount.toLocaleString()} ج.م
+            </span>
+            <span className="font-bold text-amber-800 dark:text-amber-300">
+              الإجمالي بالعمولة: {totalWithCommission.toLocaleString()} ج.م
+            </span>
+          </div>
+        )}
         
         <div className="bg-card rounded-xl shadow-soft p-4 md:p-6 border border-border flex-1 flex flex-col min-h-0">
           {/* Barcode Scanner */}
@@ -687,7 +715,7 @@ export const SalesInvoice = () => {
           </div>
 
           <InvoiceFooter
-            totalAmount={calculateTotal(items)}
+            totalAmount={totalWithCommission}
             onNewInvoice={handleNewInvoice}
             onAddItem={handleAddItem}
             onPrint={handlePrint}
