@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Search, SlidersHorizontal, Package, Loader2, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, SlidersHorizontal, Package, Loader2, Sparkles, FolderTree, X } from "lucide-react";
 import type { StoreContextData } from "./StoreLayout";
 
 interface Product {
@@ -21,16 +22,24 @@ interface Product {
   min_price: number;
   stock_quantity: number;
   category: string | null;
+  category_id: string | null;
   barcode: string | null;
   created_at: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  products_count?: number;
+}
+
 export const StoreProducts = () => {
   const { tenant } = useOutletContext<StoreContextData>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [maxPrice, setMaxPrice] = useState(10000);
 
@@ -39,6 +48,24 @@ export const StoreProducts = () => {
   const [priceRange, setPriceRange] = useState([0, 10000]);
   const [availability, setAvailability] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+
+  // Fetch categories from the new categories table
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, parent_id")
+        .eq("tenant_id", tenant.id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+
+      if (!error && data) {
+        setCategories(data);
+      }
+    };
+
+    fetchCategories();
+  }, [tenant.id]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -53,8 +80,9 @@ export const StoreProducts = () => {
           query = query.ilike("name", `%${search}%`);
         }
 
+        // Filter by category_id from the new categories table
         if (selectedCategory && selectedCategory !== "all") {
-          query = query.eq("category", selectedCategory);
+          query = query.eq("category_id", selectedCategory);
         }
 
         query = query.gte("price", priceRange[0]).lte("price", priceRange[1]);
@@ -99,34 +127,74 @@ export const StoreProducts = () => {
     fetchProducts();
   }, [tenant.id, search, selectedCategory, priceRange, availability, sortBy]);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("category")
-        .eq("tenant_id", tenant.id)
-        .not("category", "is", null);
+  // Get category name by id
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return null;
+    const cat = categories.find(c => c.id === categoryId);
+    return cat?.name || null;
+  };
 
-      const uniqueCategories = [...new Set(data?.map((p) => p.category).filter(Boolean))] as string[];
-      setCategories(uniqueCategories);
-    };
+  // Handle category selection with URL update
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    if (value === "all") {
+      searchParams.delete("category");
+    } else {
+      searchParams.set("category", value);
+    }
+    setSearchParams(searchParams);
+  };
 
-    fetchCategories();
-  }, [tenant.id]);
+  // Clear all filters
+  const clearFilters = () => {
+    setSearch("");
+    setSelectedCategory("all");
+    setPriceRange([0, maxPrice]);
+    setAvailability("all");
+    setSortBy("newest");
+    setSearchParams({});
+  };
 
   const FilterContent = () => (
     <div className="space-y-6">
+      {/* Category Filter with chips */}
+      <div className="space-y-3">
+        <Label className="flex items-center gap-2">
+          <FolderTree className="h-4 w-4" />
+          الفئات
+        </Label>
+        <div className="flex flex-wrap gap-2">
+          <Badge
+            variant={selectedCategory === "all" ? "default" : "outline"}
+            className="cursor-pointer hover:bg-primary/80 transition-colors"
+            onClick={() => handleCategoryChange("all")}
+          >
+            جميع الفئات
+          </Badge>
+          {categories.map((cat) => (
+            <Badge
+              key={cat.id}
+              variant={selectedCategory === cat.id ? "default" : "outline"}
+              className="cursor-pointer hover:bg-primary/80 transition-colors"
+              onClick={() => handleCategoryChange(cat.id)}
+            >
+              {cat.name}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label>القسم</Label>
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
           <SelectTrigger className="bg-background/50 backdrop-blur-sm">
             <SelectValue placeholder="جميع الأقسام" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">جميع الأقسام</SelectItem>
             {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -263,16 +331,43 @@ export const StoreProducts = () => {
               </div>
             </motion.div>
 
-            {/* Results info */}
+            {/* Active filters & Results info */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center gap-2 mb-6"
+              className="flex flex-wrap items-center gap-3 mb-6"
             >
-              <Sparkles className="h-5 w-5" style={{ color: tenant.primary_color }} />
-              <p className="text-muted-foreground">
-                {isLoading ? "جاري التحميل..." : `${products.length} منتج`}
-              </p>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" style={{ color: tenant.primary_color }} />
+                <p className="text-muted-foreground">
+                  {isLoading ? "جاري التحميل..." : `${products.length} منتج`}
+                </p>
+              </div>
+
+              {/* Show active category filter */}
+              {selectedCategory !== "all" && (
+                <Badge variant="secondary" className="gap-1 px-3 py-1">
+                  <FolderTree className="h-3 w-3" />
+                  {getCategoryName(selectedCategory)}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => handleCategoryChange("all")}
+                  />
+                </Badge>
+              )}
+
+              {/* Clear all filters button */}
+              {(selectedCategory !== "all" || search || availability !== "all") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4 ml-1" />
+                  مسح الفلاتر
+                </Button>
+              )}
             </motion.div>
 
             {/* Products Grid */}
@@ -305,7 +400,7 @@ export const StoreProducts = () => {
                         name={product.name}
                         price={product.price}
                         stock={product.stock_quantity}
-                        category={product.category || undefined}
+                        category={getCategoryName(product.category_id) || product.category || undefined}
                         tenantSlug={tenant.slug}
                         primaryColor={tenant.primary_color}
                       />
