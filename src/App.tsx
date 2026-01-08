@@ -49,7 +49,7 @@ const StoreProductDetail = lazy(() => import("./pages/store/StoreProductDetail")
 const StoreCart = lazy(() => import("./pages/store/StoreCart").then(m => ({ default: m.StoreCart })));
 const StoreCheckout = lazy(() => import("./pages/store/StoreCheckout").then(m => ({ default: m.StoreCheckout })));
 const StoreLinkPage = lazy(() => import("./pages/store/StoreLinkPage").then(m => ({ default: m.StoreLinkPage })));
-const StoreAddProduct = lazy(() => import("./pages/store/StoreAddProduct").then(m => ({ default: m.StoreAddProduct })));
+// StoreAddProduct removed - product management only in admin dashboard
 const CustomerLogin = lazy(() => import("./pages/store/CustomerLogin"));
 const CustomerOrders = lazy(() => import("./pages/store/CustomerOrders"));
 const CustomerWishlist = lazy(() => import("./pages/store/CustomerWishlist"));
@@ -293,11 +293,7 @@ const App = () => (
                           <StoreLinkPage />
                         </Suspense>
                       } />
-                      <Route path="add-product" element={
-                        <Suspense fallback={<FormSkeleton />}>
-                          <StoreAddProduct />
-                        </Suspense>
-                      } />
+                      {/* Product management removed from public store - only admin dashboard */}
                       <Route path="login" element={
                         <Suspense fallback={<LoginSkeleton />}>
                           <CustomerLogin />
