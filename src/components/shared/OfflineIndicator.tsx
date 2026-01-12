@@ -16,10 +16,10 @@ export const OfflineIndicator = () => {
           exit={{ opacity: 0, y: -20 }}
           className="fixed top-4 left-4 z-50"
         >
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg backdrop-blur-sm ${
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg backdrop-blur-sm transition-colors ${
             isOnline 
-              ? 'bg-green-500/90 text-white' 
-              : 'bg-orange-500/90 text-white'
+              ? 'bg-success/90 text-success-foreground' 
+              : 'bg-warning/90 text-warning-foreground'
           }`}>
             {isOnline ? (
               <>
@@ -35,14 +35,14 @@ export const OfflineIndicator = () => {
 
             {pendingCount > 0 && (
               <>
-                <Badge variant="secondary" className="bg-white/20 text-white">
+                <Badge variant="secondary" className="bg-background/20 text-current">
                   {pendingCount} في الانتظار
                 </Badge>
                 {isOnline && (
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                    className="h-6 w-6 p-0 text-current hover:bg-background/20"
                     onClick={() => syncPendingOperations()}
                     disabled={isSyncing}
                   >

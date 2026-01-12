@@ -11,7 +11,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { InactivityLock } from "@/components/auth/InactivityLock";
 import { SessionWrapper } from "@/components/auth/SessionWrapper";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
-
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 // Lazy load pages for code splitting
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -75,14 +75,15 @@ const CardsSkeleton = () => <PageSkeleton variant="cards" />;
 const LoginSkeleton = () => <PageSkeleton variant="login" />;
 
 const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <InactivityLock>
+  <ErrorBoundary>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <InactivityLock>
               <SessionWrapper>
                 <BrowserRouter>
                   <Routes>
@@ -333,14 +334,15 @@ const App = () => (
                   <Suspense fallback={null}>
                     <AIAssistant />
                   </Suspense>
-                </BrowserRouter>
-              </SessionWrapper>
-            </InactivityLock>
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
+                  </BrowserRouter>
+                </SessionWrapper>
+              </InactivityLock>
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  </ErrorBoundary>
 );
 
 export default App;
