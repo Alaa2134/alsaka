@@ -35,6 +35,7 @@ const LinksAdmin = lazy(() => import("./pages/LinksAdmin"));
 const Subscription = lazy(() => import("./pages/Subscription"));
 const StoreManagement = lazy(() => import("./pages/StoreManagement"));
 const WhatsAppSettings = lazy(() => import("./pages/WhatsAppSettings"));
+const InternalChat = lazy(() => import("./pages/InternalChat"));
 const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 const SecurityEvents = lazy(() => import("./pages/SecurityEvents"));
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
@@ -227,6 +228,13 @@ const App = () => (
                       <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin"]}>
                         <Suspense fallback={<FormSkeleton />}>
                           <WhatsAppSettings />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/internal-chat" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <InternalChat />
                         </Suspense>
                       </ProtectedRoute>
                     } />
