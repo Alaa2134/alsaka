@@ -18,6 +18,8 @@ import {
   RefreshCw
 } from "lucide-react";
 import { WhatsAppQRRegistration } from "@/components/whatsapp/WhatsAppQRRegistration";
+import { InvoiceMessageTemplateEditor } from "@/components/whatsapp/InvoiceMessageTemplateEditor";
+import { WhatsAppConnectionStatus } from "@/components/whatsapp/WhatsAppConnectionStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -111,7 +113,8 @@ const WhatsAppSettings = () => {
               {/* WhatsApp Registration */}
               <WhatsAppQRRegistration />
               
-              {/* Quick Stats */}
+              {/* Invoice Message Template */}
+              <InvoiceMessageTemplateEditor />
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
