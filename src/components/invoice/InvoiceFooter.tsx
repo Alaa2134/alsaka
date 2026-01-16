@@ -1,4 +1,5 @@
-import { Plus, FileText, Printer, Save, MessageSquare, Edit } from "lucide-react";
+import { Plus, FileText, Printer, Save, MessageSquare, Edit, Send } from "lucide-react";
+import { toast } from "sonner";
 
 interface InvoiceFooterProps {
   totalAmount: number;
@@ -6,10 +7,13 @@ interface InvoiceFooterProps {
   onAddItem: () => void;
   onPrint: () => void;
   onSave?: () => void;
+  onSendWhatsApp?: () => void;
   isSaving?: boolean;
   isEditing?: boolean;
   notes: string;
   onNotesChange: (value: string) => void;
+  clientPhone?: string;
+  clientName?: string;
 }
 
 export const InvoiceFooter = ({
@@ -18,11 +22,22 @@ export const InvoiceFooter = ({
   onAddItem,
   onPrint,
   onSave,
+  onSendWhatsApp,
   isSaving,
   isEditing,
   notes,
   onNotesChange,
+  clientPhone,
+  clientName,
 }: InvoiceFooterProps) => {
+  const handleWhatsAppClick = () => {
+    if (!clientPhone) {
+      toast.error("يرجى إدخال رقم هاتف العميل أولاً");
+      return;
+    }
+    onSendWhatsApp?.();
+  };
+
   return (
     <div className="mt-4 space-y-3">
       {/* Total and Add Button Row - Compact */}
@@ -72,6 +87,18 @@ export const InvoiceFooter = ({
             >
               {isEditing ? <Edit size={16} /> : <Save size={16} />}
               {isSaving ? "..." : isEditing ? "تحديث" : "حفظ"}
+            </button>
+          )}
+
+          {/* WhatsApp Send Button */}
+          {onSendWhatsApp && (
+            <button
+              onClick={handleWhatsAppClick}
+              className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white px-4 py-2.5 rounded-lg font-medium transition-all text-sm"
+              title={clientPhone ? `إرسال إلى ${clientPhone}` : "أدخل رقم العميل أولاً"}
+            >
+              <Send size={16} />
+              واتساب
             </button>
           )}
 
