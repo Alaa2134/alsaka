@@ -220,8 +220,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Now login with Supabase Auth
-      const email = `${accessCode}@app.internal`;
+      // Now login with Supabase Auth - use email-safe version
+      const emailSafeCode = accessCode.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const email = `${emailSafeCode}@app.internal`;
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: accessCode
@@ -352,8 +353,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Login with Auth
-      const email = `${trimmedCode}@app.internal`;
+      // Login with Auth - use email-safe version
+      const emailSafeCode = trimmedCode.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const email = `${emailSafeCode}@app.internal`;
       let { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: trimmedCode
