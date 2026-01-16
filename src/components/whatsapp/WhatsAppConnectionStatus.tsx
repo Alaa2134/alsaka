@@ -8,10 +8,13 @@ import {
   QrCode, 
   RefreshCw,
   AlertTriangle,
-  Check
+  Check,
+  MessageCircle,
+  Smartphone
 } from "lucide-react";
 import { useWhatsAppSettings, useSaveWhatsAppSettings } from "@/hooks/useWhatsAppSettings";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -101,30 +104,45 @@ export const WhatsAppConnectionStatus = ({
   if (compact) {
     return (
       <>
-        <div className="flex items-center gap-2">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex items-center gap-2"
+        >
           {connectionStatus === 'connected' ? (
-            <Badge variant="default" className="bg-green-500 hover:bg-green-600 gap-1">
-              <Wifi className="h-3 w-3" />
-              واتساب متصل
-            </Badge>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-full shadow-lg shadow-green-500/30"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                <Wifi className="h-4 w-4" />
+              </motion.div>
+              <span className="font-bold text-sm">واتساب متصل</span>
+              <Smartphone className="h-4 w-4" />
+            </motion.div>
           ) : connectionStatus === 'connecting' ? (
-            <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 gap-1">
-              <RefreshCw className="h-3 w-3 animate-spin" />
-              جاري الاتصال
-            </Badge>
+            <div className="flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span className="font-medium text-sm">جاري الاتصال...</span>
+            </div>
           ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1 text-orange-600 border-orange-300 hover:bg-orange-50"
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleConnect}
               disabled={isConnecting}
+              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-green-500/30 hover:shadow-xl transition-all"
             >
-              <WifiOff className="h-3 w-3" />
-              {isConnecting ? "جاري..." : "ربط واتساب"}
-            </Button>
+              <MessageCircle className="h-5 w-5" />
+              {isConnecting ? "جاري الربط..." : "ربط واتساب الآن"}
+              <QrCode className="h-4 w-4" />
+            </motion.button>
           )}
-        </div>
+        </motion.div>
 
         <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
           <DialogContent className="max-w-md">
