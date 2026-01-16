@@ -560,6 +560,56 @@ export type Database = {
           },
         ]
       }
+      internal_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message_content: string
+          message_type: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          reference_id: string | null
+          sender_id: string | null
+          sender_type: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message_content: string
+          message_type?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          reference_id?: string | null
+          sender_id?: string | null
+          sender_type: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message_content?: string
+          message_type?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          reference_id?: string | null
+          sender_id?: string | null
+          sender_type?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           created_at: string
