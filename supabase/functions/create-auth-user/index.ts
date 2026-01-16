@@ -57,6 +57,8 @@ Deno.serve(async (req) => {
 
     // Find the app_user by access code (secure verification)
     const normalizedCode = String(accessCode).trim();
+    // Create email-safe version by removing spaces and special characters
+    const emailSafeCode = normalizedCode.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
     const { data: verify, error: verifyError } = await supabaseAdmin
       .rpc('verify_user_login', { p_access_code: normalizedCode });
 
@@ -83,7 +85,7 @@ Deno.serve(async (req) => {
     }
 
     // If user already has auth_id, ensure the auth account is synced (legacy password/email mismatches)
-    const email = `${normalizedCode}@app.internal`;
+    const email = `${emailSafeCode}@app.internal`;
 
     if (appUser.auth_id) {
       const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(appUser.auth_id, {
