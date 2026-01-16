@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TemplateType } from "./templates/types";
 import { Save, Search, ChevronRight, ChevronLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { generateWhatsAppLink } from "@/hooks/useWhatsAppSettings";
 
 const AUTOSAVE_KEY = "invoice_autosave";
 const AUTOSAVE_INTERVAL = 3000; // 3 seconds
@@ -437,6 +438,53 @@ export const SalesInvoice = () => {
     setShowPreview(true);
   }, []);
 
+  // Send invoice via WhatsApp Web
+  const handleSendWhatsApp = useCallback(() => {
+    if (!clientPhone) {
+      toast.error("يرجى إدخال رقم هاتف العميل أولاً");
+      return;
+    }
+
+    const validItems = items.filter(i => i.itemNumber && i.itemName);
+    if (validItems.length === 0) {
+      toast.error("أضف صنف واحد على الأقل");
+      return;
+    }
+
+    const totalAmount = calculateTotal(validItems);
+    const storeName = tenant?.name || "المتجر";
+    
+    // Generate detailed invoice message with items
+    let itemsList = validItems.map((item, index) => 
+      `${index + 1}. ${item.itemName} × ${item.quantity} = ${item.total.toFixed(2)} ج.م`
+    ).join("\n");
+
+    const message = `📄 *فاتورة رقم ${invoiceNumber} - ${storeName}*
+
+مرحباً ${clientName || "عميلنا الكريم"}! 👋
+
+━━━━━━━━━━━━━━━━━
+📋 *تفاصيل الفاتورة:*
+━━━━━━━━━━━━━━━━━
+${itemsList}
+
+━━━━━━━━━━━━━━━━━
+💰 *الإجمالي: ${totalAmount.toFixed(2)} ج.م*
+━━━━━━━━━━━━━━━━━
+
+📅 التاريخ: ${date}
+💳 طريقة الدفع: ${paymentMethod}
+${notes ? `\n📝 ملاحظات: ${notes}` : ""}
+
+شكراً لتعاملك معنا! 💙
+${storeName}`;
+
+    // Generate WhatsApp link and open
+    const link = generateWhatsAppLink(clientPhone, message);
+    window.open(link, "_blank");
+    toast.success("تم فتح الواتساب - اضغط إرسال لتأكيد الإرسال");
+  }, [clientPhone, clientName, items, invoiceNumber, date, paymentMethod, notes, tenant?.name]);
+
   // Navigate to previous invoice
   const handlePrevInvoice = useCallback(async () => {
     if (!sortedInvoices.length) return;
@@ -692,10 +740,13 @@ export const SalesInvoice = () => {
             onAddItem={handleAddItem}
             onPrint={handlePrint}
             onSave={handleSaveInvoice}
+            onSendWhatsApp={handleSendWhatsApp}
             isSaving={createInvoice.isPending || updateInvoice.isPending}
             isEditing={!!editingInvoiceId}
             notes={notes}
             onNotesChange={setNotes}
+            clientPhone={clientPhone}
+            clientName={clientName}
           />
         </div>
       </div>
