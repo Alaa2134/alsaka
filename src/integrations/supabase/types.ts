@@ -1908,6 +1908,51 @@ export type Database = {
           },
         ]
       }
+      whatsapp_invoice_sends: {
+        Row: {
+          client_phone: string
+          id: string
+          invoice_id: string
+          message_sent: string
+          sent_at: string
+          sent_via: string | null
+          tenant_id: string
+        }
+        Insert: {
+          client_phone: string
+          id?: string
+          invoice_id: string
+          message_sent: string
+          sent_at?: string
+          sent_via?: string | null
+          tenant_id: string
+        }
+        Update: {
+          client_phone?: string
+          id?: string
+          invoice_id?: string
+          message_sent?: string
+          sent_at?: string
+          sent_via?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_invoice_sends_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_invoice_sends_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_notifications_log: {
         Row: {
           client_id: string | null
@@ -1965,9 +2010,14 @@ export type Database = {
           auto_send_order_notifications: boolean | null
           auto_send_order_tracking: boolean | null
           bot_phone: string | null
+          connection_status: string | null
           created_at: string
           id: string
+          invoice_message_template: string | null
           is_verified: boolean | null
+          last_connected_at: string | null
+          last_disconnected_at: string | null
+          qr_session_id: string | null
           tenant_id: string
           updated_at: string
           whatsapp_number: string
@@ -1977,9 +2027,14 @@ export type Database = {
           auto_send_order_notifications?: boolean | null
           auto_send_order_tracking?: boolean | null
           bot_phone?: string | null
+          connection_status?: string | null
           created_at?: string
           id?: string
+          invoice_message_template?: string | null
           is_verified?: boolean | null
+          last_connected_at?: string | null
+          last_disconnected_at?: string | null
+          qr_session_id?: string | null
           tenant_id: string
           updated_at?: string
           whatsapp_number: string
@@ -1989,9 +2044,14 @@ export type Database = {
           auto_send_order_notifications?: boolean | null
           auto_send_order_tracking?: boolean | null
           bot_phone?: string | null
+          connection_status?: string | null
           created_at?: string
           id?: string
+          invoice_message_template?: string | null
           is_verified?: boolean | null
+          last_connected_at?: string | null
+          last_disconnected_at?: string | null
+          qr_session_id?: string | null
           tenant_id?: string
           updated_at?: string
           whatsapp_number?: string

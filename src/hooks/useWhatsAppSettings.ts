@@ -14,7 +14,58 @@ export interface WhatsAppSettings {
   auto_send_order_notifications: boolean;
   created_at: string;
   updated_at: string;
+  // New fields for WhatsApp Web Automation
+  invoice_message_template: string | null;
+  connection_status: 'connected' | 'disconnected' | 'connecting';
+  last_connected_at: string | null;
+  last_disconnected_at: string | null;
+  qr_session_id: string | null;
 }
+
+// Default invoice message template
+export const DEFAULT_INVOICE_TEMPLATE = `📄 *فاتورة رقم {invoice_number} - {store_name}*
+
+مرحباً {client_name}! 👋
+
+━━━━━━━━━━━━━━━━━
+📋 *تفاصيل الفاتورة:*
+━━━━━━━━━━━━━━━━━
+{items_list}
+
+━━━━━━━━━━━━━━━━━
+💰 *الإجمالي: {total_amount} ج.م*
+━━━━━━━━━━━━━━━━━
+
+📅 التاريخ: {date}
+💳 طريقة الدفع: {payment_method}
+{notes}
+
+شكراً لتعاملك معنا! 💙
+{store_name}`;
+
+// Parse template with invoice data
+export interface InvoiceMessageData {
+  invoiceNumber: string;
+  storeName: string;
+  clientName: string;
+  itemsList: string;
+  totalAmount: string;
+  date: string;
+  paymentMethod: string;
+  notes: string;
+}
+
+export const parseInvoiceTemplate = (template: string, data: InvoiceMessageData): string => {
+  return template
+    .replace(/{invoice_number}/g, data.invoiceNumber)
+    .replace(/{store_name}/g, data.storeName)
+    .replace(/{client_name}/g, data.clientName || "عميلنا الكريم")
+    .replace(/{items_list}/g, data.itemsList)
+    .replace(/{total_amount}/g, data.totalAmount)
+    .replace(/{date}/g, data.date)
+    .replace(/{payment_method}/g, data.paymentMethod)
+    .replace(/{notes}/g, data.notes ? `\n📝 ملاحظات: ${data.notes}` : "");
+};
 
 export const useWhatsAppSettings = () => {
   const { tenant } = useAuth();

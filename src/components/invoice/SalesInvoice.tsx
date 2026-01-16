@@ -16,7 +16,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TemplateType } from "./templates/types";
 import { Save, Search, ChevronRight, ChevronLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateWhatsAppLink } from "@/hooks/useWhatsAppSettings";
+import { generateWhatsAppLink, useWhatsAppSettings, parseInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE } from "@/hooks/useWhatsAppSettings";
+import { WhatsAppConnectionStatus } from "@/components/whatsapp/WhatsAppConnectionStatus";
+import { supabase as supabaseClient } from "@/integrations/supabase/client";
 
 const AUTOSAVE_KEY = "invoice_autosave";
 const AUTOSAVE_INTERVAL = 3000; // 3 seconds
@@ -54,11 +56,13 @@ export const SalesInvoice = () => {
   const { data: clients } = useClients();
   const { data: warehouses } = useWarehouses();
   const { data: allInvoices } = useInvoices();
+  const { data: whatsappSettings } = useWhatsAppSettings();
   const createInvoice = useCreateInvoice();
   const updateInvoice = useUpdateInvoice();
   const createClient = useCreateClient({ showToast: false });
 
   const [clientPhone, setClientPhone] = useState("");
+  const [whatsappConnectionStatus, setWhatsappConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
 
   const [invoiceNumber, setInvoiceNumber] = useState("1");
   const [clientNumber, setClientNumber] = useState("");
@@ -438,10 +442,16 @@ export const SalesInvoice = () => {
     setShowPreview(true);
   }, []);
 
-  // Send invoice via WhatsApp Web
-  const handleSendWhatsApp = useCallback(() => {
+  // Send invoice via WhatsApp Web with template support
+  const handleSendWhatsApp = useCallback(async () => {
     if (!clientPhone) {
       toast.error("يرجى إدخال رقم هاتف العميل أولاً");
+      return;
+    }
+
+    // Check connection status
+    if (whatsappConnectionStatus === 'disconnected') {
+      toast.error("يرجى ربط الواتساب أولاً من الزر أعلاه");
       return;
     }
 
@@ -455,35 +465,51 @@ export const SalesInvoice = () => {
     const storeName = tenant?.name || "المتجر";
     
     // Generate detailed invoice message with items
-    let itemsList = validItems.map((item, index) => 
+    const itemsList = validItems.map((item, index) => 
       `${index + 1}. ${item.itemName} × ${item.quantity} = ${item.total.toFixed(2)} ج.م`
     ).join("\n");
 
-    const message = `📄 *فاتورة رقم ${invoiceNumber} - ${storeName}*
+    // Use custom template or default
+    const template = whatsappSettings?.invoice_message_template || DEFAULT_INVOICE_TEMPLATE;
+    
+    const message = parseInvoiceTemplate(template, {
+      invoiceNumber,
+      storeName,
+      clientName: clientName || "عميلنا الكريم",
+      itemsList,
+      totalAmount: totalAmount.toFixed(2),
+      date,
+      paymentMethod,
+      notes,
+    });
 
-مرحباً ${clientName || "عميلنا الكريم"}! 👋
-
-━━━━━━━━━━━━━━━━━
-📋 *تفاصيل الفاتورة:*
-━━━━━━━━━━━━━━━━━
-${itemsList}
-
-━━━━━━━━━━━━━━━━━
-💰 *الإجمالي: ${totalAmount.toFixed(2)} ج.م*
-━━━━━━━━━━━━━━━━━
-
-📅 التاريخ: ${date}
-💳 طريقة الدفع: ${paymentMethod}
-${notes ? `\n📝 ملاحظات: ${notes}` : ""}
-
-شكراً لتعاملك معنا! 💙
-${storeName}`;
+    // Log the send to prevent duplicate sends
+    if (editingInvoiceId && tenant?.id) {
+      try {
+        const { error } = await supabaseClient
+          .from("whatsapp_invoice_sends")
+          .insert({
+            tenant_id: tenant.id,
+            invoice_id: editingInvoiceId,
+            client_phone: clientPhone,
+            message_sent: message,
+            sent_via: 'whatsapp_web',
+          });
+        
+        if (error && error.code === '23505') {
+          // Duplicate entry - already sent
+          toast.warning("تم إرسال هذه الفاتورة مسبقاً لهذا الرقم");
+        }
+      } catch (err) {
+        console.log("Could not log WhatsApp send:", err);
+      }
+    }
 
     // Generate WhatsApp link and open
     const link = generateWhatsAppLink(clientPhone, message);
     window.open(link, "_blank");
     toast.success("تم فتح الواتساب - اضغط إرسال لتأكيد الإرسال");
-  }, [clientPhone, clientName, items, invoiceNumber, date, paymentMethod, notes, tenant?.name]);
+  }, [clientPhone, clientName, items, invoiceNumber, date, paymentMethod, notes, tenant, whatsappSettings, editingInvoiceId, whatsappConnectionStatus]);
 
   // Navigate to previous invoice
   const handlePrevInvoice = useCallback(async () => {
@@ -687,8 +713,9 @@ ${storeName}`;
             </Button>
           </div>
           
-          {/* Editing indicator and autosave */}
+          {/* Editing indicator, WhatsApp status, and autosave */}
           <div className="flex items-center gap-2">
+            <WhatsAppConnectionStatus compact onStatusChange={setWhatsappConnectionStatus} />
             {editingInvoiceId && (
               <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">
                 <Edit size={10} />
