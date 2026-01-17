@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TemplateType } from "./templates/types";
 import { Save, Search, ChevronRight, ChevronLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateWhatsAppLink, useWhatsAppSettings, parseInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE } from "@/hooks/useWhatsAppSettings";
+import { useWhatsAppSettings, parseInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE } from "@/hooks/useWhatsAppSettings";
 import { WhatsAppConnectionStatus } from "@/components/whatsapp/WhatsAppConnectionStatus";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 
@@ -62,7 +62,8 @@ export const SalesInvoice = () => {
   const createClient = useCreateClient({ showToast: false });
 
   const [clientPhone, setClientPhone] = useState("");
-  const [whatsappConnectionStatus, setWhatsappConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
+  const [whatsappConnectionStatus, setWhatsappConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connected');
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
 
   const [invoiceNumber, setInvoiceNumber] = useState("1");
   const [clientNumber, setClientNumber] = useState("");
@@ -442,16 +443,10 @@ export const SalesInvoice = () => {
     setShowPreview(true);
   }, []);
 
-  // Send invoice via WhatsApp Web with template support
+  // Send invoice via WhatsApp API in background
   const handleSendWhatsApp = useCallback(async () => {
     if (!clientPhone) {
       toast.error("يرجى إدخال رقم هاتف العميل أولاً");
-      return;
-    }
-
-    // Check connection status
-    if (whatsappConnectionStatus === 'disconnected') {
-      toast.error("يرجى ربط الواتساب أولاً من الزر أعلاه");
       return;
     }
 
@@ -461,55 +456,79 @@ export const SalesInvoice = () => {
       return;
     }
 
-    const totalAmount = calculateTotal(validItems);
-    const storeName = tenant?.name || "المتجر";
-    
-    // Generate detailed invoice message with items
-    const itemsList = validItems.map((item, index) => 
-      `${index + 1}. ${item.itemName} × ${item.quantity} = ${item.total.toFixed(2)} ج.م`
-    ).join("\n");
-
-    // Use custom template or default
-    const template = whatsappSettings?.invoice_message_template || DEFAULT_INVOICE_TEMPLATE;
-    
-    const message = parseInvoiceTemplate(template, {
-      invoiceNumber,
-      storeName,
-      clientName: clientName || "عميلنا الكريم",
-      itemsList,
-      totalAmount: totalAmount.toFixed(2),
-      date,
-      paymentMethod,
-      notes,
-    });
-
-    // Log the send to prevent duplicate sends
-    if (editingInvoiceId && tenant?.id) {
-      try {
-        const { error } = await supabaseClient
-          .from("whatsapp_invoice_sends")
-          .insert({
-            tenant_id: tenant.id,
-            invoice_id: editingInvoiceId,
-            client_phone: clientPhone,
-            message_sent: message,
-            sent_via: 'whatsapp_web',
-          });
-        
-        if (error && error.code === '23505') {
-          // Duplicate entry - already sent
-          toast.warning("تم إرسال هذه الفاتورة مسبقاً لهذا الرقم");
-        }
-      } catch (err) {
-        console.log("Could not log WhatsApp send:", err);
-      }
+    // Check if already sending
+    if (isSendingWhatsApp) {
+      toast.info("جاري الإرسال...");
+      return;
     }
 
-    // Generate WhatsApp link and open
-    const link = generateWhatsAppLink(clientPhone, message);
-    window.open(link, "_blank");
-    toast.success("تم فتح الواتساب - اضغط إرسال لتأكيد الإرسال");
-  }, [clientPhone, clientName, items, invoiceNumber, date, paymentMethod, notes, tenant, whatsappSettings, editingInvoiceId, whatsappConnectionStatus]);
+    setIsSendingWhatsApp(true);
+    const loadingToast = toast.loading("جاري إرسال الفاتورة عبر واتساب...");
+
+    try {
+      const totalAmount = calculateTotal(validItems);
+      const storeName = tenant?.name || "المتجر";
+      
+      // Generate detailed invoice message with items
+      const itemsList = validItems.map((item, index) => 
+        `${index + 1}. ${item.itemName} × ${item.quantity} = ${item.total.toFixed(2)} ج.م`
+      ).join("\n");
+
+      // Use custom template or default
+      const template = whatsappSettings?.invoice_message_template || DEFAULT_INVOICE_TEMPLATE;
+      
+      const message = parseInvoiceTemplate(template, {
+        invoiceNumber,
+        storeName,
+        clientName: clientName || "عميلنا الكريم",
+        itemsList,
+        totalAmount: totalAmount.toFixed(2),
+        date,
+        paymentMethod,
+        notes,
+      });
+
+      // Send via edge function (background)
+      const { data, error } = await supabaseClient.functions.invoke("send-whatsapp", {
+        body: { to: clientPhone, message }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.success) {
+        // Log the successful send
+        if (tenant?.id) {
+          await supabaseClient
+            .from("whatsapp_invoice_sends")
+            .insert({
+              tenant_id: tenant.id,
+              invoice_id: editingInvoiceId || `temp_${Date.now()}`,
+              client_phone: clientPhone,
+              message_sent: message,
+              sent_via: 'whatsapp_api',
+            });
+        }
+
+        toast.dismiss(loadingToast);
+        toast.success("✅ تم إرسال الفاتورة بنجاح عبر واتساب!", {
+          description: `إلى: ${clientPhone}`,
+          duration: 5000,
+        });
+      } else {
+        throw new Error(data?.error || "فشل الإرسال");
+      }
+    } catch (err: any) {
+      console.error("WhatsApp send error:", err);
+      toast.dismiss(loadingToast);
+      toast.error("فشل إرسال الفاتورة", {
+        description: err.message || "حاول مرة أخرى",
+      });
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
+  }, [clientPhone, clientName, items, invoiceNumber, date, paymentMethod, notes, tenant, whatsappSettings, editingInvoiceId, isSendingWhatsApp, calculateTotal]);
 
   // Navigate to previous invoice
   const handlePrevInvoice = useCallback(async () => {
@@ -769,6 +788,7 @@ export const SalesInvoice = () => {
             onSave={handleSaveInvoice}
             onSendWhatsApp={handleSendWhatsApp}
             isSaving={createInvoice.isPending || updateInvoice.isPending}
+            isSendingWhatsApp={isSendingWhatsApp}
             isEditing={!!editingInvoiceId}
             notes={notes}
             onNotesChange={setNotes}
