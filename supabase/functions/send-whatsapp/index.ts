@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,7 @@ const corsHeaders = {
 interface WhatsAppMessage {
   to: string;
   message: string;
+  tenantId?: string;
   templateName?: string;
   templateParams?: string[];
 }
@@ -19,22 +21,62 @@ serve(async (req) => {
   }
 
   try {
-    const WHATSAPP_ACCESS_TOKEN = Deno.env.get("WHATSAPP_ACCESS_TOKEN");
-    const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
-
-    if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
-      console.error("Missing WhatsApp configuration");
-      return new Response(
-        JSON.stringify({ error: "WhatsApp not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const { to, message, templateName, templateParams }: WhatsAppMessage = await req.json();
+    const { to, message, tenantId, templateName, templateParams }: WhatsAppMessage = await req.json();
 
     if (!to) {
       return new Response(
         JSON.stringify({ error: "Phone number is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let accessToken: string | null = null;
+    let phoneNumberId: string | null = null;
+
+    // Try to get per-tenant credentials first
+    if (tenantId) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const { data: settings } = await supabase
+        .from("whatsapp_settings")
+        .select("whatsapp_access_token_encrypted, whatsapp_phone_id")
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+
+      if (settings?.whatsapp_access_token_encrypted && settings?.whatsapp_phone_id) {
+        // Decrypt the access token using database function
+        const { data: decrypted } = await supabase.rpc("decrypt_company_data", {
+          encrypted_text: settings.whatsapp_access_token_encrypted,
+          tenant_uuid: tenantId,
+        });
+        
+        if (decrypted) {
+          accessToken = decrypted;
+          phoneNumberId = settings.whatsapp_phone_id;
+          console.log("Using per-tenant WhatsApp credentials for tenant:", tenantId);
+        }
+      }
+    }
+
+    // Fallback to global credentials if per-tenant not available
+    if (!accessToken || !phoneNumberId) {
+      accessToken = Deno.env.get("WHATSAPP_ACCESS_TOKEN") || null;
+      phoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || null;
+      
+      if (accessToken && phoneNumberId) {
+        console.log("Using global WhatsApp credentials");
+      }
+    }
+
+    if (!accessToken || !phoneNumberId) {
+      console.error("No WhatsApp configuration available");
+      return new Response(
+        JSON.stringify({ 
+          error: "WhatsApp not configured", 
+          message: "يرجى إعداد بيانات WhatsApp Business API في إعدادات الواتساب" 
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -83,11 +125,11 @@ serve(async (req) => {
     console.log("Sending WhatsApp message to:", formattedPhone);
 
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+          "Authorization": `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
@@ -101,7 +143,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Failed to send WhatsApp message", 
-          details: responseData 
+          details: responseData,
+          message: responseData.error?.message || "فشل إرسال الرسالة"
         }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

@@ -14,12 +14,15 @@ export interface WhatsAppSettings {
   auto_send_order_notifications: boolean;
   created_at: string;
   updated_at: string;
-  // New fields for WhatsApp Web Automation
+  // Fields for WhatsApp Web Automation
   invoice_message_template: string | null;
   connection_status: 'connected' | 'disconnected' | 'connecting';
   last_connected_at: string | null;
   last_disconnected_at: string | null;
   qr_session_id: string | null;
+  // Per-tenant WhatsApp API credentials
+  whatsapp_access_token_encrypted: string | null;
+  whatsapp_phone_id: string | null;
 }
 
 // Default invoice message template

@@ -2020,7 +2020,9 @@ export type Database = {
           qr_session_id: string | null
           tenant_id: string
           updated_at: string
+          whatsapp_access_token_encrypted: string | null
           whatsapp_number: string
+          whatsapp_phone_id: string | null
         }
         Insert: {
           auto_send_invoices?: boolean | null
@@ -2037,7 +2039,9 @@ export type Database = {
           qr_session_id?: string | null
           tenant_id: string
           updated_at?: string
+          whatsapp_access_token_encrypted?: string | null
           whatsapp_number: string
+          whatsapp_phone_id?: string | null
         }
         Update: {
           auto_send_invoices?: boolean | null
@@ -2054,7 +2058,9 @@ export type Database = {
           qr_session_id?: string | null
           tenant_id?: string
           updated_at?: string
+          whatsapp_access_token_encrypted?: string | null
           whatsapp_number?: string
+          whatsapp_phone_id?: string | null
         }
         Relationships: [
           {

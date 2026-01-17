@@ -9,17 +9,22 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { 
   MessageCircle, 
-  QrCode, 
   Check, 
   Phone,
   Bell,
   FileText,
   Truck,
   RefreshCw,
-  ExternalLink
+  Key,
+  Shield,
+  ExternalLink,
+  HelpCircle,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useWhatsAppSettings, useSaveWhatsAppSettings } from "@/hooks/useWhatsAppSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export const WhatsAppQRRegistration = () => {
   const { tenant } = useAuth();
@@ -27,17 +32,25 @@ export const WhatsAppQRRegistration = () => {
   const saveSettings = useSaveWhatsAppSettings();
   
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+  const [phoneNumberId, setPhoneNumberId] = useState("");
+  const [showToken, setShowToken] = useState(false);
   const [autoOrderTracking, setAutoOrderTracking] = useState(true);
   const [autoInvoices, setAutoInvoices] = useState(true);
   const [autoOrderNotifications, setAutoOrderNotifications] = useState(true);
-  const [showQR, setShowQR] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   
   useEffect(() => {
     if (settings) {
       setWhatsappNumber(settings.whatsapp_number || "");
+      setPhoneNumberId(settings.whatsapp_phone_id || "");
       setAutoOrderTracking(settings.auto_send_order_tracking);
       setAutoInvoices(settings.auto_send_invoices);
       setAutoOrderNotifications(settings.auto_send_order_notifications);
+      // Don't show decrypted token for security
+      if (settings.whatsapp_access_token_encrypted) {
+        setAccessToken("••••••••••••••••"); // Masked
+      }
     }
   }, [settings]);
   
@@ -47,47 +60,70 @@ export const WhatsAppQRRegistration = () => {
       return;
     }
     
-    await saveSettings.mutateAsync({
+    // Prepare update data
+    const updateData: any = {
       whatsapp_number: whatsappNumber,
+      whatsapp_phone_id: phoneNumberId,
       auto_send_order_tracking: autoOrderTracking,
       auto_send_invoices: autoInvoices,
       auto_send_order_notifications: autoOrderNotifications,
-    });
+    };
+    
+    // Only update token if it's changed (not masked)
+    if (accessToken && !accessToken.includes("•")) {
+      // Encrypt the token before saving
+      if (tenant?.id) {
+        const { data: encrypted } = await supabase.rpc("encrypt_company_data", {
+          plain_text: accessToken,
+          tenant_uuid: tenant.id,
+        });
+        
+        if (encrypted) {
+          updateData.whatsapp_access_token_encrypted = encrypted;
+        }
+      }
+    }
+    
+    await saveSettings.mutateAsync(updateData);
   };
   
-  const generateQRLink = () => {
-    // Generate a registration message for the store
-    const message = `🏪 تسجيل متجر جديد
-
-اسم المتجر: ${tenant?.name || "غير محدد"}
-رقم الواتساب: ${whatsappNumber}
-
-أرغب في تفعيل إشعارات الواتساب التلقائية:
-${autoOrderTracking ? "✅" : "❌"} روابط تتبع الطلبات
-${autoInvoices ? "✅" : "❌"} الفواتير
-${autoOrderNotifications ? "✅" : "❌"} إشعارات الطلبات`;
-
-    return encodeURIComponent(message);
-  };
-  
-  const openWhatsAppRegistration = () => {
-    if (!whatsappNumber.trim()) {
-      toast.error("يرجى إدخال رقم الواتساب أولاً");
+  const testConnection = async () => {
+    if (!phoneNumberId || (!accessToken || accessToken.includes("•"))) {
+      toast.error("يرجى إدخال بيانات WhatsApp API كاملة");
       return;
     }
     
-    const cleanPhone = whatsappNumber.replace(/\D/g, "");
-    const message = generateQRLink();
-    
-    // Open WhatsApp with pre-filled message
-    window.open(`https://wa.me/${cleanPhone}?text=${message}`, "_blank");
-    setShowQR(true);
+    setIsTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-whatsapp", {
+        body: { 
+          to: whatsappNumber, 
+          message: `✅ اختبار اتصال WhatsApp API ناجح!\n\n🏪 ${tenant?.name || "متجرك"}\n📅 ${new Date().toLocaleString("ar-EG")}`,
+          tenantId: tenant?.id
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success("✅ تم إرسال رسالة الاختبار بنجاح!");
+        
+        // Mark as verified
+        await saveSettings.mutateAsync({
+          is_verified: true,
+          connection_status: 'connected',
+          last_connected_at: new Date().toISOString(),
+        });
+      } else {
+        throw new Error(data?.message || "فشل الاختبار");
+      }
+    } catch (err: any) {
+      console.error("Test failed:", err);
+      toast.error(`فشل الاختبار: ${err.message}`);
+    } finally {
+      setIsTesting(false);
+    }
   };
-  
-  // Generate QR code URL using a free QR code API
-  const qrCodeUrl = whatsappNumber 
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://wa.me/${whatsappNumber.replace(/\D/g, "")}`)}`
-    : "";
 
   if (isLoading) {
     return (
@@ -99,15 +135,17 @@ ${autoOrderNotifications ? "✅" : "❌"} إشعارات الطلبات`;
     );
   }
 
+  const isConfigured = settings?.whatsapp_access_token_encrypted && settings?.whatsapp_phone_id;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-green-500" />
-          تسجيل الواتساب
+          إعداد WhatsApp Business API
         </CardTitle>
         <CardDescription>
-          سجل رقم الواتساب لإرسال الإشعارات والروابط تلقائياً للعملاء
+          سجل بيانات WhatsApp Business API الخاصة بشركتك للإرسال التلقائي
         </CardDescription>
       </CardHeader>
       
@@ -115,27 +153,53 @@ ${autoOrderNotifications ? "✅" : "❌"} إشعارات الطلبات`;
         {/* Status */}
         <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${settings?.is_verified ? "bg-green-100 text-green-600" : "bg-yellow-100 text-yellow-600"}`}>
-              {settings?.is_verified ? <Check className="h-5 w-5" /> : <Phone className="h-5 w-5" />}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isConfigured ? "bg-green-100 text-green-600" : "bg-yellow-100 text-yellow-600"}`}>
+              {isConfigured ? <Check className="h-5 w-5" /> : <Phone className="h-5 w-5" />}
             </div>
             <div>
               <p className="font-medium">
-                {settings?.is_verified ? "متصل" : "غير متصل"}
+                {isConfigured ? "تم الإعداد" : "غير مكتمل"}
               </p>
               <p className="text-sm text-muted-foreground">
                 {settings?.whatsapp_number || "لم يتم تسجيل رقم"}
               </p>
             </div>
           </div>
-          <Badge variant={settings?.is_verified ? "default" : "secondary"}>
-            {settings?.is_verified ? "مفعل" : "في الانتظار"}
+          <Badge variant={isConfigured ? "default" : "secondary"} className={isConfigured ? "bg-green-500" : ""}>
+            {isConfigured ? "جاهز للإرسال" : "يحتاج إعداد"}
           </Badge>
         </div>
         
-        {/* Phone Number Input */}
-        <div className="space-y-2">
-          <Label htmlFor="whatsapp">رقم الواتساب</Label>
-          <div className="flex gap-2">
+        {/* Help Link */}
+        <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg">
+          <div className="flex items-start gap-3">
+            <HelpCircle className="h-5 w-5 text-blue-500 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-blue-700 dark:text-blue-400">كيفية الحصول على بيانات WhatsApp API (مجاناً)</p>
+              <ol className="mt-2 text-sm text-blue-600 dark:text-blue-300 space-y-1 list-decimal list-inside">
+                <li>اذهب إلى <a href="https://developers.facebook.com" target="_blank" rel="noopener" className="underline">developers.facebook.com</a></li>
+                <li>أنشئ تطبيق جديد واختر "Business"</li>
+                <li>أضف منتج "WhatsApp" للتطبيق</li>
+                <li>انسخ Access Token و Phone Number ID</li>
+              </ol>
+              <Button variant="link" className="p-0 h-auto mt-2 text-blue-700" onClick={() => window.open("https://developers.facebook.com/docs/whatsapp/cloud-api/get-started", "_blank")}>
+                <ExternalLink className="h-4 w-4 ml-1" />
+                دليل التفعيل الكامل
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {/* API Credentials */}
+        <div className="space-y-4 p-4 border rounded-lg bg-card">
+          <h4 className="font-medium flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            بيانات WhatsApp Business API
+          </h4>
+          
+          {/* Phone Number */}
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">رقم الواتساب</Label>
             <Input
               id="whatsapp"
               type="tel"
@@ -143,38 +207,66 @@ ${autoOrderNotifications ? "✅" : "❌"} إشعارات الطلبات`;
               value={whatsappNumber}
               onChange={(e) => setWhatsappNumber(e.target.value)}
               dir="ltr"
-              className="flex-1"
             />
-            <Button variant="outline" onClick={openWhatsAppRegistration}>
-              <QrCode className="h-4 w-4 ml-2" />
-              مسح QR
-            </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            أدخل الرقم بالكامل مع كود الدولة (مثال: 201012345678)
-          </p>
-        </div>
-        
-        {/* QR Code Display */}
-        {whatsappNumber && (
-          <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed rounded-lg bg-white">
-            <img 
-              src={qrCodeUrl}
-              alt="WhatsApp QR Code"
-              className="w-40 h-40 rounded-lg shadow-md"
+          
+          {/* Phone Number ID */}
+          <div className="space-y-2">
+            <Label htmlFor="phoneId">Phone Number ID</Label>
+            <Input
+              id="phoneId"
+              type="text"
+              placeholder="مثال: 123456789012345"
+              value={phoneNumberId}
+              onChange={(e) => setPhoneNumberId(e.target.value)}
+              dir="ltr"
             />
-            <div className="text-center">
-              <p className="font-medium">امسح الـ QR Code</p>
-              <p className="text-sm text-muted-foreground">
-                أو اضغط للفتح في الواتساب
-              </p>
+          </div>
+          
+          {/* Access Token */}
+          <div className="space-y-2">
+            <Label htmlFor="token">Access Token</Label>
+            <div className="relative">
+              <Input
+                id="token"
+                type={showToken ? "text" : "password"}
+                placeholder="الصق Access Token هنا"
+                value={accessToken}
+                onChange={(e) => setAccessToken(e.target.value)}
+                dir="ltr"
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                onClick={() => setShowToken(!showToken)}
+              >
+                {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
             </div>
-            <Button variant="outline" onClick={openWhatsAppRegistration} className="gap-2">
-              <ExternalLink className="h-4 w-4" />
-              فتح في واتساب
-            </Button>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              يتم تشفير Token وحفظه بشكل آمن
+            </p>
           </div>
-        )}
+          
+          {/* Test Button */}
+          <Button 
+            variant="outline" 
+            onClick={testConnection}
+            disabled={isTesting || !phoneNumberId || !accessToken || accessToken.includes("•")}
+            className="w-full"
+          >
+            {isTesting ? (
+              <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+            ) : (
+              <MessageCircle className="h-4 w-4 ml-2" />
+            )}
+            اختبار الاتصال (إرسال رسالة تجريبية)
+          </Button>
+        </div>
         
         <Separator />
         
