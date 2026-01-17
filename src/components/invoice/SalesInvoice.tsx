@@ -488,9 +488,9 @@ export const SalesInvoice = () => {
         notes,
       });
 
-      // Send via edge function (background)
+      // Send via edge function (background) with tenant credentials
       const { data, error } = await supabaseClient.functions.invoke("send-whatsapp", {
-        body: { to: clientPhone, message }
+        body: { to: clientPhone, message, tenantId: tenant?.id }
       });
 
       if (error) {
