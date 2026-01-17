@@ -1,6 +1,6 @@
-import { Plus, FileText, Printer, Save, MessageSquare, Edit, MessageCircle, Phone, CheckCircle } from "lucide-react";
+import { Plus, FileText, Printer, Save, MessageSquare, Edit, MessageCircle, Phone, CheckCircle, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface InvoiceFooterProps {
   totalAmount: number;
@@ -11,6 +11,7 @@ interface InvoiceFooterProps {
   onSendWhatsApp?: () => void;
   isSaving?: boolean;
   isEditing?: boolean;
+  isSendingWhatsApp?: boolean;
   notes: string;
   onNotesChange: (value: string) => void;
   clientPhone?: string;
@@ -27,6 +28,7 @@ export const InvoiceFooter = ({
   onSendWhatsApp,
   isSaving,
   isEditing,
+  isSendingWhatsApp,
   notes,
   onNotesChange,
   clientPhone,
@@ -36,6 +38,10 @@ export const InvoiceFooter = ({
   const handleWhatsAppClick = () => {
     if (!clientPhone) {
       toast.error("يرجى إدخال رقم هاتف العميل أولاً");
+      return;
+    }
+    if (isSendingWhatsApp) {
+      toast.info("جاري الإرسال...");
       return;
     }
     onSendWhatsApp?.();
@@ -116,23 +122,48 @@ export const InvoiceFooter = ({
             </div>
             
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={!isSendingWhatsApp ? { scale: 1.05 } : {}}
+              whileTap={!isSendingWhatsApp ? { scale: 0.95 } : {}}
               onClick={handleWhatsAppClick}
-              disabled={!canSendWhatsApp}
+              disabled={!canSendWhatsApp || isSendingWhatsApp}
               className={`flex items-center gap-3 px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
-                canSendWhatsApp 
-                  ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30 hover:shadow-xl' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                isSendingWhatsApp 
+                  ? 'bg-green-400 text-white cursor-wait'
+                  : canSendWhatsApp 
+                    ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30 hover:shadow-xl' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              <MessageCircle size={24} />
-              إرسال الفاتورة
+              <AnimatePresence mode="wait">
+                {isSendingWhatsApp ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="flex items-center gap-3"
+                  >
+                    <Loader2 size={24} className="animate-spin" />
+                    <span>جاري الإرسال...</span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="send"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="flex items-center gap-3"
+                  >
+                    <Send size={24} />
+                    <span>إرسال الفاتورة</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.button>
           </div>
           
           {/* Quick Info */}
-          {canSendWhatsApp && (
+          {canSendWhatsApp && !isSendingWhatsApp && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -141,16 +172,37 @@ export const InvoiceFooter = ({
             >
               <span className="flex items-center gap-1">
                 <CheckCircle size={14} />
-                سيتم فتح واتساب ويب
+                إرسال تلقائي في الخلفية
               </span>
               <span className="flex items-center gap-1">
                 <CheckCircle size={14} />
-                الرسالة جاهزة تلقائياً
+                بدون فتح صفحة جديدة
               </span>
               <span className="flex items-center gap-1">
                 <CheckCircle size={14} />
-                اضغط إرسال فقط
+                اضغط وانتظر فقط
               </span>
+            </motion.div>
+          )}
+          
+          {/* Sending Status */}
+          {isSendingWhatsApp && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-3 bg-green-500/10 rounded-lg p-3 flex items-center gap-3"
+            >
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <Loader2 size={16} className="animate-spin text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                  جاري إرسال الفاتورة...
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  سيتم إعلامك عند اكتمال الإرسال
+                </p>
+              </div>
             </motion.div>
           )}
         </motion.div>
