@@ -37,6 +37,7 @@ import { UserManager } from "@/components/system/UserManager";
 import { SecurityManager } from "@/components/system/SecurityManager";
 import { RolePermissionsManager } from "@/components/system/RolePermissionsManager";
 import { QuickExporter } from "@/components/export/QuickExporter";
+import { SystemExporter } from "@/components/export/SystemExporter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Rocket } from "lucide-react";
@@ -333,35 +334,41 @@ const SystemDashboard = () => {
             </TabsContent>
 
             <TabsContent value="export">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Rocket className="h-5 w-5 text-primary" />
-                    تصدير تطبيقات الشركات
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    اختر شركة لتصدير تطبيق سطح المكتب الخاص بها بنقرة واحدة
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {stats?.recentTenants.map((tenant: any) => (
-                      <div key={tenant.id} className="space-y-2">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{tenant.name}</span>
+              <div className="space-y-6">
+                {/* System Full Export */}
+                <SystemExporter />
+
+                {/* Tenant-specific exports */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Rocket className="h-5 w-5 text-primary" />
+                      تصدير تطبيقات الشركات
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">
+                      اختر شركة لتصدير تطبيق سطح المكتب الخاص بها بنقرة واحدة
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {stats?.recentTenants.map((tenant: any) => (
+                        <div key={tenant.id} className="space-y-2">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{tenant.name}</span>
+                          </div>
+                          <QuickExporter
+                            tenantName={tenant.name}
+                            tenantSlug={tenant.slug}
+                            primaryColor="#3b82f6"
+                            secondaryColor="#8b5cf6"
+                          />
                         </div>
-                        <QuickExporter
-                          tenantName={tenant.name}
-                          tenantSlug={tenant.slug}
-                          primaryColor="#3b82f6"
-                          secondaryColor="#8b5cf6"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
