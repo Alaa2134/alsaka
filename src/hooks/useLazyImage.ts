@@ -1,4 +1,6 @@
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
+import React, { ImgHTMLAttributes } from 'react';
+import { cn } from '@/lib/utils';
 
 interface UseLazyImageOptions {
   threshold?: number;
@@ -48,3 +50,47 @@ export function useLazyImage(options: UseLazyImageOptions = {}) {
 
   return { observe, disconnect };
 }
+
+/**
+ * مكون صورة كسولة التحميل
+ */
+interface LazyImageProps extends ImgHTMLAttributes<HTMLImageElement> {
+  src: string;
+  alt: string;
+  placeholder?: string;
+}
+
+export const LazyImage = React.memo(function LazyImageComponent({ 
+  src, 
+  alt, 
+  placeholder = '/placeholder.svg',
+  className,
+  ...props 
+}: LazyImageProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(placeholder);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      setCurrentSrc(src);
+      setIsLoaded(true);
+    };
+  }, [src]);
+
+  return React.createElement('img', {
+    ref: imgRef,
+    src: currentSrc,
+    alt: alt,
+    className: cn(
+      'transition-opacity duration-300',
+      isLoaded ? 'opacity-100' : 'opacity-50',
+      className
+    ),
+    loading: 'lazy',
+    decoding: 'async',
+    ...props
+  });
+});

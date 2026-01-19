@@ -5,7 +5,7 @@ import {
   WifiOff, 
   RefreshCw, 
   CheckCircle,
-  CloudOff 
+  CloudOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ export const ConnectionStatus = memo(({
   showAlways = false,
   className 
 }: ConnectionStatusProps) => {
-  const { isOnline } = useNetworkStatus();
+  const { isOnline, wasOffline } = useNetworkStatus();
   const [show, setShow] = useState(false);
   const [justReconnected, setJustReconnected] = useState(false);
 
