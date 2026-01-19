@@ -3,7 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth, Tenant } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Pencil, Building2, Palette, Globe, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Pencil, Building2, Palette, Globe, CheckCircle, XCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +13,7 @@ import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 import { LogoUploader } from "@/components/shared/LogoUploader";
+import { ElectronExporter } from "@/components/export/ElectronExporter";
 
 const TenantsAdmin = () => {
   const { user, hasPermission } = useAuth();
@@ -20,6 +21,7 @@ const TenantsAdmin = () => {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [exportingTenant, setExportingTenant] = useState<Tenant | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -363,19 +365,36 @@ const TenantsAdmin = () => {
                       />
                     </div>
 
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      onClick={() => handleEdit(tenant)}
-                    >
-                      <Pencil size={16} className="ml-2" />
-                      تعديل
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1" 
+                        onClick={() => handleEdit(tenant)}
+                      >
+                        <Pencil size={16} className="ml-2" />
+                        تعديل
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setExportingTenant(tenant)}
+                        title="تصدير تطبيق EXE"
+                      >
+                        <Download size={16} />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
             )}
           </div>
+
+          {/* Electron Exporter Dialog */}
+          <ElectronExporter 
+            tenant={exportingTenant} 
+            open={!!exportingTenant} 
+            onOpenChange={(open) => !open && setExportingTenant(null)} 
+          />
         </div>
       </MainLayout>
     </>
