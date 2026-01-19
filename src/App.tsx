@@ -12,6 +12,8 @@ import { InactivityLock } from "@/components/auth/InactivityLock";
 import { SessionWrapper } from "@/components/auth/SessionWrapper";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { PerformanceOptimizer } from "@/components/performance/PerformanceOptimizer";
+import { SecurityHeaders } from "@/components/security/SecurityHeaders";
 // Lazy load pages for code splitting
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -59,12 +61,18 @@ const CustomerWishlist = lazy(() => import("./pages/store/CustomerWishlist"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 10, // 10 minutes - reduce refetches
-      gcTime: 1000 * 60 * 60, // 1 hour cache
+      staleTime: 1000 * 60 * 15, // 15 minutes - reduce refetches
+      gcTime: 1000 * 60 * 120, // 2 hours cache
       refetchOnWindowFocus: false,
       refetchOnMount: false, // Don't refetch on mount if data is fresh
+      refetchOnReconnect: false,
       retry: 1, // Reduce retries
+      networkMode: 'offlineFirst', // تحسين الأداء offline
     },
+    mutations: {
+      retry: 1,
+      networkMode: 'offlineFirst',
+    }
   },
 });
 
@@ -84,6 +92,8 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <PerformanceOptimizer />
+              <SecurityHeaders />
               <InactivityLock>
               <SessionWrapper>
                 <BrowserRouter>
