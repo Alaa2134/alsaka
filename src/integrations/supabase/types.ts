@@ -2129,15 +2129,16 @@ export type Database = {
       auth_user_tenant_id: { Args: never; Returns: string }
       check_rate_limit: {
         Args: {
-          _action_type: string
-          _block_minutes?: number
-          _identifier: string
-          _max_attempts?: number
-          _window_minutes?: number
+          p_action_type: string
+          p_block_minutes?: number
+          p_identifier: string
+          p_max_attempts?: number
+          p_window_minutes?: number
         }
         Returns: boolean
       }
       check_session_valid: { Args: never; Returns: boolean }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       decrypt_company_data: {
         Args: { encrypted_text: string; tenant_uuid: string }
         Returns: string
@@ -2338,6 +2339,7 @@ export type Database = {
         }
         Returns: string
       }
+      mask_sensitive_data: { Args: { data: Json }; Returns: Json }
       record_failed_login: {
         Args: { _access_code: string; _ip_address?: string }
         Returns: Json
@@ -2346,6 +2348,36 @@ export type Database = {
       record_successful_login: {
         Args: { _ip_address?: string; _user_id: string }
         Returns: undefined
+      }
+      safe_search_products: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search_term: string
+          p_tenant_id: string
+        }
+        Returns: {
+          barcode: string | null
+          category: string | null
+          category_id: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          item_number: string
+          min_price: number
+          name: string
+          price: number
+          stock_quantity: number
+          tenant_id: string | null
+          updated_at: string
+          warehouse_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       update_session_activity: { Args: never; Returns: undefined }
       user_has_role: {
@@ -2361,6 +2393,10 @@ export type Database = {
       }
       verify_access_code: {
         Args: { hashed_code: string; plain_code: string }
+        Returns: boolean
+      }
+      verify_and_consume_backup_code: {
+        Args: { plain_code: string; user_id_param: string }
         Returns: boolean
       }
       verify_backup_code: {
