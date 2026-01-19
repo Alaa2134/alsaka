@@ -98,12 +98,12 @@ export function useAnimatedList<T extends Record<string, any>>({
       
       // ترتيب التواريخ
       if (typeof aVal === 'string' && typeof bVal === 'string') {
-        const aDate = new Date(aVal);
-        const bDate = new Date(bVal);
-        if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+        const aDateParsed = Date.parse(aVal);
+        const bDateParsed = Date.parse(bVal);
+        if (!isNaN(aDateParsed) && !isNaN(bDateParsed)) {
           return sortDirection === 'asc' 
-            ? aDate.getTime() - bDate.getTime() 
-            : bDate.getTime() - aDate.getTime();
+            ? aDateParsed - bDateParsed 
+            : bDateParsed - aDateParsed;
         }
       }
       
