@@ -1,4 +1,4 @@
-import { FileText, Printer, Save, MessageSquare, Edit, MessageCircle, Phone, CheckCircle, Loader2, Send } from "lucide-react";
+import { FileText, Printer, Save, MessageSquare, Edit, MessageCircle, Phone, CheckCircle, Loader2, Send, Percent, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -16,6 +16,10 @@ interface InvoiceFooterProps {
   clientPhone?: string;
   clientName?: string;
   whatsappConnected?: boolean;
+  discount: number;
+  onDiscountChange: (value: number) => void;
+  payment: number;
+  onPaymentChange: (value: number) => void;
 }
 
 export const InvoiceFooter = ({
@@ -32,6 +36,10 @@ export const InvoiceFooter = ({
   clientPhone,
   clientName,
   whatsappConnected = true,
+  discount,
+  onDiscountChange,
+  payment,
+  onPaymentChange,
 }: InvoiceFooterProps) => {
   const handleWhatsAppClick = () => {
     if (!clientPhone) {
@@ -46,21 +54,84 @@ export const InvoiceFooter = ({
   };
 
   const canSendWhatsApp = clientPhone && clientPhone.length >= 10;
+  
+  // Calculate net total and remaining
+  const netTotal = totalAmount - discount;
+  const remaining = netTotal - payment;
 
   return (
     <div className="mt-4 space-y-4">
-      {/* Total Amount - Large and Prominent */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-2 border-primary/30 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-            <span className="text-2xl">💰</span>
+      {/* Discount and Payment Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Discount Field */}
+        <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-3">
+          <label className="text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-2 mb-2">
+            <Percent size={14} />
+            الخصم
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={discount || ""}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^\d.]/g, '');
+                onDiscountChange(parseFloat(val) || 0);
+              }}
+              placeholder="0.00"
+              className="w-full bg-card border-2 border-orange-500/30 rounded-lg px-3 py-2.5 text-center text-lg font-bold text-orange-600 dark:text-orange-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all"
+            />
+            <span className="text-muted-foreground text-sm whitespace-nowrap">ج.م</span>
           </div>
-          <div>
-            <span className="text-sm text-muted-foreground">إجمالي الفاتورة</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-primary">{totalAmount.toFixed(2)}</span>
-              <span className="text-lg text-muted-foreground">ج.م</span>
-            </div>
+        </div>
+
+        {/* Payment Field */}
+        <div className="bg-green-500/10 border-2 border-green-500/30 rounded-xl p-3">
+          <label className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center gap-2 mb-2">
+            <CreditCard size={14} />
+            التسديد
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={payment || ""}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^\d.]/g, '');
+                onPaymentChange(parseFloat(val) || 0);
+              }}
+              placeholder="0.00"
+              className="w-full bg-card border-2 border-green-500/30 rounded-lg px-3 py-2.5 text-center text-lg font-bold text-green-600 dark:text-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none transition-all"
+            />
+            <span className="text-muted-foreground text-sm whitespace-nowrap">ج.م</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Totals Summary */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-2 border-primary/30 rounded-xl p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Subtotal */}
+          <div className="text-center">
+            <span className="text-xs text-muted-foreground block mb-1">الإجمالي</span>
+            <span className="text-xl font-bold text-foreground">{totalAmount.toFixed(2)}</span>
+            <span className="text-sm text-muted-foreground mr-1">ج.م</span>
+          </div>
+          
+          {/* Net Total (after discount) */}
+          <div className="text-center border-x border-border px-4">
+            <span className="text-xs text-muted-foreground block mb-1">الصافي</span>
+            <span className="text-2xl font-bold text-primary">{netTotal.toFixed(2)}</span>
+            <span className="text-sm text-muted-foreground mr-1">ج.م</span>
+          </div>
+          
+          {/* Remaining */}
+          <div className="text-center">
+            <span className="text-xs text-muted-foreground block mb-1">المتبقي</span>
+            <span className={`text-xl font-bold ${remaining > 0 ? 'text-red-500' : remaining < 0 ? 'text-green-500' : 'text-foreground'}`}>
+              {remaining.toFixed(2)}
+            </span>
+            <span className="text-sm text-muted-foreground mr-1">ج.م</span>
           </div>
         </div>
       </div>

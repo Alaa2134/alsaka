@@ -70,6 +70,8 @@ export const CommissionSalesInvoice = () => {
   const [paymentMethod, setPaymentMethod] = useState("نقدي");
   const [items, setItems] = useState<InvoiceItem[]>([createEmptyItem()]);
   const [notes, setNotes] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [payment, setPayment] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("classic");
@@ -723,6 +725,10 @@ export const CommissionSalesInvoice = () => {
             isEditing={!!editingInvoiceId}
             notes={notes}
             onNotesChange={setNotes}
+            discount={discount}
+            onDiscountChange={setDiscount}
+            payment={payment}
+            onPaymentChange={setPayment}
           />
         </div>
       </div>
