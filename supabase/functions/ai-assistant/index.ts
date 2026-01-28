@@ -24,20 +24,9 @@ serve(async (req) => {
       });
     }
 
-    const { prompt, tenantId, accessCode } = await req.json();
-
-    // Validate access code exists and is active
-    if (!accessCode) {
-      return new Response(JSON.stringify({ 
-        action: 'error',
-        message: 'غير مصرح - رمز الوصول مطلوب' 
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const { prompt, tenantId, userId } = await req.json();
     
-    console.log('AI Assistant request:', { prompt, tenantId });
+    console.log('AI Assistant request:', { prompt, tenantId, userId });
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -48,18 +37,33 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify access code is valid
+    // Extract JWT token and verify user
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ 
+        action: 'error',
+        message: 'غير مصرح - جلسة غير صالحة' 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get app user by auth_id
     const { data: userData, error: userError } = await supabase
       .from('app_users')
       .select('id, tenant_id, role, is_active')
-      .eq('access_code', accessCode)
+      .eq('auth_id', user.id)
       .eq('is_active', true)
       .single();
 
     if (userError || !userData) {
+      console.error('User lookup error:', userError);
       return new Response(JSON.stringify({ 
         action: 'error',
-        message: 'غير مصرح - رمز الوصول غير صالح' 
+        message: 'غير مصرح - المستخدم غير موجود' 
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
