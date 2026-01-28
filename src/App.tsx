@@ -26,6 +26,7 @@ const Reports = lazy(() => import("./pages/Reports"));
 const Warehouses = lazy(() => import("./pages/Warehouses"));
 const Returns = lazy(() => import("./pages/Returns"));
 const InvoiceDesigner = lazy(() => import("./pages/InvoiceDesigner"));
+const InvoicePageSettings = lazy(() => import("./pages/InvoicePageSettings"));
 const InvoicesAdmin = lazy(() => import("./pages/InvoicesAdmin"));
 const UsersAdmin = lazy(() => import("./pages/UsersAdmin"));
 const TenantsAdmin = lazy(() => import("./pages/TenantsAdmin"));
@@ -186,6 +187,13 @@ const App = () => (
                       <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
                         <Suspense fallback={<FormSkeleton />}>
                           <InvoiceDesigner />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/invoice-page-settings" element={
+                      <ProtectedRoute requiredRoles={["system_manager", "company_admin", "admin", "manager"]}>
+                        <Suspense fallback={<FormSkeleton />}>
+                          <InvoicePageSettings />
                         </Suspense>
                       </ProtectedRoute>
                     } />

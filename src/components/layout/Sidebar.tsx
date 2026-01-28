@@ -27,7 +27,8 @@ import {
   Activity,
   ShieldAlert,
   Settings,
-  FolderTree
+  FolderTree,
+  Layout
 } from "lucide-react";
 import { useAuth, roleLabels, AppRole } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -52,6 +53,7 @@ const navItems: { path: string; label: string; icon: typeof FileText; roles: App
   { path: "/accounting", label: "المحاسبة", icon: BarChart3, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/reports", label: "التقارير", icon: BarChart3, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/invoice-designer", label: "تصميم الفاتورة", icon: Sparkles, roles: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/invoice-page-settings", label: "تخصيص صفحة الفاتورة", icon: Layout, roles: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/company-settings", label: "إعدادات الشركة", icon: Building2, roles: ["system_manager", "company_admin", "admin"] },
   { path: "/subscription", label: "الاشتراك", icon: Crown, roles: ["system_manager", "company_admin", "admin"] },
   { path: "/audit-logs", label: "سجل النشاطات", icon: Activity, roles: ["system_manager", "company_admin", "admin"] },
