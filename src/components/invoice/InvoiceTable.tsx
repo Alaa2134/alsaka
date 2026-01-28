@@ -321,13 +321,13 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
       <table className="w-full border-collapse table-fixed">
         <thead>
           <tr className="bg-foreground text-background">
-            <th className="px-2 py-3 text-center font-bold w-12">حذف</th>
-            <th className="px-2 py-3 text-center font-bold w-24">الإجمالي</th>
-            <th className="px-2 py-3 text-center font-bold w-20">الحد الأدنى</th>
-            <th className="px-2 py-3 text-center font-bold w-20">السعر</th>
-            <th className="px-2 py-3 text-center font-bold w-16">الكمية</th>
-            <th className="px-2 py-3 text-right font-bold">اسم الصنف</th>
             <th className="px-2 py-3 text-center font-bold w-24">رقم الصنف</th>
+            <th className="px-2 py-3 text-right font-bold">اسم الصنف</th>
+            <th className="px-2 py-3 text-center font-bold w-16">الكمية</th>
+            <th className="px-2 py-3 text-center font-bold w-20">السعر</th>
+            <th className="px-2 py-3 text-center font-bold w-20">الحد الأدنى</th>
+            <th className="px-2 py-3 text-center font-bold w-24">الإجمالي</th>
+            <th className="px-2 py-3 text-center font-bold w-12">حذف</th>
           </tr>
         </thead>
         <tbody>
@@ -338,36 +338,84 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                 index % 2 === 0 ? "bg-card" : "bg-muted/30"
               } hover:bg-primary/5 transition-colors`}
             >
-              {/* حذف */}
-              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
-                <button
-                  onClick={() => {
-                    setItemToDelete({ id: item.id, name: item.itemName || `صنف ${index + 1}` });
-                    setDeleteDialogOpen(true);
+              {/* رقم الصنف */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
+                <input
+                  ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
+                  type="text"
+                  value={item.itemNumber}
+                  onChange={(e) => handleInputChange(item.id, "itemNumber", e.target.value)}
+                  onFocus={() => {
+                    setActiveInput({ id: item.id, field: "itemNumber" });
+                    setSearchTerm(item.itemNumber);
                   }}
-                  className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-all hover:scale-110"
-                  title="حذف الصنف"
-                >
-                  <Trash2 size={18} />
-                </button>
+                  onBlur={handleInputBlur}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
+                  autoComplete="off"
+                />
+                {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
+                  <SuggestionDropdown
+                    suggestions={suggestions}
+                    onSelect={(p) => handleSelectProduct(item.id, p)}
+                    onClose={() => setActiveInput(null)}
+                    visible={true}
+                    selectedIndex={selectedSuggestionIndex}
+                    notFound={notFound}
+                    searchTerm={searchTerm}
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                  />
+                )}
               </td>
               
-              {/* الإجمالي */}
-              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
-                <div className="bg-primary/10 border-2 border-primary/30 rounded-lg px-2 py-2">
-                  <span className="font-bold text-base text-primary">{item.total.toFixed(2)}</span>
-                </div>
+              {/* اسم الصنف */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
+                <input
+                  ref={(el) => setInputRef(`${item.id}-itemName`, el)}
+                  type="text"
+                  value={item.itemName}
+                  onChange={(e) => handleInputChange(item.id, "itemName", e.target.value)}
+                  onFocus={() => {
+                    setActiveInput({ id: item.id, field: "itemName" });
+                    setSearchTerm(item.itemName);
+                  }}
+                  onBlur={handleInputBlur}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemName")}
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
+                  placeholder="اسم الصنف..."
+                  autoComplete="off"
+                />
+                {activeInput?.id === item.id && activeInput?.field === "itemName" && (
+                  <SuggestionDropdown
+                    suggestions={suggestions}
+                    onSelect={(p) => handleSelectProduct(item.id, p)}
+                    onClose={() => setActiveInput(null)}
+                    visible={true}
+                    selectedIndex={selectedSuggestionIndex}
+                    notFound={notFound}
+                    searchTerm={searchTerm}
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                  />
+                )}
               </td>
               
-              {/* الحد الأدنى */}
+              {/* الكمية */}
               <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700">
                 <input
+                  ref={(el) => setInputRef(`${item.id}-quantity`, el)}
                   type="text"
-                  inputMode="decimal"
-                  value={item.minPrice || ""}
-                  readOnly
-                  className="w-full bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center cursor-not-allowed opacity-70 shadow-sm text-sm"
-                  title="الحد الأدنى - يمكن تعديله من صفحة المنتجات فقط"
+                  inputMode="numeric"
+                  value={item.quantity || ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '');
+                    onUpdateItem(item.id, "quantity", parseInt(val) || 0);
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "quantity")}
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
                 />
               </td>
               
@@ -412,85 +460,37 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                 </div>
               </td>
               
-              {/* الكمية */}
+              {/* الحد الأدنى */}
               <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700">
                 <input
-                  ref={(el) => setInputRef(`${item.id}-quantity`, el)}
                   type="text"
-                  inputMode="numeric"
-                  value={item.quantity || ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^\d]/g, '');
-                    onUpdateItem(item.id, "quantity", parseInt(val) || 0);
-                  }}
-                  onKeyDown={(e) => handleKeyDown(e, item.id, "quantity")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
+                  inputMode="decimal"
+                  value={item.minPrice || ""}
+                  readOnly
+                  className="w-full bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center cursor-not-allowed opacity-70 shadow-sm text-sm"
+                  title="الحد الأدنى - يمكن تعديله من صفحة المنتجات فقط"
                 />
               </td>
               
-              {/* اسم الصنف */}
-              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
-                <input
-                  ref={(el) => setInputRef(`${item.id}-itemName`, el)}
-                  type="text"
-                  value={item.itemName}
-                  onChange={(e) => handleInputChange(item.id, "itemName", e.target.value)}
-                  onFocus={() => {
-                    setActiveInput({ id: item.id, field: "itemName" });
-                    setSearchTerm(item.itemName);
-                  }}
-                  onBlur={handleInputBlur}
-                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemName")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
-                  placeholder="اسم الصنف..."
-                  autoComplete="off"
-                />
-                {activeInput?.id === item.id && activeInput?.field === "itemName" && (
-                  <SuggestionDropdown
-                    suggestions={suggestions}
-                    onSelect={(p) => handleSelectProduct(item.id, p)}
-                    onClose={() => setActiveInput(null)}
-                    visible={true}
-                    selectedIndex={selectedSuggestionIndex}
-                    notFound={notFound}
-                    searchTerm={searchTerm}
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                  />
-                )}
+              {/* الإجمالي */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
+                <div className="bg-primary/10 border-2 border-primary/30 rounded-lg px-2 py-2">
+                  <span className="font-bold text-base text-primary">{item.total.toFixed(2)}</span>
+                </div>
               </td>
               
-              {/* رقم الصنف */}
-              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
-                <input
-                  ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
-                  type="text"
-                  value={item.itemNumber}
-                  onChange={(e) => handleInputChange(item.id, "itemNumber", e.target.value)}
-                  onFocus={() => {
-                    setActiveInput({ id: item.id, field: "itemNumber" });
-                    setSearchTerm(item.itemNumber);
+              {/* حذف */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
+                <button
+                  onClick={() => {
+                    setItemToDelete({ id: item.id, name: item.itemName || `صنف ${index + 1}` });
+                    setDeleteDialogOpen(true);
                   }}
-                  onBlur={handleInputBlur}
-                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
-                  autoComplete="off"
-                />
-                {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
-                  <SuggestionDropdown
-                    suggestions={suggestions}
-                    onSelect={(p) => handleSelectProduct(item.id, p)}
-                    onClose={() => setActiveInput(null)}
-                    visible={true}
-                    selectedIndex={selectedSuggestionIndex}
-                    notFound={notFound}
-                    searchTerm={searchTerm}
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                  />
-                )}
+                  className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-all hover:scale-110"
+                  title="حذف الصنف"
+                >
+                  <Trash2 size={18} />
+                </button>
               </td>
             </tr>
           ))}
