@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -9,7 +9,7 @@ import {
   DialogDescription,
   DialogFooter 
 } from "@/components/ui/dialog";
-import { Eye, EyeOff, Lock, Unlock } from "lucide-react";
+import { Eye, EyeOff, Lock, Unlock, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 interface SensitiveDataBlurProps {
@@ -20,6 +20,25 @@ interface SensitiveDataBlurProps {
 
 // Default password - can be customized per user/tenant later
 const DEFAULT_PASSWORD = "1234";
+const STORAGE_KEY = "sensitive_data_password";
+
+// Get stored password or default
+const getStoredPassword = (): string => {
+  try {
+    return localStorage.getItem(STORAGE_KEY) || DEFAULT_PASSWORD;
+  } catch {
+    return DEFAULT_PASSWORD;
+  }
+};
+
+// Save password to storage
+const savePassword = (password: string): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, password);
+  } catch {
+    console.error("Failed to save password");
+  }
+};
 
 export const SensitiveDataBlur = ({ 
   children, 
@@ -157,6 +176,7 @@ interface BlurContextType {
   isGloballyBlurred: boolean;
   setGloballyBlurred: (value: boolean) => void;
   globalPassword: string;
+  setGlobalPassword: (value: string) => void;
 }
 
 const BlurContext = createContext<BlurContextType | null>(null);
@@ -168,30 +188,36 @@ interface BlurProviderProps {
   password?: string;
 }
 
-export const BlurProvider = ({ children, password = DEFAULT_PASSWORD }: BlurProviderProps) => {
+export const BlurProvider = ({ children }: BlurProviderProps) => {
   const [isGloballyBlurred, setGloballyBlurred] = useState(true);
+  const [globalPassword, setGlobalPassword] = useState(() => getStoredPassword());
   
   return (
     <BlurContext.Provider value={{ 
       isGloballyBlurred, 
       setGloballyBlurred, 
-      globalPassword: password 
+      globalPassword,
+      setGlobalPassword
     }}>
       {children}
     </BlurContext.Provider>
   );
 };
 
-// Global toggle button component
+// Global toggle button component with password change
 export const GlobalBlurToggle = () => {
   const context = useBlurContext();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const [inputPassword, setInputPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [attempts, setAttempts] = useState(0);
 
   if (!context) return null;
 
-  const { isGloballyBlurred, setGloballyBlurred, globalPassword } = context;
+  const { isGloballyBlurred, setGloballyBlurred, globalPassword, setGlobalPassword } = context;
 
   const handleToggle = () => {
     if (isGloballyBlurred) {
@@ -222,6 +248,29 @@ export const GlobalBlurToggle = () => {
     }
   };
 
+  const handleChangePassword = () => {
+    if (currentPassword !== globalPassword) {
+      toast.error("كلمة السر الحالية غير صحيحة");
+      return;
+    }
+    if (newPassword.length < 4) {
+      toast.error("كلمة السر الجديدة يجب أن تكون 4 أحرف على الأقل");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("كلمة السر الجديدة غير متطابقة");
+      return;
+    }
+    
+    setGlobalPassword(newPassword);
+    savePassword(newPassword);
+    setShowChangePasswordDialog(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    toast.success("تم تغيير كلمة السر بنجاح");
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleVerifyPassword();
@@ -230,25 +279,37 @@ export const GlobalBlurToggle = () => {
 
   return (
     <>
-      <Button
-        variant={isGloballyBlurred ? "outline" : "default"}
-        size="sm"
-        onClick={handleToggle}
-        className="gap-2"
-      >
-        {isGloballyBlurred ? (
-          <>
-            <Eye className="h-4 w-4" />
-            إظهار البيانات
-          </>
-        ) : (
-          <>
-            <EyeOff className="h-4 w-4" />
-            إخفاء البيانات
-          </>
-        )}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant={isGloballyBlurred ? "outline" : "default"}
+          size="sm"
+          onClick={handleToggle}
+          className="gap-2"
+        >
+          {isGloballyBlurred ? (
+            <>
+              <Eye className="h-4 w-4" />
+              إظهار البيانات
+            </>
+          ) : (
+            <>
+              <EyeOff className="h-4 w-4" />
+              إخفاء البيانات
+            </>
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowChangePasswordDialog(true)}
+          className="gap-1 px-2"
+          title="تغيير كلمة السر"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </div>
 
+      {/* Verify Password Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
@@ -282,6 +343,67 @@ export const GlobalBlurToggle = () => {
             </Button>
             <Button onClick={handleVerifyPassword}>
               تأكيد
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={showChangePasswordDialog} onOpenChange={setShowChangePasswordDialog}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              تغيير كلمة السر
+            </DialogTitle>
+            <DialogDescription>
+              أدخل كلمة السر الحالية ثم الجديدة
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">كلمة السر الحالية</label>
+              <Input
+                type="password"
+                placeholder="كلمة السر الحالية"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="text-center tracking-widest"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">كلمة السر الجديدة</label>
+              <Input
+                type="password"
+                placeholder="كلمة السر الجديدة"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="text-center tracking-widest"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">تأكيد كلمة السر الجديدة</label>
+              <Input
+                type="password"
+                placeholder="تأكيد كلمة السر"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleChangePassword()}
+                className="text-center tracking-widest"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => {
+              setShowChangePasswordDialog(false);
+              setCurrentPassword("");
+              setNewPassword("");
+              setConfirmPassword("");
+            }}>
+              إلغاء
+            </Button>
+            <Button onClick={handleChangePassword}>
+              حفظ
             </Button>
           </DialogFooter>
         </DialogContent>
