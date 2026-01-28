@@ -45,6 +45,7 @@ interface SuggestionDropdownProps {
   categories: string[];
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
+  inputRef?: HTMLInputElement | null;
 }
 
 const SuggestionDropdown = ({ 
@@ -57,9 +58,11 @@ const SuggestionDropdown = ({
   searchTerm,
   categories,
   selectedCategory,
-  onCategoryChange
+  onCategoryChange,
+  inputRef
 }: SuggestionDropdownProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -71,14 +74,33 @@ const SuggestionDropdown = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  // Calculate position based on input element
+  useEffect(() => {
+    if (inputRef && visible) {
+      const rect = inputRef.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: Math.max(rect.width, 350)
+      });
+    }
+  }, [inputRef, visible]);
+
   if (!visible) return null;
   if (suggestions.length === 0 && !notFound) return null;
 
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-2xl max-h-96 overflow-hidden"
-      style={{ backgroundColor: 'hsl(var(--card))', zIndex: 9999, position: 'absolute', minWidth: '350px' }}
+      className="bg-card border-2 border-primary/20 rounded-xl shadow-2xl max-h-96 overflow-hidden"
+      style={{ 
+        position: 'fixed',
+        top: position.top,
+        left: position.left,
+        width: position.width,
+        zIndex: 99999,
+        backgroundColor: 'hsl(var(--card))'
+      }}
     >
       {/* Category Filter */}
       {categories.length > 0 && (
@@ -133,7 +155,7 @@ const SuggestionDropdown = ({
                   ? "bg-primary/20 text-primary" 
                   : "hover:bg-primary/10"
               }`}
-              style={{ backgroundColor: index === selectedIndex ? 'hsl(var(--primary) / 0.2)' : undefined }}
+              style={{ backgroundColor: index === selectedIndex ? 'hsl(var(--primary) / 0.2)' : 'hsl(var(--card))' }}
             >
               <div className="flex flex-col items-start gap-0.5">
                 <span className="font-semibold text-foreground truncate">{product.name}</span>
@@ -366,6 +388,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                     categories={categories}
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
+                    inputRef={inputRefs.current.get(`${item.id}-itemNumber`)}
                   />
                 )}
               </td>
@@ -399,6 +422,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                     categories={categories}
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
+                    inputRef={inputRefs.current.get(`${item.id}-itemName`)}
                   />
                 )}
               </td>
