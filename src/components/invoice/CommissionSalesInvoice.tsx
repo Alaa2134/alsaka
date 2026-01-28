@@ -704,7 +704,7 @@ export const CommissionSalesInvoice = () => {
             onPaymentMethodChange={setPaymentMethod}
           />
 
-          <div className="flex-1 min-h-0 overflow-auto">
+          <div className="min-h-[300px] overflow-auto">
             <InvoiceTable
               items={items}
               onUpdateItem={handleUpdateItem}
