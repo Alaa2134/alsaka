@@ -317,17 +317,17 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl shadow-soft border border-border animate-slide-in mt-6" style={{ overflow: 'visible' }}>
-      <table className="w-full border-collapse">
+    <div className="overflow-x-auto rounded-xl shadow-soft border border-border animate-slide-in mt-6" style={{ overflow: 'visible' }} dir="rtl">
+      <table className="w-full border-collapse table-fixed">
         <thead>
           <tr className="bg-foreground text-background">
-            <th className="px-3 py-3 text-right font-bold w-32">رقم الصنف</th>
-            <th className="px-3 py-3 text-right font-bold min-w-[300px]">اسم الصنف</th>
-            <th className="px-3 py-3 text-center font-bold w-20">الكمية</th>
-            <th className="px-3 py-3 text-center font-bold w-24">السعر</th>
-            <th className="px-3 py-3 text-center font-bold w-24">الحد الأدنى</th>
-            <th className="px-3 py-3 text-center font-bold w-28">الإجمالي</th>
-            <th className="px-3 py-3 text-center font-bold w-12">حذف</th>
+            <th className="px-2 py-3 text-center font-bold w-12">حذف</th>
+            <th className="px-2 py-3 text-center font-bold w-24">الإجمالي</th>
+            <th className="px-2 py-3 text-center font-bold w-20">الحد الأدنى</th>
+            <th className="px-2 py-3 text-center font-bold w-20">السعر</th>
+            <th className="px-2 py-3 text-center font-bold w-16">الكمية</th>
+            <th className="px-2 py-3 text-right font-bold">اسم الصنف</th>
+            <th className="px-2 py-3 text-center font-bold w-24">رقم الصنف</th>
           </tr>
         </thead>
         <tbody>
@@ -338,37 +338,98 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                 index % 2 === 0 ? "bg-card" : "bg-muted/30"
               } hover:bg-primary/5 transition-colors`}
             >
-              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
-                <input
-                  ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
-                  type="text"
-                  value={item.itemNumber}
-                  onChange={(e) => handleInputChange(item.id, "itemNumber", e.target.value)}
-                  onFocus={() => {
-                    setActiveInput({ id: item.id, field: "itemNumber" });
-                    setSearchTerm(item.itemNumber);
+              {/* حذف */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
+                <button
+                  onClick={() => {
+                    setItemToDelete({ id: item.id, name: item.itemName || `صنف ${index + 1}` });
+                    setDeleteDialogOpen(true);
                   }}
-                  onBlur={handleInputBlur}
-                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-base"
-                  autoComplete="off"
-                />
-                {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
-                  <SuggestionDropdown
-                    suggestions={suggestions}
-                    onSelect={(p) => handleSelectProduct(item.id, p)}
-                    onClose={() => setActiveInput(null)}
-                    visible={true}
-                    selectedIndex={selectedSuggestionIndex}
-                    notFound={notFound}
-                    searchTerm={searchTerm}
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                  />
-                )}
+                  className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-all hover:scale-110"
+                  title="حذف الصنف"
+                >
+                  <Trash2 size={18} />
+                </button>
               </td>
-              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
+              
+              {/* الإجمالي */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
+                <div className="bg-primary/10 border-2 border-primary/30 rounded-lg px-2 py-2">
+                  <span className="font-bold text-base text-primary">{item.total.toFixed(2)}</span>
+                </div>
+              </td>
+              
+              {/* الحد الأدنى */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={item.minPrice || ""}
+                  readOnly
+                  className="w-full bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center cursor-not-allowed opacity-70 shadow-sm text-sm"
+                  title="الحد الأدنى - يمكن تعديله من صفحة المنتجات فقط"
+                />
+              </td>
+              
+              {/* السعر */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700">
+                <div className="relative">
+                  <input
+                    ref={(el) => setInputRef(`${item.id}-price`, el)}
+                    type="text"
+                    inputMode="decimal"
+                    value={item.price || ""}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^\d.]/g, '');
+                      const newPrice = parseFloat(val) || 0;
+                      onUpdateItem(item.id, "price", newPrice);
+                    }}
+                    onBlur={() => {
+                      if (item.minPrice > 0 && item.price < item.minPrice && item.price > 0) {
+                        playAlertSound();
+                        toast.warning(
+                          `تحذير: سعر "${item.itemName}" أقل من الحد الأدنى!`,
+                          {
+                            description: `السعر: ${item.price} - الحد الأدنى: ${item.minPrice}`,
+                            duration: 5000,
+                            icon: <Volume2 className="text-warning" />,
+                          }
+                        );
+                      }
+                    }}
+                    onKeyDown={(e) => handleKeyDown(e, item.id, "price")}
+                    className={`w-full bg-white dark:bg-gray-800 border-2 rounded-lg px-2 py-2 text-center shadow-sm focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm ${
+                      item.minPrice > 0 && item.price < item.minPrice && item.price > 0
+                        ? "border-destructive bg-destructive/10 text-destructive animate-pulse"
+                        : "border-gray-300 dark:border-gray-600 focus:border-primary"
+                    }`}
+                  />
+                  {item.minPrice > 0 && item.price < item.minPrice && item.price > 0 && (
+                    <div className="absolute -top-1 -left-1">
+                      <AlertCircle className="w-4 h-4 text-destructive animate-bounce" />
+                    </div>
+                  )}
+                </div>
+              </td>
+              
+              {/* الكمية */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700">
+                <input
+                  ref={(el) => setInputRef(`${item.id}-quantity`, el)}
+                  type="text"
+                  inputMode="numeric"
+                  value={item.quantity || ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, '');
+                    onUpdateItem(item.id, "quantity", parseInt(val) || 0);
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "quantity")}
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
+                />
+              </td>
+              
+              {/* اسم الصنف */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
                 <input
                   ref={(el) => setInputRef(`${item.id}-itemName`, el)}
                   type="text"
@@ -380,7 +441,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   }}
                   onBlur={handleInputBlur}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "itemName")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-base"
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
                   placeholder="اسم الصنف..."
                   autoComplete="off"
                 />
@@ -399,86 +460,37 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   />
                 )}
               </td>
-              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+              
+              {/* رقم الصنف */}
+              <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
                 <input
-                  ref={(el) => setInputRef(`${item.id}-quantity`, el)}
+                  ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
                   type="text"
-                  inputMode="numeric"
-                  value={item.quantity || ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^\d]/g, '');
-                    onUpdateItem(item.id, "quantity", parseInt(val) || 0);
+                  value={item.itemNumber}
+                  onChange={(e) => handleInputChange(item.id, "itemNumber", e.target.value)}
+                  onFocus={() => {
+                    setActiveInput({ id: item.id, field: "itemNumber" });
+                    setSearchTerm(item.itemNumber);
                   }}
-                  onKeyDown={(e) => handleKeyDown(e, item.id, "quantity")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-base"
+                  onBlur={handleInputBlur}
+                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
+                  autoComplete="off"
                 />
-              </td>
-              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-                <div className="relative">
-                  <input
-                    ref={(el) => setInputRef(`${item.id}-price`, el)}
-                    type="text"
-                    inputMode="decimal"
-                    value={item.price || ""}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^\d.]/g, '');
-                      const newPrice = parseFloat(val) || 0;
-                      onUpdateItem(item.id, "price", newPrice);
-                    }}
-                    onBlur={() => {
-                      // Check if price is below minimum on blur
-                      if (item.minPrice > 0 && item.price < item.minPrice && item.price > 0) {
-                        playAlertSound();
-                        toast.warning(
-                          `تحذير: سعر "${item.itemName}" أقل من الحد الأدنى!`,
-                          {
-                            description: `السعر: ${item.price} - الحد الأدنى: ${item.minPrice}`,
-                            duration: 5000,
-                            icon: <Volume2 className="text-warning" />,
-                          }
-                        );
-                      }
-                    }}
-                    onKeyDown={(e) => handleKeyDown(e, item.id, "price")}
-                    className={`w-full bg-white dark:bg-gray-800 border-2 rounded-lg px-3 py-3 text-center shadow-sm focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-base ${
-                      item.minPrice > 0 && item.price < item.minPrice && item.price > 0
-                        ? "border-destructive bg-destructive/10 text-destructive animate-pulse"
-                        : "border-gray-300 dark:border-gray-600 focus:border-primary"
-                    }`}
+                {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
+                  <SuggestionDropdown
+                    suggestions={suggestions}
+                    onSelect={(p) => handleSelectProduct(item.id, p)}
+                    onClose={() => setActiveInput(null)}
+                    visible={true}
+                    selectedIndex={selectedSuggestionIndex}
+                    notFound={notFound}
+                    searchTerm={searchTerm}
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
                   />
-                  {item.minPrice > 0 && item.price < item.minPrice && item.price > 0 && (
-                    <div className="absolute -top-1 -right-1">
-                      <AlertCircle className="w-4 h-4 text-destructive animate-bounce" />
-                    </div>
-                  )}
-                </div>
-              </td>
-              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={item.minPrice || ""}
-                  readOnly
-                  className="w-full bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-3 text-center cursor-not-allowed opacity-70 shadow-sm text-base"
-                  title="الحد الأدنى - يمكن تعديله من صفحة المنتجات فقط"
-                />
-              </td>
-              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
-                <div className="bg-primary/10 border-2 border-primary/30 rounded-lg px-3 py-3">
-                  <span className="font-bold text-lg text-primary">{item.total.toFixed(2)}</span>
-                </div>
-              </td>
-              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
-                <button
-                  onClick={() => {
-                    setItemToDelete({ id: item.id, name: item.itemName || `صنف ${index + 1}` });
-                    setDeleteDialogOpen(true);
-                  }}
-                  className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-all hover:scale-110"
-                  title="حذف الصنف"
-                >
-                  <Trash2 size={20} />
-                </button>
+                )}
               </td>
             </tr>
           ))}
