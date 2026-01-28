@@ -20,9 +20,11 @@ import {
   ArrowUp,
   ArrowDown,
   Monitor,
+  Smartphone,
 } from "lucide-react";
 import { useInvoicePageLayout, InvoiceLayoutSection, InvoicePageLayoutSettings } from "@/hooks/useInvoicePageLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { InvoicePagePreview } from "@/components/invoice/InvoicePagePreview";
 
 const InvoicePageSettings = () => {
   const { hasPermission } = useAuth();
@@ -351,32 +353,25 @@ const InvoicePageSettings = () => {
             </TabsContent>
           </Tabs>
 
-          {/* Preview Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Monitor className="h-5 w-5" />
-                معاينة التصميم
+          {/* Live Preview Section */}
+          <Card className="border-2 border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Monitor className="h-5 w-5 text-primary" />
+                  معاينة مباشرة
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  تحديث فوري
+                </div>
               </CardTitle>
               <CardDescription>
-                سيتم تطبيق هذه الإعدادات على صفحة فاتورة البيع
+                شاهد التغييرات فوراً أثناء تعديل الإعدادات
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg p-4 bg-muted/30 space-y-2">
-                {sortedSections
-                  .filter(s => s.visible)
-                  .map((section) => (
-                    <div
-                      key={section.id}
-                      className={`p-3 rounded border bg-background ${
-                        localSettings.compactMode ? "py-2" : "py-3"
-                      }`}
-                    >
-                      <span className="text-sm text-muted-foreground">{section.nameAr}</span>
-                    </div>
-                  ))}
-              </div>
+              <InvoicePagePreview settings={localSettings} />
             </CardContent>
           </Card>
 
