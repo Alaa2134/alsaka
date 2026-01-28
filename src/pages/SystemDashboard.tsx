@@ -23,7 +23,8 @@ import {
   BarChart3,
   Palette,
   Settings,
-  CreditCard
+  CreditCard,
+  Download
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,6 +39,7 @@ import { SecurityManager } from "@/components/system/SecurityManager";
 import { RolePermissionsManager } from "@/components/system/RolePermissionsManager";
 import { QuickExporter } from "@/components/export/QuickExporter";
 import { SystemExporter } from "@/components/export/SystemExporter";
+import { AppDownloadCard } from "@/components/export/AppDownloadCard";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Rocket } from "lucide-react";
@@ -163,6 +165,10 @@ const SystemDashboard = () => {
                 <Activity className="h-4 w-4" />
                 نظرة عامة
               </TabsTrigger>
+              <TabsTrigger value="download" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                تنزيل التطبيق
+              </TabsTrigger>
               <TabsTrigger value="quick-access" className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
                 الوصول السريع
@@ -202,71 +208,81 @@ const SystemDashboard = () => {
             </TabsList>
 
             <TabsContent value="overview">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Recent Companies */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 size={20} />
-                      أحدث الشركات
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {stats?.recentTenants.map((tenant: any) => (
-                        <div key={tenant.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Globe size={18} className="text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">{tenant.name}</p>
-                              <p className="text-xs text-muted-foreground font-mono">{tenant.slug}</p>
-                            </div>
-                          </div>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            tenant.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                          }`}>
-                            {tenant.is_active ? "نشط" : "معطل"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="space-y-6">
+                {/* App Download Section */}
+                <AppDownloadCard compact />
 
-                {/* Recent Audit Logs */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity size={20} />
-                      سجل العمليات
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-[300px] overflow-auto">
-                      {auditLogs?.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-4">لا توجد سجلات</p>
-                      ) : (
-                        auditLogs?.map((log: any) => (
-                          <div key={log.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${
-                                log.action.includes('create') ? 'bg-green-500' :
-                                log.action.includes('update') ? 'bg-blue-500' :
-                                log.action.includes('delete') ? 'bg-red-500' : 'bg-gray-500'
-                              }`} />
-                              <span className="font-medium">{log.action}</span>
-                              <span className="text-muted-foreground">- {log.table_name}</span>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Recent Companies */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 size={20} />
+                        أحدث الشركات
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {stats?.recentTenants.map((tenant: any) => (
+                          <div key={tenant.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Globe size={18} className="text-muted-foreground" />
+                              <div>
+                                <p className="font-medium">{tenant.name}</p>
+                                <p className="text-xs text-muted-foreground font-mono">{tenant.slug}</p>
+                              </div>
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(log.created_at).toLocaleTimeString("ar-EG")}
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              tenant.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                            }`}>
+                              {tenant.is_active ? "نشط" : "معطل"}
                             </span>
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Audit Logs */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <Activity size={20} />
+                        سجل العمليات
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 max-h-[300px] overflow-auto">
+                        {auditLogs?.length === 0 ? (
+                          <p className="text-muted-foreground text-center py-4">لا توجد سجلات</p>
+                        ) : (
+                          auditLogs?.map((log: any) => (
+                            <div key={log.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${
+                                  log.action.includes('create') ? 'bg-green-500' :
+                                  log.action.includes('update') ? 'bg-blue-500' :
+                                  log.action.includes('delete') ? 'bg-red-500' : 'bg-gray-500'
+                                }`} />
+                                <span className="font-medium">{log.action}</span>
+                                <span className="text-muted-foreground">- {log.table_name}</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(log.created_at).toLocaleTimeString("ar-EG")}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
+            </TabsContent>
+
+            {/* Download Tab */}
+            <TabsContent value="download">
+              <AppDownloadCard />
             </TabsContent>
 
             {/* Quick Access Tab */}
