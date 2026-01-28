@@ -24,6 +24,10 @@ export interface TenantData {
   logo_url: string | null;
   primary_color: string;
   secondary_color: string;
+  // Print logo settings
+  print_logo_width?: number;
+  print_logo_height?: number;
+  print_logo_position?: 'left' | 'center' | 'right';
 }
 
 export interface InvoiceTemplateProps {
