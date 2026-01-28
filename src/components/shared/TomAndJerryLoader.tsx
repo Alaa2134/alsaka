@@ -11,76 +11,79 @@ interface TomAndJerryLoaderProps {
  */
 export const TomAndJerryLoader = memo(({ text = 'جاري التحميل...', size = 'md' }: TomAndJerryLoaderProps) => {
   const sizes = {
-    sm: { icon: 32, track: 150 },
-    md: { icon: 48, track: 220 },
-    lg: { icon: 64, track: 300 },
+    sm: { icon: 32, track: 160 },
+    md: { icon: 48, track: 240 },
+    lg: { icon: 64, track: 320 },
   };
 
   const { icon, track } = sizes[size];
 
   return (
     <div className="flex flex-col items-center justify-center gap-4" dir="rtl">
-      {/* مسار المطاردة */}
-      <div 
-        className="relative overflow-hidden rounded-full bg-muted/30 border border-border"
-        style={{ width: track, height: icon + 16 }}
+      {/* النص العلوي */}
+      <motion.p 
+        className="text-lg font-bold text-primary"
+        animate={{ opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
       >
-        {/* الفأر (جيري) 🐭 */}
+        {text}
+      </motion.p>
+
+      {/* مسار المطاردة - من اليمين لليسار */}
+      <div 
+        className="relative overflow-hidden rounded-full bg-gradient-to-l from-blue-100 to-blue-50 dark:from-blue-900/20 dark:to-blue-950/10 border-2 border-blue-200 dark:border-blue-800 shadow-inner"
+        style={{ width: track, height: icon + 20 }}
+      >
+        {/* القط (توم) 🐱 - يبدأ من اليمين */}
         <motion.div
-          className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center"
+          className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center z-10"
+          style={{ fontSize: icon * 0.8 }}
+          animate={{ 
+            x: [track - icon, 0, track - icon],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          🐱
+        </motion.div>
+
+        {/* الفأر (جيري) 🐭 - أمام القط */}
+        <motion.div
+          className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center z-20"
           style={{ fontSize: icon * 0.6 }}
           animate={{ 
-            x: [track - icon - 8, 8, track - icon - 8],
+            x: [track - icon * 0.7 - 10, -icon * 0.5, track - icon * 0.7 - 10],
           }}
           transition={{
-            duration: 2.5,
+            duration: 2,
             repeat: Infinity,
-            ease: "linear",
+            ease: "easeInOut",
           }}
         >
-          <motion.span
-            animate={{ scaleX: [1, 1, -1, -1, 1] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-          >
-            🐭
-          </motion.span>
+          🐭
         </motion.div>
 
-        {/* القط (توم) 🐱 */}
-        <motion.div
-          className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center"
-          style={{ fontSize: icon * 0.7 }}
-          animate={{ 
-            x: [track - icon * 2 - 20, -icon/2, track - icon * 2 - 20],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        >
-          <motion.span
-            animate={{ scaleX: [1, 1, -1, -1, 1] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-          >
-            🐱
-          </motion.span>
-        </motion.div>
-
-        {/* أثر الجري */}
-        {[...Array(4)].map((_, i) => (
+        {/* أثر الجري 💨 */}
+        {[...Array(3)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute top-1/2 -translate-y-1/2 text-lg opacity-40"
-            style={{ left: `${15 + i * 20}%` }}
+            className="absolute top-1/2 -translate-y-1/2"
+            style={{ 
+              right: `${20 + i * 25}%`,
+              fontSize: icon * 0.4 
+            }}
             animate={{ 
-              opacity: [0.2, 0.5, 0.2],
-              scale: [0.8, 1.1, 0.8]
+              opacity: [0, 0.6, 0],
+              scale: [0.5, 1, 0.5],
+              x: [0, -10, 0]
             }}
             transition={{ 
-              duration: 0.4, 
+              duration: 0.6, 
               repeat: Infinity, 
-              delay: i * 0.1 
+              delay: i * 0.15 
             }}
           >
             💨
@@ -88,27 +91,24 @@ export const TomAndJerryLoader = memo(({ text = 'جاري التحميل...', si
         ))}
       </div>
 
-      {/* النص */}
-      <motion.div 
-        className="text-center"
-        animate={{ opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+      {/* النص السفلي */}
+      <motion.p 
+        className="text-sm text-muted-foreground"
+        animate={{ opacity: [0.4, 0.8, 0.4] }}
+        transition={{ duration: 2, repeat: Infinity }}
       >
-        <p className="text-base font-semibold text-foreground">{text}</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          🐱 توم يطارد جيري 🐭
-        </p>
-      </motion.div>
+        🐱 توم يطارد جيري 🐭
+      </motion.p>
 
       {/* نقاط التحميل */}
-      <div className="flex gap-1.5">
+      <div className="flex gap-2">
         {[0, 1, 2].map((i) => (
           <motion.div
             key={i}
-            className="w-2 h-2 rounded-full bg-primary"
+            className="w-3 h-3 rounded-full bg-primary"
             animate={{ 
-              y: [0, -8, 0],
-              opacity: [0.4, 1, 0.4]
+              y: [0, -10, 0],
+              opacity: [0.3, 1, 0.3]
             }}
             transition={{
               duration: 0.5,
@@ -139,6 +139,7 @@ export const TomAndJerryFullPageLoader = memo(({ text = 'جاري التحميل
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", duration: 0.4 }}
+        className="bg-card p-8 rounded-2xl shadow-2xl border"
       >
         <TomAndJerryLoader text={text} size="lg" />
       </motion.div>
