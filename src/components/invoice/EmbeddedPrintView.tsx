@@ -160,13 +160,34 @@ export function EmbeddedPrintView({
   }, [open, generatePrintContent]);
 
   const handlePrint = useCallback(() => {
-    if (iframeRef.current?.contentWindow) {
-      setIsPrinting(true);
-      setTimeout(() => {
-        iframeRef.current?.contentWindow?.print();
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    
+    setIsPrinting(true);
+    
+    // انتظار تحميل المحتوى بالكامل
+    setTimeout(() => {
+      try {
+        const iframeWindow = iframe.contentWindow;
+        if (iframeWindow) {
+          iframeWindow.focus();
+          iframeWindow.print();
+        }
+      } catch (error) {
+        console.error('Print error:', error);
+        // محاولة بديلة - فتح نافذة جديدة للطباعة
+        const printWindow = window.open('', '_blank');
+        if (printWindow && iframe.contentDocument) {
+          printWindow.document.write(iframe.contentDocument.documentElement.outerHTML);
+          printWindow.document.close();
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+        }
+      } finally {
         setIsPrinting(false);
-      }, 100);
-    }
+      }
+    }, 300);
   }, []);
 
   const getPaperMaxWidth = () => {
