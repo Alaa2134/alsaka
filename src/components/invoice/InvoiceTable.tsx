@@ -343,7 +343,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
               <td className="px-4 py-3 border-b border-border/50 text-center font-bold text-muted-foreground">
                 {index + 1}
               </td>
-              <td className="px-4 py-3 border-b border-border/50 relative" style={{ overflow: 'visible' }}>
+              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
                 <input
                   ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
                   type="text"
@@ -355,7 +355,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   }}
                   onBlur={handleInputBlur}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
-                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
                   autoComplete="off"
                 />
                 {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
@@ -373,7 +373,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   />
                 )}
               </td>
-              <td className="px-4 py-3 border-b border-border/50 relative" style={{ overflow: 'visible' }}>
+              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
                 <input
                   ref={(el) => setInputRef(`${item.id}-itemName`, el)}
                   type="text"
@@ -385,7 +385,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   }}
                   onBlur={handleInputBlur}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "itemName")}
-                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 focus:border-primary focus:outline-none transition-all"
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
                   placeholder="اسم الصنف..."
                   autoComplete="off"
                 />
@@ -404,7 +404,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   />
                 )}
               </td>
-              <td className="px-4 py-3 border-b border-border/50">
+              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                 <input
                   ref={(el) => setInputRef(`${item.id}-quantity`, el)}
                   type="text"
@@ -415,10 +415,10 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                     onUpdateItem(item.id, "quantity", parseInt(val) || 0);
                   }}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "quantity")}
-                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 text-center focus:border-primary focus:outline-none transition-all"
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
                 />
               </td>
-              <td className="px-4 py-3 border-b border-border/50">
+              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                 <div className="relative">
                   <input
                     ref={(el) => setInputRef(`${item.id}-price`, el)}
@@ -445,10 +445,10 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                       }
                     }}
                     onKeyDown={(e) => handleKeyDown(e, item.id, "price")}
-                    className={`w-full bg-background border-2 rounded-lg px-3 py-2 text-center focus:outline-none transition-all ${
+                    className={`w-full bg-white dark:bg-gray-800 border-2 rounded-lg px-3 py-2.5 text-center shadow-sm focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all ${
                       item.minPrice > 0 && item.price < item.minPrice && item.price > 0
                         ? "border-destructive bg-destructive/10 text-destructive animate-pulse"
-                        : "border-border focus:border-primary"
+                        : "border-gray-300 dark:border-gray-600 focus:border-primary"
                     }`}
                   />
                   {item.minPrice > 0 && item.price < item.minPrice && item.price > 0 && (
@@ -458,24 +458,26 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   )}
                 </div>
               </td>
-              <td className="px-4 py-3 border-b border-border/50">
+              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                 <input
                   type="text"
                   inputMode="decimal"
                   value={item.minPrice || ""}
                   readOnly
-                  className="w-full bg-muted border-2 border-border rounded-lg px-3 py-2 text-center cursor-not-allowed opacity-70"
+                  className="w-full bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-center cursor-not-allowed opacity-70 shadow-sm"
                   title="الحد الأدنى - يمكن تعديله من صفحة المنتجات فقط"
                 />
               </td>
-              <td className="px-4 py-3 border-b border-border/50 text-center">
-                <span className="font-bold text-lg gradient-text">{item.total.toFixed(2)}</span>
+              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
+                <div className="bg-primary/10 border-2 border-primary/30 rounded-lg px-3 py-2.5">
+                  <span className="font-bold text-lg text-primary">{item.total.toFixed(2)}</span>
+                </div>
               </td>
-              <td className="px-4 py-3 border-b border-border/50">
+              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                 <select
                   value={item.warehouse}
                   onChange={(e) => onUpdateItem(item.id, "warehouse", e.target.value)}
-                  className="w-full bg-background border-2 border-border rounded-lg px-3 py-2 focus:border-primary focus:outline-none transition-all cursor-pointer"
+                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
                 >
                   <option value="">اختر المخزن</option>
                   {warehouses.map((wh) => (
@@ -485,7 +487,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   ))}
                 </select>
               </td>
-              <td className="px-4 py-3 border-b border-border/50 text-center">
+              <td className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
                 <button
                   onClick={() => {
                     setItemToDelete({ id: item.id, name: item.itemName || `صنف ${index + 1}` });
