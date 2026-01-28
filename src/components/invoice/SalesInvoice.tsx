@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { InvoiceHeader } from "./InvoiceHeader";
 import { InvoiceTable } from "./InvoiceTable";
 import { InvoiceFooter } from "./InvoiceFooter";
-import { InvoicePreviewModal } from "./InvoicePreviewModal";
+import { EmbeddedPrintView } from "./EmbeddedPrintView";
 import { InvoiceSearch } from "./InvoiceSearch";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { InvoiceItem } from "@/types/invoice";
@@ -797,7 +797,7 @@ export const SalesInvoice = () => {
         </div>
       </div>
 
-      <InvoicePreviewModal
+      <EmbeddedPrintView
         open={showPreview}
         onClose={() => setShowPreview(false)}
         invoice={previewInvoice}

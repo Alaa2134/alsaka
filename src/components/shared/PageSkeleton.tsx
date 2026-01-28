@@ -1,23 +1,27 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { TomAndJerryLoader } from "./TomAndJerryLoader";
 
 interface PageSkeletonProps {
   variant?: "dashboard" | "table" | "form" | "cards" | "login";
+  animated?: boolean;
 }
 
-export const PageSkeleton = ({ variant = "dashboard" }: PageSkeletonProps) => {
+export const PageSkeleton = ({ variant = "dashboard", animated = true }: PageSkeletonProps) => {
+  // For main pages, show Tom and Jerry animation
+  if (animated && (variant === "dashboard" || variant === "form")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8 bg-background">
+        <TomAndJerryLoader text="جاري تحميل الصفحة..." size="lg" />
+      </div>
+    );
+  }
+
   if (variant === "login") {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-4">
-            <Skeleton className="w-20 h-20 mx-auto rounded-2xl" />
-            <Skeleton className="h-10 w-48 mx-auto" />
-            <Skeleton className="h-5 w-24 mx-auto" />
-          </div>
-          <div className="bg-card rounded-2xl p-8 border border-border space-y-6">
-            <Skeleton className="h-14 w-full rounded-xl" />
-            <Skeleton className="h-14 w-full rounded-xl" />
-            <Skeleton className="h-4 w-3/4 mx-auto" />
+            <TomAndJerryLoader text="جاري تحميل صفحة الدخول..." size="md" />
           </div>
         </div>
       </div>
