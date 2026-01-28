@@ -697,10 +697,10 @@ export const SalesInvoice = () => {
   }, [clients, sortedInvoices, warehouses]);
 
   return (
-    <div className="p-4 md:p-6 h-full">
+    <div className="p-3 md:p-4 h-full">
       <div className="h-full flex flex-col">
         {/* Header with navigation and search */}
-        <div className="flex items-center justify-between mb-2 gap-2">
+        <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           {/* Navigation arrows */}
           <div className="flex items-center gap-1">
             <Button
@@ -750,27 +750,29 @@ export const SalesInvoice = () => {
           </div>
         </div>
         
-        <div className="bg-card rounded-xl shadow-soft p-4 md:p-6 border border-border flex-1 flex flex-col min-h-0">
+        <div className="bg-card rounded-xl shadow-soft p-3 md:p-4 border border-border flex-1 flex flex-col overflow-auto">
           {/* Barcode Scanner */}
-          <div className="mb-4">
+          <div className="mb-3 flex-shrink-0">
             <BarcodeScanner products={products} onProductFound={handleBarcodeProduct} />
           </div>
 
-          <InvoiceHeader
-            invoiceNumber={invoiceNumber}
-            clientNumber={clientNumber}
-            clientName={clientName}
-            clientPhone={clientPhone}
-            date={date}
-            paymentMethod={paymentMethod}
-            onClientNumberChange={handleClientNumberChange}
-            onClientNameChange={setClientName}
-            onClientPhoneChange={setClientPhone}
-            onDateChange={setDate}
-            onPaymentMethodChange={setPaymentMethod}
-          />
+          <div className="flex-shrink-0">
+            <InvoiceHeader
+              invoiceNumber={invoiceNumber}
+              clientNumber={clientNumber}
+              clientName={clientName}
+              clientPhone={clientPhone}
+              date={date}
+              paymentMethod={paymentMethod}
+              onClientNumberChange={handleClientNumberChange}
+              onClientNameChange={setClientName}
+              onClientPhoneChange={setClientPhone}
+              onDateChange={setDate}
+              onPaymentMethodChange={setPaymentMethod}
+            />
+          </div>
 
-          <div className="flex-1 overflow-visible">
+          <div className="flex-1 min-h-0 overflow-auto">
             <InvoiceTable
               items={items}
               onUpdateItem={handleUpdateItem}
@@ -780,20 +782,22 @@ export const SalesInvoice = () => {
             />
           </div>
 
-          <InvoiceFooter
-            totalAmount={calculateTotal(items)}
-            onNewInvoice={handleNewInvoice}
-            onPrint={handlePrint}
-            onSave={handleSaveInvoice}
-            onSendWhatsApp={handleSendWhatsApp}
-            isSaving={createInvoice.isPending || updateInvoice.isPending}
-            isSendingWhatsApp={isSendingWhatsApp}
-            isEditing={!!editingInvoiceId}
-            notes={notes}
-            onNotesChange={setNotes}
-            clientPhone={clientPhone}
-            clientName={clientName}
-          />
+          <div className="flex-shrink-0 mt-3">
+            <InvoiceFooter
+              totalAmount={calculateTotal(items)}
+              onNewInvoice={handleNewInvoice}
+              onPrint={handlePrint}
+              onSave={handleSaveInvoice}
+              onSendWhatsApp={handleSendWhatsApp}
+              isSaving={createInvoice.isPending || updateInvoice.isPending}
+              isSendingWhatsApp={isSendingWhatsApp}
+              isEditing={!!editingInvoiceId}
+              notes={notes}
+              onNotesChange={setNotes}
+              clientPhone={clientPhone}
+              clientName={clientName}
+            />
+          </div>
         </div>
       </div>
 
