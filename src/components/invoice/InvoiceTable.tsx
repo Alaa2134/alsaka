@@ -206,7 +206,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
       filtered = filtered.filter(p => p.category === selectedCategory);
     }
     
-    // Filter by search term
+    // Filter by search term - show suggestions from first character
     if (searchTerm && searchTerm.length >= 1) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(p => 
@@ -231,11 +231,12 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
         if (!(aStartsWithName || aStartsWithNumber) && (bStartsWithName || bStartsWithNumber)) return 1;
         return 0;
       })
-      .slice(0, 10);
+      .slice(0, 15); // Show more suggestions
   };
 
   const suggestions = getSuggestions();
-  const notFound = searchTerm.length >= 2 && suggestions.length === 0;
+  // Show "not found" from first character
+  const notFound = searchTerm.length >= 1 && suggestions.length === 0;
 
   const handleSelectProduct = (itemId: string, product: Product) => {
     onUpdateItem(itemId, "itemNumber", product.item_number);
