@@ -77,8 +77,8 @@ const SuggestionDropdown = ({
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-2xl max-h-64 overflow-hidden"
-      style={{ backgroundColor: 'hsl(var(--card))', zIndex: 9999, position: 'absolute' }}
+      className="absolute top-full left-0 right-0 mt-2 bg-card border-2 border-primary/20 rounded-xl shadow-2xl max-h-96 overflow-hidden"
+      style={{ backgroundColor: 'hsl(var(--card))', zIndex: 9999, position: 'absolute', minWidth: '350px' }}
     >
       {/* Category Filter */}
       {categories.length > 0 && (
@@ -116,7 +116,7 @@ const SuggestionDropdown = ({
         <span className="text-xs">اختر منتج {selectedCategory && `(${selectedCategory})`}</span>
       </div>
       
-      <div className="max-h-44 overflow-y-auto">
+      <div className="max-h-72 overflow-y-auto">
         {notFound && searchTerm.length >= 2 ? (
           <div className="px-4 py-3 flex items-center gap-2 text-destructive bg-destructive/10">
             <AlertCircle size={16} />
