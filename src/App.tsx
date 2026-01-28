@@ -14,6 +14,8 @@ import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { PerformanceOptimizer } from "@/components/performance/PerformanceOptimizer";
 import { SecurityHeaders } from "@/components/security/SecurityHeaders";
+import { OfflineProvider } from "@/components/offline/OfflineProvider";
+import { OfflineBanner } from "@/components/offline/OfflineBanner";
 // Lazy load pages for code splitting
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -88,14 +90,16 @@ const App = () => (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <PerformanceOptimizer />
-              <SecurityHeaders />
-              <InactivityLock>
-              <SessionWrapper>
+          <OfflineProvider>
+            <AuthProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <OfflineBanner />
+                <PerformanceOptimizer />
+                <SecurityHeaders />
+                <InactivityLock>
+                <SessionWrapper>
                 <BrowserRouter>
                   <Routes>
                     <Route path="/login" element={
@@ -357,6 +361,7 @@ const App = () => (
               </InactivityLock>
             </TooltipProvider>
           </AuthProvider>
+          </OfflineProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>
