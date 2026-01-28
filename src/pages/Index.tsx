@@ -17,13 +17,13 @@ const Index = () => {
         <meta name="description" content="نظام فواتير بيع متكامل لإدارة المبيعات والمخزون" />
       </Helmet>
       <MainLayout>
-        <div className="h-[calc(100vh-4rem)] flex flex-col">
-          <div className="px-6 pt-4 pb-0">
+        <div className="h-full flex flex-col overflow-hidden">
+          <div className="px-4 pt-3 pb-0 flex-shrink-0">
             <StockAlerts />
           </div>
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-6">
-            <TabsList className="w-fit mb-2">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 px-4">
+            <TabsList className="w-fit mb-2 flex-shrink-0">
               <TabsTrigger value="sales" className="gap-2">
                 <Receipt size={16} />
                 فاتورة البيع
@@ -34,14 +34,14 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="sales" className="flex-1 m-0 min-h-0">
-              <div className="h-full">
+            <TabsContent value="sales" className="flex-1 m-0 min-h-0 overflow-hidden">
+              <div className="h-full overflow-auto">
                 <SalesInvoice />
               </div>
             </TabsContent>
             
-            <TabsContent value="commission" className="flex-1 m-0 min-h-0">
-              <div className="h-full">
+            <TabsContent value="commission" className="flex-1 m-0 min-h-0 overflow-hidden">
+              <div className="h-full overflow-auto">
                 <CommissionSalesInvoice />
               </div>
             </TabsContent>

@@ -317,17 +317,17 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl shadow-soft border border-border animate-slide-in mt-6" style={{ overflow: 'visible' }} dir="rtl">
-      <table className="w-full border-collapse table-fixed">
+    <div className="rounded-xl shadow-soft border border-border animate-slide-in mt-4" style={{ overflow: 'visible' }} dir="rtl">
+      <table className="w-full border-collapse">
         <thead>
           <tr className="bg-foreground text-background">
-            <th className="px-2 py-3 text-center font-bold w-24">رقم الصنف</th>
-            <th className="px-2 py-3 text-right font-bold">اسم الصنف</th>
-            <th className="px-2 py-3 text-center font-bold w-16">الكمية</th>
-            <th className="px-2 py-3 text-center font-bold w-20">السعر</th>
-            <th className="px-2 py-3 text-center font-bold w-20">الحد الأدنى</th>
-            <th className="px-2 py-3 text-center font-bold w-24">الإجمالي</th>
-            <th className="px-2 py-3 text-center font-bold w-12">حذف</th>
+            <th className="px-3 py-3 text-center font-bold whitespace-nowrap" style={{ width: '10%', minWidth: '80px' }}>رقم الصنف</th>
+            <th className="px-3 py-3 text-right font-bold" style={{ width: '35%' }}>اسم الصنف</th>
+            <th className="px-3 py-3 text-center font-bold whitespace-nowrap" style={{ width: '10%', minWidth: '60px' }}>الكمية</th>
+            <th className="px-3 py-3 text-center font-bold whitespace-nowrap" style={{ width: '12%', minWidth: '70px' }}>السعر</th>
+            <th className="px-3 py-3 text-center font-bold whitespace-nowrap" style={{ width: '12%', minWidth: '70px' }}>الحد الأدنى</th>
+            <th className="px-3 py-3 text-center font-bold whitespace-nowrap" style={{ width: '13%', minWidth: '80px' }}>الإجمالي</th>
+            <th className="px-2 py-3 text-center font-bold" style={{ width: '8%', minWidth: '40px' }}>حذف</th>
           </tr>
         </thead>
         <tbody>
@@ -351,7 +351,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   }}
                   onBlur={handleInputBlur}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
+                  className="w-full min-w-0 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2.5 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
                   autoComplete="off"
                 />
                 {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
@@ -383,7 +383,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   }}
                   onBlur={handleInputBlur}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "itemName")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
+                  className="w-full min-w-0 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
                   placeholder="اسم الصنف..."
                   autoComplete="off"
                 />
@@ -415,7 +415,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                     onUpdateItem(item.id, "quantity", parseInt(val) || 0);
                   }}
                   onKeyDown={(e) => handleKeyDown(e, item.id, "quantity")}
-                  className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
+                  className="w-full min-w-0 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2.5 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
                 />
               </td>
               
@@ -446,7 +446,7 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                       }
                     }}
                     onKeyDown={(e) => handleKeyDown(e, item.id, "price")}
-                    className={`w-full bg-white dark:bg-gray-800 border-2 rounded-lg px-2 py-2 text-center shadow-sm focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm ${
+                    className={`w-full min-w-0 bg-white dark:bg-gray-800 border-2 rounded-lg px-2 py-2.5 text-center shadow-sm focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm ${
                       item.minPrice > 0 && item.price < item.minPrice && item.price > 0
                         ? "border-destructive bg-destructive/10 text-destructive animate-pulse"
                         : "border-gray-300 dark:border-gray-600 focus:border-primary"
@@ -467,14 +467,14 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
                   inputMode="decimal"
                   value={item.minPrice || ""}
                   readOnly
-                  className="w-full bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2 text-center cursor-not-allowed opacity-70 shadow-sm text-sm"
+                  className="w-full min-w-0 bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2.5 text-center cursor-not-allowed opacity-70 shadow-sm text-sm"
                   title="الحد الأدنى - يمكن تعديله من صفحة المنتجات فقط"
                 />
               </td>
               
               {/* الإجمالي */}
               <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center">
-                <div className="bg-primary/10 border-2 border-primary/30 rounded-lg px-2 py-2">
+                <div className="bg-primary/10 border-2 border-primary/30 rounded-lg px-2 py-2.5">
                   <span className="font-bold text-base text-primary">{item.total.toFixed(2)}</span>
                 </div>
               </td>
