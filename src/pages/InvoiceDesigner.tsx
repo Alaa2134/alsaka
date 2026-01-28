@@ -72,7 +72,7 @@ const elementLabels: Record<string, string> = {
 };
 
 const InvoiceDesigner = () => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, tenant } = useAuth();
   const { data: templates, isLoading } = useInvoiceTemplates();
   const createTemplate = useCreateTemplate();
   const updateTemplate = useUpdateTemplate();
@@ -111,7 +111,7 @@ const InvoiceDesigner = () => {
     } else {
       await createTemplate.mutateAsync({
         name: templateName,
-        tenant_id: null,
+        tenant_id: tenant?.id || null,
         is_default: templates?.length === 0,
         settings,
       });
