@@ -1781,6 +1781,9 @@ export type Database = {
           logo_url: string | null
           name: string
           primary_color: string | null
+          print_logo_height: number | null
+          print_logo_position: string | null
+          print_logo_width: number | null
           secondary_color: string | null
           slug: string
           updated_at: string | null
@@ -1792,6 +1795,9 @@ export type Database = {
           logo_url?: string | null
           name: string
           primary_color?: string | null
+          print_logo_height?: number | null
+          print_logo_position?: string | null
+          print_logo_width?: number | null
           secondary_color?: string | null
           slug: string
           updated_at?: string | null
@@ -1803,6 +1809,9 @@ export type Database = {
           logo_url?: string | null
           name?: string
           primary_color?: string | null
+          print_logo_height?: number | null
+          print_logo_position?: string | null
+          print_logo_width?: number | null
           secondary_color?: string | null
           slug?: string
           updated_at?: string | null

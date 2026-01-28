@@ -31,7 +31,8 @@ import {
   Zap,
   Volume2,
   VolumeX,
-  MessageCircle
+  MessageCircle,
+  Printer
 } from "lucide-react";
 import { LogoUploader } from "@/components/shared/LogoUploader";
 import { WhatsAppQRRegistration } from "@/components/whatsapp/WhatsAppQRRegistration";
@@ -72,12 +73,26 @@ const CompanySettings = () => {
   const { user, tenant, refreshCompanySettings, hasPermission } = useAuth();
   const logActivity = useLogActivity();
   const [settings, setSettings] = useState<CompanySettingsData | null>(null);
-  const [tenantData, setTenantData] = useState<{ name: string; logo_url: string | null; slug: string } | null>(null);
+  const [tenantData, setTenantData] = useState<{ 
+    name: string; 
+    logo_url: string | null; 
+    slug: string;
+    print_logo_width: number;
+    print_logo_height: number;
+    print_logo_position: string;
+  } | null>(null);
   const [slugError, setSlugError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [originalSettings, setOriginalSettings] = useState<CompanySettingsData | null>(null);
-  const [originalTenantData, setOriginalTenantData] = useState<{ name: string; logo_url: string | null; slug: string } | null>(null);
+  const [originalTenantData, setOriginalTenantData] = useState<{ 
+    name: string; 
+    logo_url: string | null; 
+    slug: string;
+    print_logo_width: number;
+    print_logo_height: number;
+    print_logo_position: string;
+  } | null>(null);
 
   useEffect(() => {
     // Don't try to hit backend until user + tenant are loaded
@@ -145,13 +160,23 @@ const CompanySettings = () => {
     try {
       const { data, error } = await supabase
         .from("tenants")
-        .select("name, logo_url, slug")
+        .select("name, logo_url, slug, print_logo_width, print_logo_height, print_logo_position")
         .eq("id", tenant!.id)
         .single();
 
       if (error) throw error;
-      setTenantData(data);
-      setOriginalTenantData(data);
+      setTenantData({
+        ...data,
+        print_logo_width: data.print_logo_width ?? 120,
+        print_logo_height: data.print_logo_height ?? 80,
+        print_logo_position: data.print_logo_position ?? 'center'
+      });
+      setOriginalTenantData({
+        ...data,
+        print_logo_width: data.print_logo_width ?? 120,
+        print_logo_height: data.print_logo_height ?? 80,
+        print_logo_position: data.print_logo_position ?? 'center'
+      });
     } catch (error) {
       console.error("Error fetching tenant:", error);
     }
@@ -254,13 +279,16 @@ const CompanySettings = () => {
 
       if (settingsError) throw settingsError;
 
-      // Update tenant data including slug
+      // Update tenant data including slug and print settings
       const { error: tenantError } = await supabase
         .from("tenants")
         .update({
           name: tenantData.name,
           logo_url: tenantData.logo_url,
           slug: tenantData.slug,
+          print_logo_width: tenantData.print_logo_width,
+          print_logo_height: tenantData.print_logo_height,
+          print_logo_position: tenantData.print_logo_position,
         })
         .eq("id", tenant!.id);
 
@@ -430,6 +458,59 @@ const CompanySettings = () => {
                     currentLogo={tenantData?.logo_url || ""}
                     onLogoChange={(url) => setTenantData(prev => prev ? { ...prev, logo_url: url } : null)}
                   />
+                </div>
+
+                {/* Print Logo Settings */}
+                <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                  <Label className="flex items-center gap-2 font-semibold">
+                    <Printer className="h-4 w-4" />
+                    إعدادات اللوجو في الطباعة
+                  </Label>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>عرض اللوجو (بكسل)</Label>
+                      <Input
+                        type="number"
+                        min="40"
+                        max="400"
+                        value={tenantData?.print_logo_width || 120}
+                        onChange={(e) => setTenantData(prev => prev ? { ...prev, print_logo_width: Number(e.target.value) } : null)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>ارتفاع اللوجو (بكسل)</Label>
+                      <Input
+                        type="number"
+                        min="40"
+                        max="300"
+                        value={tenantData?.print_logo_height || 80}
+                        onChange={(e) => setTenantData(prev => prev ? { ...prev, print_logo_height: Number(e.target.value) } : null)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>موضع اللوجو</Label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: 'right', label: 'يمين' },
+                        { value: 'center', label: 'وسط' },
+                        { value: 'left', label: 'يسار' },
+                      ].map((pos) => (
+                        <Button
+                          key={pos.value}
+                          type="button"
+                          variant={tenantData?.print_logo_position === pos.value ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setTenantData(prev => prev ? { ...prev, print_logo_position: pos.value } : null)}
+                          className="flex-1"
+                        >
+                          {pos.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <Separator />

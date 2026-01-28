@@ -488,7 +488,21 @@ const CustomTemplateRenderer = ({
             style={{ borderColor: settings.headerColor }}
           >
             {settings.showLogo && tenant?.logo_url && (
-              <img src={tenant.logo_url} alt="Logo" className="h-16 mx-auto mb-2" />
+              <div style={{ 
+                textAlign: tenant.print_logo_position || 'center',
+                marginBottom: '8px'
+              }}>
+                <img 
+                  src={tenant.logo_url} 
+                  alt="Logo" 
+                  style={{ 
+                    width: `${tenant.print_logo_width || 120}px`,
+                    height: `${tenant.print_logo_height || 80}px`,
+                    objectFit: 'contain',
+                    display: 'inline-block'
+                  }} 
+                />
+              </div>
             )}
             <h1 className="text-xl font-bold" style={{ color: settings.headerColor }}>
               {settings.companyName}
