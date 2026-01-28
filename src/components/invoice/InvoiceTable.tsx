@@ -363,20 +363,34 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
             >
               {/* رقم الصنف */}
               <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
-                <input
-                  ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
-                  type="text"
-                  value={item.itemNumber}
-                  onChange={(e) => handleInputChange(item.id, "itemNumber", e.target.value)}
-                  onFocus={() => {
-                    setActiveInput({ id: item.id, field: "itemNumber" });
-                    setSearchTerm(item.itemNumber);
-                  }}
-                  onBlur={handleInputBlur}
-                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
-                  className="w-full min-w-0 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2.5 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
-                  autoComplete="off"
-                />
+                <div className="relative">
+                  {/* Inline suggestion ghost text */}
+                  {activeInput?.id === item.id && activeInput?.field === "itemNumber" && suggestions.length > 0 && searchTerm.length > 0 && (
+                    <div className="absolute inset-0 flex items-center px-2 pointer-events-none z-0">
+                      <span className="text-transparent text-sm text-center w-full">{searchTerm}</span>
+                      <span className="absolute inset-0 flex items-center justify-center text-sm">
+                        <span className="text-transparent">{searchTerm}</span>
+                        <span className="bg-primary text-primary-foreground px-1 rounded text-sm font-medium">
+                          {suggestions[selectedSuggestionIndex]?.item_number.slice(searchTerm.length) || ''}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  <input
+                    ref={(el) => setInputRef(`${item.id}-itemNumber`, el)}
+                    type="text"
+                    value={item.itemNumber}
+                    onChange={(e) => handleInputChange(item.id, "itemNumber", e.target.value)}
+                    onFocus={() => {
+                      setActiveInput({ id: item.id, field: "itemNumber" });
+                      setSearchTerm(item.itemNumber);
+                    }}
+                    onBlur={handleInputBlur}
+                    onKeyDown={(e) => handleKeyDown(e, item.id, "itemNumber")}
+                    className="w-full min-w-0 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-2 py-2.5 text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm relative z-10"
+                    autoComplete="off"
+                  />
+                </div>
                 {activeInput?.id === item.id && activeInput?.field === "itemNumber" && (
                   <SuggestionDropdown
                     suggestions={suggestions}
@@ -396,21 +410,35 @@ export const InvoiceTable = ({ items, onUpdateItem, onDeleteItem, onAddItem, def
               
               {/* اسم الصنف */}
               <td className="px-2 py-2 border-b border-gray-200 dark:border-gray-700 relative" style={{ overflow: 'visible' }}>
-                <input
-                  ref={(el) => setInputRef(`${item.id}-itemName`, el)}
-                  type="text"
-                  value={item.itemName}
-                  onChange={(e) => handleInputChange(item.id, "itemName", e.target.value)}
-                  onFocus={() => {
-                    setActiveInput({ id: item.id, field: "itemName" });
-                    setSearchTerm(item.itemName);
-                  }}
-                  onBlur={handleInputBlur}
-                  onKeyDown={(e) => handleKeyDown(e, item.id, "itemName")}
-                  className="w-full min-w-0 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm"
-                  placeholder="اسم الصنف..."
-                  autoComplete="off"
-                />
+                <div className="relative">
+                  {/* Inline suggestion ghost text */}
+                  {activeInput?.id === item.id && activeInput?.field === "itemName" && suggestions.length > 0 && searchTerm.length > 0 && (
+                    <div className="absolute inset-0 flex items-center pointer-events-none z-0 overflow-hidden rounded-lg border-2 border-transparent">
+                      <div className="flex items-center px-3 w-full">
+                        <span className="text-transparent text-sm">{searchTerm}</span>
+                        <span className="bg-foreground text-background px-1 rounded text-sm font-semibold truncate">
+                          {suggestions[selectedSuggestionIndex]?.name.slice(searchTerm.length) || ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <input
+                    ref={(el) => setInputRef(`${item.id}-itemName`, el)}
+                    type="text"
+                    value={item.itemName}
+                    onChange={(e) => handleInputChange(item.id, "itemName", e.target.value)}
+                    onFocus={() => {
+                      setActiveInput({ id: item.id, field: "itemName" });
+                      setSearchTerm(item.itemName);
+                    }}
+                    onBlur={handleInputBlur}
+                    onKeyDown={(e) => handleKeyDown(e, item.id, "itemName")}
+                    className="w-full min-w-0 bg-transparent border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all text-sm relative z-10"
+                    placeholder="اسم الصنف..."
+                    autoComplete="off"
+                    style={{ backgroundColor: 'transparent' }}
+                  />
+                </div>
                 {activeInput?.id === item.id && activeInput?.field === "itemName" && (
                   <SuggestionDropdown
                     suggestions={suggestions}
