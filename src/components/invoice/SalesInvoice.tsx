@@ -770,7 +770,7 @@ export const SalesInvoice = () => {
             onPaymentMethodChange={setPaymentMethod}
           />
 
-          <div className="min-h-[300px] overflow-auto">
+          <div className="flex-1 overflow-visible">
             <InvoiceTable
               items={items}
               onUpdateItem={handleUpdateItem}
