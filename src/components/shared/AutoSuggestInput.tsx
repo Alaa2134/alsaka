@@ -67,7 +67,7 @@ export const AutoSuggestInput = ({
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative z-[9999]">
       <input
         type="text"
         value={value}
@@ -80,8 +80,8 @@ export const AutoSuggestInput = ({
       />
 
       {isOpen && filteredSuggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-primary/20 rounded-xl shadow-lg z-50 max-h-52 overflow-y-auto animate-scale-in">
-          <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-primary/20 rounded-xl shadow-2xl z-[9999] max-h-52 overflow-y-auto animate-scale-in">
+          <div className="p-2 border-b border-border flex items-center gap-2 text-muted-foreground bg-card">
             <Search size={14} />
             <span className="text-xs">اختر من القائمة</span>
           </div>
@@ -90,7 +90,7 @@ export const AutoSuggestInput = ({
               key={suggestion.id}
               type="button"
               onClick={() => handleSelect(suggestion)}
-              className="w-full px-4 py-3 text-right hover:bg-primary/10 transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0"
+              className="w-full px-4 py-3 text-right hover:bg-primary/10 transition-colors flex justify-between items-center gap-2 border-b border-border/50 last:border-0 bg-card"
             >
               <span className="font-semibold text-foreground truncate">
                 {suggestion.label}
