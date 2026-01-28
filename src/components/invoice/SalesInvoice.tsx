@@ -13,12 +13,14 @@ import { useWarehouses } from "@/hooks/useWarehouses";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateInvoice, useUpdateInvoice, useInvoices, useNextInvoiceNumber } from "@/hooks/useInvoices";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInvoicePageLayout } from "@/hooks/useInvoicePageLayout";
 import { TemplateType } from "./templates/types";
-import { Save, Search, ChevronRight, ChevronLeft, Edit } from "lucide-react";
+import { Save, Search, ChevronRight, ChevronLeft, Edit, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWhatsAppSettings, parseInvoiceTemplate, DEFAULT_INVOICE_TEMPLATE } from "@/hooks/useWhatsAppSettings";
 import { WhatsAppConnectionStatus } from "@/components/whatsapp/WhatsAppConnectionStatus";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const AUTOSAVE_KEY = "invoice_autosave";
 const AUTOSAVE_INTERVAL = 3000; // 3 seconds
@@ -49,7 +51,8 @@ interface AutosaveData {
 }
 
 export const SalesInvoice = () => {
-  const { tenant } = useAuth();
+  const { tenant, hasPermission } = useAuth();
+  const { settings: layoutSettings } = useInvoicePageLayout();
   const { data: nextNumber } = useNextInvoiceNumber();
   const { data: nextClientNum } = useNextClientNumber();
   const { data: products } = useProducts();
@@ -60,6 +63,9 @@ export const SalesInvoice = () => {
   const createInvoice = useCreateInvoice();
   const updateInvoice = useUpdateInvoice();
   const createClient = useCreateClient({ showToast: false });
+  
+  // Check if user can edit layout settings
+  const canEditLayout = hasPermission(["system_manager", "company_admin", "admin", "manager"]);
 
   const [clientPhone, setClientPhone] = useState("");
   const [whatsappConnectionStatus, setWhatsappConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connected');
@@ -696,8 +702,92 @@ export const SalesInvoice = () => {
     toast.success(`تم تحميل الفاتورة رقم ${invoice.invoice_number}`);
   }, [clients, sortedInvoices, warehouses]);
 
+  // Get section visibility helpers
+  const isSectionVisible = (sectionId: string) => {
+    const section = layoutSettings.sections.find(s => s.id === sectionId);
+    return section?.visible ?? true;
+  };
+
+  const getSectionOrder = (sectionId: string) => {
+    const section = layoutSettings.sections.find(s => s.id === sectionId);
+    return section?.order ?? 0;
+  };
+
+  // Sort sections by order
+  const sortedSections = useMemo(() => {
+    return [...layoutSettings.sections].sort((a, b) => a.order - b.order);
+  }, [layoutSettings.sections]);
+
+  // Render sections based on layout settings
+  const renderSection = (sectionId: string) => {
+    if (!isSectionVisible(sectionId)) return null;
+
+    const compactPadding = layoutSettings.compactMode ? "p-2" : "p-3 md:p-4";
+    const tableStyle = layoutSettings.tableStyle === "compact" ? "text-sm" : layoutSettings.tableStyle === "spacious" ? "text-base" : "";
+
+    switch (sectionId) {
+      case "header":
+        return (
+          <div key="header" className={`flex-shrink-0 ${layoutSettings.headerStyle === "minimal" ? "pb-1" : layoutSettings.headerStyle === "expanded" ? "pb-4" : "pb-2"}`}>
+            <InvoiceHeader
+              invoiceNumber={invoiceNumber}
+              clientNumber={clientNumber}
+              clientName={clientName}
+              clientPhone={clientPhone}
+              date={date}
+              paymentMethod={paymentMethod}
+              onClientNumberChange={handleClientNumberChange}
+              onClientNameChange={setClientName}
+              onClientPhoneChange={setClientPhone}
+              onDateChange={setDate}
+              onPaymentMethodChange={setPaymentMethod}
+            />
+          </div>
+        );
+      case "barcode":
+        return layoutSettings.showBarcodeScanner ? (
+          <div key="barcode" className="mb-3 flex-shrink-0">
+            <BarcodeScanner products={products} onProductFound={handleBarcodeProduct} />
+          </div>
+        ) : null;
+      case "table":
+        return (
+          <div key="table" className={`flex-1 min-h-0 overflow-auto ${tableStyle}`}>
+            <InvoiceTable
+              items={items}
+              onUpdateItem={handleUpdateItem}
+              onDeleteItem={handleDeleteItem}
+              onAddItem={handleAddItem}
+              defaultWarehouse={warehouses && warehouses.length === 1 ? warehouses[0].name : undefined}
+            />
+          </div>
+        );
+      case "footer":
+        return (
+          <div key="footer" className="flex-shrink-0 mt-3">
+            <InvoiceFooter
+              totalAmount={calculateTotal(items)}
+              onNewInvoice={handleNewInvoice}
+              onPrint={handlePrint}
+              onSave={handleSaveInvoice}
+              onSendWhatsApp={handleSendWhatsApp}
+              isSaving={createInvoice.isPending || updateInvoice.isPending}
+              isSendingWhatsApp={isSendingWhatsApp}
+              isEditing={!!editingInvoiceId}
+              notes={notes}
+              onNotesChange={setNotes}
+              clientPhone={clientPhone}
+              clientName={clientName}
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="p-3 md:p-4 h-full">
+    <div className={`h-full ${layoutSettings.compactMode ? "p-2" : "p-3 md:p-4"}`}>
       <div className="h-full flex flex-col">
         {/* Header with navigation and search */}
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
@@ -730,18 +820,32 @@ export const SalesInvoice = () => {
               <Search size={14} />
               بحث
             </Button>
+            {canEditLayout && (
+              <Link to="/invoice-page-settings">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  title="تخصيص التصميم"
+                >
+                  <Settings size={14} />
+                </Button>
+              </Link>
+            )}
           </div>
           
           {/* Editing indicator, WhatsApp status, and autosave */}
           <div className="flex items-center gap-2">
-            <WhatsAppConnectionStatus compact onStatusChange={setWhatsappConnectionStatus} />
+            {layoutSettings.showWhatsAppStatus && (
+              <WhatsAppConnectionStatus compact onStatusChange={setWhatsappConnectionStatus} />
+            )}
             {editingInvoiceId && (
               <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">
                 <Edit size={10} />
                 تعديل
               </div>
             )}
-            {lastSaved && (
+            {layoutSettings.showAutosaveIndicator && lastSaved && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Save size={12} className="text-success" />
                 <span>{lastSaved.toLocaleTimeString("ar-EG")}</span>
@@ -750,54 +854,9 @@ export const SalesInvoice = () => {
           </div>
         </div>
         
-        <div className="bg-card rounded-xl shadow-soft p-3 md:p-4 border border-border flex-1 flex flex-col overflow-auto">
-          {/* Barcode Scanner */}
-          <div className="mb-3 flex-shrink-0">
-            <BarcodeScanner products={products} onProductFound={handleBarcodeProduct} />
-          </div>
-
-          <div className="flex-shrink-0">
-            <InvoiceHeader
-              invoiceNumber={invoiceNumber}
-              clientNumber={clientNumber}
-              clientName={clientName}
-              clientPhone={clientPhone}
-              date={date}
-              paymentMethod={paymentMethod}
-              onClientNumberChange={handleClientNumberChange}
-              onClientNameChange={setClientName}
-              onClientPhoneChange={setClientPhone}
-              onDateChange={setDate}
-              onPaymentMethodChange={setPaymentMethod}
-            />
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-auto">
-            <InvoiceTable
-              items={items}
-              onUpdateItem={handleUpdateItem}
-              onDeleteItem={handleDeleteItem}
-              onAddItem={handleAddItem}
-              defaultWarehouse={warehouses && warehouses.length === 1 ? warehouses[0].name : undefined}
-            />
-          </div>
-
-          <div className="flex-shrink-0 mt-3">
-            <InvoiceFooter
-              totalAmount={calculateTotal(items)}
-              onNewInvoice={handleNewInvoice}
-              onPrint={handlePrint}
-              onSave={handleSaveInvoice}
-              onSendWhatsApp={handleSendWhatsApp}
-              isSaving={createInvoice.isPending || updateInvoice.isPending}
-              isSendingWhatsApp={isSendingWhatsApp}
-              isEditing={!!editingInvoiceId}
-              notes={notes}
-              onNotesChange={setNotes}
-              clientPhone={clientPhone}
-              clientName={clientName}
-            />
-          </div>
+        {/* Main content with customizable sections */}
+        <div className={`bg-card rounded-xl shadow-soft ${layoutSettings.compactMode ? "p-2" : "p-3 md:p-4"} border border-border flex-1 flex flex-col overflow-auto`}>
+          {sortedSections.map(section => renderSection(section.id))}
         </div>
       </div>
 
