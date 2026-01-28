@@ -717,7 +717,6 @@ export const CommissionSalesInvoice = () => {
           <InvoiceFooter
             totalAmount={totalWithCommission}
             onNewInvoice={handleNewInvoice}
-            onAddItem={handleAddItem}
             onPrint={handlePrint}
             onSave={handleSaveInvoice}
             isSaving={createInvoice.isPending || updateInvoice.isPending}

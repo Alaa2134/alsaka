@@ -783,7 +783,6 @@ export const SalesInvoice = () => {
           <InvoiceFooter
             totalAmount={calculateTotal(items)}
             onNewInvoice={handleNewInvoice}
-            onAddItem={handleAddItem}
             onPrint={handlePrint}
             onSave={handleSaveInvoice}
             onSendWhatsApp={handleSendWhatsApp}

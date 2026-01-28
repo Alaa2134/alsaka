@@ -1,11 +1,10 @@
-import { Plus, FileText, Printer, Save, MessageSquare, Edit, MessageCircle, Phone, CheckCircle, Loader2, Send } from "lucide-react";
+import { FileText, Printer, Save, MessageSquare, Edit, MessageCircle, Phone, CheckCircle, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface InvoiceFooterProps {
   totalAmount: number;
   onNewInvoice: () => void;
-  onAddItem: () => void;
   onPrint: () => void;
   onSave?: () => void;
   onSendWhatsApp?: () => void;
@@ -22,7 +21,6 @@ interface InvoiceFooterProps {
 export const InvoiceFooter = ({
   totalAmount,
   onNewInvoice,
-  onAddItem,
   onPrint,
   onSave,
   onSendWhatsApp,
@@ -53,28 +51,17 @@ export const InvoiceFooter = ({
     <div className="mt-4 space-y-4">
       {/* Total Amount - Large and Prominent */}
       <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-2 border-primary/30 rounded-xl p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-              <span className="text-2xl">💰</span>
-            </div>
-            <div>
-              <span className="text-sm text-muted-foreground">إجمالي الفاتورة</span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-primary">{totalAmount.toFixed(2)}</span>
-                <span className="text-lg text-muted-foreground">ج.م</span>
-              </div>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+            <span className="text-2xl">💰</span>
+          </div>
+          <div>
+            <span className="text-sm text-muted-foreground">إجمالي الفاتورة</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-primary">{totalAmount.toFixed(2)}</span>
+              <span className="text-lg text-muted-foreground">ج.م</span>
             </div>
           </div>
-          
-          {/* Add Item Button */}
-          <button
-            onClick={onAddItem}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl hover:scale-105"
-          >
-            <Plus size={22} />
-            إضافة صنف
-          </button>
         </div>
       </div>
 
