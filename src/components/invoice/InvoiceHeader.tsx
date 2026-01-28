@@ -86,40 +86,40 @@ export const InvoiceHeader = ({
         <h1 className="text-xl font-bold">فاتورة بيع</h1>
       </div>
 
-      {/* Header Fields - Compact Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+      {/* Header Fields - Compact Grid with Visible Borders */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
         {/* Invoice Number */}
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Hash size={12} />
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <Hash size={14} />
             رقم الفاتورة
           </label>
           <input
             type="text"
             value={invoiceNumber}
             readOnly
-            className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-foreground font-bold text-center text-sm"
+            className="w-full bg-muted/50 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-foreground font-bold text-center shadow-sm"
           />
         </div>
 
         {/* Date */}
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Calendar size={12} />
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <Calendar size={14} />
             التاريخ
           </label>
           <input
             type="date"
             value={date}
             onChange={(e) => onDateChange(e.target.value)}
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-center text-sm focus:border-primary focus:outline-none transition-all"
+            className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-foreground text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
           />
         </div>
 
         {/* Client Number with Auto-suggest */}
-        <div className="space-y-1 relative">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Hash size={12} />
+        <div className="space-y-1.5 relative">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <Hash size={14} />
             رقم العميل
           </label>
           <input
@@ -131,14 +131,14 @@ export const InvoiceHeader = ({
               setShowClientSuggestions(true);
             }}
             onBlur={() => setTimeout(() => setShowClientSuggestions(false), 200)}
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-center text-sm focus:border-primary focus:outline-none transition-all"
+            className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-foreground text-center shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
             autoComplete="off"
             placeholder="رقم العميل"
           />
           
           {/* Client Suggestions Dropdown */}
           {showClientSuggestions && activeField === "number" && filteredClients.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-primary/30 rounded-lg shadow-xl max-h-48 overflow-y-auto" style={{ zIndex: 9999 }}>
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-primary/30 rounded-lg shadow-xl max-h-48 overflow-y-auto" style={{ zIndex: 9999 }}>
               {filteredClients.map((client) => (
                 <button
                   key={client.id}
@@ -160,9 +160,9 @@ export const InvoiceHeader = ({
         </div>
 
         {/* Client Name with Auto-suggest */}
-        <div className="space-y-1 relative">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <User size={12} />
+        <div className="space-y-1.5 relative">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <User size={14} />
             اسم العميل
           </label>
           <input
@@ -174,14 +174,14 @@ export const InvoiceHeader = ({
               setShowClientSuggestions(true);
             }}
             onBlur={() => setTimeout(() => setShowClientSuggestions(false), 200)}
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:outline-none transition-all"
+            className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-foreground shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
             autoComplete="off"
             placeholder="اسم العميل"
           />
           
           {/* Client Suggestions Dropdown */}
           {showClientSuggestions && activeField === "name" && filteredClients.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-primary/30 rounded-lg shadow-xl max-h-48 overflow-y-auto" style={{ zIndex: 9999 }}>
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border-2 border-primary/30 rounded-lg shadow-xl max-h-48 overflow-y-auto" style={{ zIndex: 9999 }}>
               {filteredClients.map((client) => (
                 <button
                   key={client.id}
@@ -203,31 +203,31 @@ export const InvoiceHeader = ({
         </div>
 
         {/* Client Phone */}
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <Phone size={12} />
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <Phone size={14} />
             هاتف العميل
           </label>
           <input
             type="tel"
             value={clientPhone}
             onChange={(e) => onClientPhoneChange(e.target.value)}
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:outline-none transition-all"
+            className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-foreground shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
             placeholder="رقم الهاتف"
             dir="ltr"
           />
         </div>
 
         {/* Payment Method */}
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-            <CreditCard size={12} />
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <CreditCard size={14} />
             طريقة الدفع
           </label>
           <select
             value={paymentMethod}
             onChange={(e) => onPaymentMethodChange(e.target.value)}
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:border-primary focus:outline-none transition-all cursor-pointer"
+            className="w-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-foreground shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
           >
             <option value="نقدي">نقدي</option>
             <option value="آجل">آجل</option>
