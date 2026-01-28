@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, X, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Printer, X, ZoomIn, ZoomOut, RotateCcw, AlertCircle, CheckCircle } from "lucide-react";
 import { InvoiceTemplateSelector } from "./InvoiceTemplateSelector";
 import { ClassicTemplate, ModernTemplate, MinimalTemplate, ThermalTemplate } from "./templates";
 import { TemplateType, InvoiceData, InvoiceItemData, TenantData } from "./templates/types";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Star, FileText } from "lucide-react";
 import { TomAndJerryLoader } from "@/components/shared/TomAndJerryLoader";
 import { renderToStaticMarkup } from 'react-dom/server';
+import { toast } from "sonner";
 
 interface EmbeddedPrintViewProps {
   open: boolean;
@@ -30,7 +31,6 @@ export function EmbeddedPrintView({
   selectedTemplate,
   onSelectTemplate,
 }: EmbeddedPrintViewProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { data: defaultTemplate } = useDefaultTemplate();
   const { data: allTemplates } = useInvoiceTemplates();
   
@@ -39,6 +39,8 @@ export function EmbeddedPrintView({
   const [zoom, setZoom] = useState(100);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [printStatus, setPrintStatus] = useState<'idle' | 'preparing' | 'ready' | 'error'>('idle');
+  const [htmlContent, setHtmlContent] = useState<string>('');
 
   useEffect(() => {
     if (defaultTemplate) {
@@ -50,8 +52,8 @@ export function EmbeddedPrintView({
   const selectedCustomTemplate = allTemplates?.find(t => t.id === selectedCustomTemplateId) || defaultTemplate;
   const templateSettings: TemplateSettings = selectedCustomTemplate?.settings || defaultTemplateSettings;
 
-  // Generate print content
-  const generatePrintContent = useCallback(() => {
+  // Generate complete HTML document for printing
+  const generatePrintHTML = useCallback(() => {
     const props = { invoice, items, tenant };
     
     let templateElement;
@@ -81,114 +83,214 @@ export function EmbeddedPrintView({
 
     const content = renderToStaticMarkup(templateElement);
 
-    return `
-      <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>فاتورة رقم ${invoice.invoice_number}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-        <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          body {
-            font-family: 'Cairo', sans-serif;
-            direction: rtl;
-            background: white;
-            color: black;
-            padding: 20px;
-          }
-          @media print {
-            body { padding: 0; }
-            @page {
-              size: ${paperWidth} auto;
-              margin: 10mm;
-            }
-          }
-          table { border-collapse: collapse; width: 100%; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-          th { background-color: #2563eb; color: white; }
-          tr:nth-child(even) { background-color: #f9fafb; }
-          .text-center { text-align: center; }
-          .text-left { text-align: left; }
-          .font-bold { font-weight: bold; }
-          .text-primary { color: #2563eb; }
-          .bg-primary { background-color: #2563eb; }
-          .text-white { color: white; }
-          .rounded-lg { border-radius: 8px; }
-          .p-4 { padding: 16px; }
-          .p-6 { padding: 24px; }
-          .mb-4 { margin-bottom: 16px; }
-          .mt-4 { margin-top: 16px; }
-          .grid { display: grid; }
-          .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-          .gap-4 { gap: 16px; }
-          .gap-8 { gap: 32px; }
-          .border-b { border-bottom: 1px solid #e5e7eb; }
-          .border-b-4 { border-bottom: 4px solid; }
-          .pb-4 { padding-bottom: 16px; }
-          .bg-gray-50 { background-color: #f9fafb; }
-          .bg-gray-100 { background-color: #f3f4f6; }
-          .text-xl { font-size: 1.25rem; }
-          .text-2xl { font-size: 1.5rem; }
-          .text-muted { color: #6b7280; }
-        </style>
-      </head>
-      <body>
-        ${content}
-      </body>
-      </html>
-    `;
-  }, [invoice, items, tenant, selectedTemplate, useCustomTemplate, templateSettings]);
-
-  // Update iframe content when template changes
-  useEffect(() => {
-    if (open && iframeRef.current) {
-      setIsLoading(true);
-      const doc = iframeRef.current.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(generatePrintContent());
-        doc.close();
-        setTimeout(() => setIsLoading(false), 500);
+    return `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فاتورة رقم ${invoice.invoice_number}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+      direction: rtl;
+      background: white;
+      color: black;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    body {
+      padding: 15mm;
+    }
+    @media print {
+      html, body {
+        padding: 0;
+        margin: 0;
+      }
+      @page {
+        size: ${paperWidth} auto;
+        margin: 10mm;
       }
     }
-  }, [open, generatePrintContent]);
+    table { 
+      border-collapse: collapse; 
+      width: 100%;
+      margin: 10px 0;
+    }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 10px 8px; 
+      text-align: right;
+      font-size: 13px;
+    }
+    th { 
+      background-color: #2563eb; 
+      color: white;
+      font-weight: 700;
+    }
+    tr:nth-child(even) { 
+      background-color: #f9fafb; 
+    }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .font-bold { font-weight: bold; }
+    .text-primary { color: #2563eb; }
+    .bg-primary { background-color: #2563eb; }
+    .text-white { color: white; }
+    .rounded-lg { border-radius: 8px; }
+    .p-4 { padding: 16px; }
+    .p-6 { padding: 24px; }
+    .mb-4 { margin-bottom: 16px; }
+    .mt-4 { margin-top: 16px; }
+    .grid { display: grid; }
+    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .gap-4 { gap: 16px; }
+    .gap-8 { gap: 32px; }
+    .border-b { border-bottom: 1px solid #e5e7eb; }
+    .border-b-4 { border-bottom: 4px solid; }
+    .pb-4 { padding-bottom: 16px; }
+    .bg-gray-50 { background-color: #f9fafb; }
+    .bg-gray-100 { background-color: #f3f4f6; }
+    .text-xl { font-size: 1.25rem; }
+    .text-2xl { font-size: 1.5rem; }
+    .text-muted { color: #6b7280; }
+    img { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  ${content}
+</body>
+</html>`;
+  }, [invoice, items, tenant, selectedTemplate, useCustomTemplate, templateSettings]);
 
+  // Update HTML content when dependencies change
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+      setPrintStatus('preparing');
+      
+      // Generate HTML content
+      const html = generatePrintHTML();
+      setHtmlContent(html);
+      
+      // Small delay to ensure rendering
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+        setPrintStatus('ready');
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [open, generatePrintHTML]);
+
+  // Direct print function - opens new window for reliable printing
   const handlePrint = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
+    if (!htmlContent) {
+      toast.error('لا يوجد محتوى للطباعة');
+      return;
+    }
+    
+    setIsPrinting(true);
+    setPrintStatus('preparing');
+    
+    try {
+      // Method: Open new window and print
+      const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+      
+      if (!printWindow) {
+        toast.error('تم حظر النافذة المنبثقة. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.');
+        setIsPrinting(false);
+        setPrintStatus('error');
+        return;
+      }
+      
+      // Write content to new window
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Wait for fonts and content to load
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          
+          // Close window after print dialog closes
+          setTimeout(() => {
+            printWindow.close();
+            setIsPrinting(false);
+            setPrintStatus('ready');
+            toast.success('تم إرسال الفاتورة للطباعة');
+          }, 500);
+        }, 500);
+      };
+      
+      // Fallback if onload doesn't fire
+      setTimeout(() => {
+        if (printWindow && !printWindow.closed) {
+          printWindow.focus();
+          printWindow.print();
+          setTimeout(() => {
+            if (printWindow && !printWindow.closed) {
+              printWindow.close();
+            }
+            setIsPrinting(false);
+            setPrintStatus('ready');
+          }, 1000);
+        }
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error('حدث خطأ أثناء الطباعة. جرب مرة أخرى.');
+      setIsPrinting(false);
+      setPrintStatus('error');
+    }
+  }, [htmlContent]);
+
+  // Quick print using browser's native print
+  const handleQuickPrint = useCallback(() => {
+    // Create a hidden iframe for printing
+    const printFrame = document.createElement('iframe');
+    printFrame.style.cssText = 'position:fixed;right:-9999px;bottom:-9999px;width:0;height:0;border:none;';
+    printFrame.name = 'printFrame_' + Date.now();
+    document.body.appendChild(printFrame);
+    
+    const frameWindow = printFrame.contentWindow;
+    if (!frameWindow) {
+      toast.error('تعذر إنشاء إطار الطباعة');
+      return;
+    }
     
     setIsPrinting(true);
     
-    // انتظار تحميل المحتوى بالكامل
+    frameWindow.document.open();
+    frameWindow.document.write(htmlContent);
+    frameWindow.document.close();
+    
+    // Wait for content to load
     setTimeout(() => {
       try {
-        const iframeWindow = iframe.contentWindow;
-        if (iframeWindow) {
-          iframeWindow.focus();
-          iframeWindow.print();
-        }
-      } catch (error) {
-        console.error('Print error:', error);
-        // محاولة بديلة - فتح نافذة جديدة للطباعة
-        const printWindow = window.open('', '_blank');
-        if (printWindow && iframe.contentDocument) {
-          printWindow.document.write(iframe.contentDocument.documentElement.outerHTML);
-          printWindow.document.close();
-          printWindow.focus();
-          printWindow.print();
-          printWindow.close();
-        }
-      } finally {
-        setIsPrinting(false);
+        frameWindow.focus();
+        frameWindow.print();
+      } catch (e) {
+        console.error('Quick print error:', e);
+        // Fallback to main print method
+        handlePrint();
       }
-    }, 300);
-  }, []);
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(printFrame);
+        setIsPrinting(false);
+      }, 1000);
+    }, 500);
+  }, [htmlContent, handlePrint]);
 
   const getPaperMaxWidth = () => {
     if (useCustomTemplate) {
@@ -209,6 +311,12 @@ export function EmbeddedPrintView({
             <DialogTitle className="flex items-center gap-2">
               <Printer className="w-5 h-5 text-primary" />
               معاينة وطباعة الفاتورة
+              {printStatus === 'ready' && (
+                <CheckCircle className="w-4 h-4 text-green-500" />
+              )}
+              {printStatus === 'error' && (
+                <AlertCircle className="w-4 h-4 text-red-500" />
+              )}
             </DialogTitle>
             <button
               onClick={onClose}
@@ -298,17 +406,29 @@ export function EmbeddedPrintView({
             </div>
           </div>
           
-          <Button 
-            onClick={handlePrint} 
-            className="w-full flex items-center justify-center gap-2 h-12 text-lg"
-            disabled={isPrinting || isLoading}
-          >
-            <Printer size={20} />
-            {isPrinting ? 'جاري الطباعة...' : 'طباعة الفاتورة'}
-          </Button>
+          {/* Print Buttons */}
+          <div className="flex gap-2">
+            <Button 
+              onClick={handlePrint} 
+              className="flex-1 flex items-center justify-center gap-2 h-12 text-lg"
+              disabled={isPrinting || isLoading}
+            >
+              <Printer size={20} />
+              {isPrinting ? 'جاري الطباعة...' : 'طباعة الفاتورة'}
+            </Button>
+            <Button 
+              onClick={handleQuickPrint} 
+              variant="outline"
+              className="h-12 px-4"
+              disabled={isPrinting || isLoading}
+              title="طباعة سريعة"
+            >
+              <Printer size={18} />
+            </Button>
+          </div>
         </div>
 
-        {/* Preview Area with iframe */}
+        {/* Preview Area */}
         <div className="flex-1 overflow-auto bg-gray-200 dark:bg-gray-800 p-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -323,11 +443,11 @@ export function EmbeddedPrintView({
                 transformOrigin: 'top center'
               }}
             >
-              <iframe
-                ref={iframeRef}
-                className="w-full border-0"
-                style={{ minHeight: '800px', height: 'auto' }}
-                title="معاينة الفاتورة"
+              {/* Preview using dangerouslySetInnerHTML for accurate representation */}
+              <div 
+                className="p-0"
+                style={{ minHeight: '800px' }}
+                dangerouslySetInnerHTML={{ __html: htmlContent }}
               />
             </div>
           )}
@@ -337,7 +457,7 @@ export function EmbeddedPrintView({
   );
 }
 
-// Custom Template Renderer (same as before)
+// Custom Template Renderer
 const CustomTemplateRenderer = ({
   settings,
   invoice,
