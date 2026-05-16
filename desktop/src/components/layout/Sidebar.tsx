@@ -1,0 +1,130 @@
+import { NavLink, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  FileText,
+  Package,
+  Users,
+  ShoppingBag,
+  Warehouse,
+  Layers,
+  Settings,
+  ShieldCheck,
+  Bell,
+  Database,
+  LineChart,
+  MessageSquare,
+  Calculator,
+  LogOut,
+  Sun,
+  Moon,
+  RotateCcw,
+} from "lucide-react";
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { atLeast, ROLE_LABEL } from "@/lib/rbac";
+import { useTheme } from "@/contexts/ThemeContext";
+
+interface NavItem {
+  to: string;
+  label: string;
+  icon: ReactNode;
+  minRole: Role;
+}
+
+const NAV: NavItem[] = [
+  { to: "/", label: "لوحة التحكم", icon: <LayoutDashboard className="h-4 w-4" />, minRole: "cashier" },
+  { to: "/invoice", label: "فاتورة جديدة", icon: <FileText className="h-4 w-4" />, minRole: "cashier" },
+  { to: "/invoices", label: "الفواتير", icon: <FileText className="h-4 w-4" />, minRole: "cashier" },
+  { to: "/returns", label: "المرتجعات", icon: <RotateCcw className="h-4 w-4" />, minRole: "cashier" },
+  { to: "/products", label: "المنتجات", icon: <Package className="h-4 w-4" />, minRole: "manager" },
+  { to: "/clients", label: "العملاء", icon: <Users className="h-4 w-4" />, minRole: "manager" },
+  { to: "/categories", label: "التصنيفات", icon: <Layers className="h-4 w-4" />, minRole: "manager" },
+  { to: "/warehouses", label: "المخازن", icon: <Warehouse className="h-4 w-4" />, minRole: "manager" },
+  { to: "/reports", label: "التقارير", icon: <LineChart className="h-4 w-4" />, minRole: "manager" },
+  { to: "/accounting", label: "المحاسبة", icon: <Calculator className="h-4 w-4" />, minRole: "manager" },
+  { to: "/store-management", label: "إدارة المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
+  { to: "/store-orders", label: "طلبات المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
+  { to: "/internal-chat", label: "المحادثات", icon: <MessageSquare className="h-4 w-4" />, minRole: "manager" },
+  { to: "/users", label: "المستخدمون", icon: <Users className="h-4 w-4" />, minRole: "admin" },
+  { to: "/tenants", label: "الشركات", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
+  { to: "/system", label: "لوحة النظام", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
+  { to: "/audit-logs", label: "سجل الأحداث", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
+  { to: "/security-events", label: "أحداث الأمان", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
+  { to: "/notifications", label: "الإشعارات", icon: <Bell className="h-4 w-4" />, minRole: "cashier" },
+  { to: "/whatsapp-settings", label: "إعدادات واتساب", icon: <Settings className="h-4 w-4" />, minRole: "admin" },
+  { to: "/company-settings", label: "إعدادات الشركة", icon: <Settings className="h-4 w-4" />, minRole: "admin" },
+  { to: "/account-settings", label: "حسابي", icon: <Settings className="h-4 w-4" />, minRole: "cashier" },
+];
+
+export function Sidebar() {
+  const { user, logout } = useAuth();
+  const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
+  const role = user?.role;
+
+  const visible = NAV.filter((n) => atLeast(role, n.minRole));
+
+  return (
+    <aside className="no-print w-64 shrink-0 h-full border-l border-border bg-card flex flex-col">
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <div className="h-9 w-9 rounded-md gradient-primary flex items-center justify-center text-primary-foreground font-bold">
+            S
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold leading-tight">SystemAlaa</div>
+            <div className="text-xs text-muted-foreground truncate">
+              {user?.name || user?.email}
+            </div>
+          </div>
+        </div>
+        {role && (
+          <div className="mt-3 text-xs text-muted-foreground">{ROLE_LABEL[role]}</div>
+        )}
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
+        {visible.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === "/"}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-soft"
+                  : "text-foreground hover:bg-secondary",
+              )
+            }
+          >
+            {item.icon}
+            <span className="truncate">{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="p-3 border-t border-border flex items-center justify-between gap-2">
+        <button
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary"
+          onClick={toggle}
+          title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          <span className="text-xs">{theme === "dark" ? "فاتح" : "داكن"}</span>
+        </button>
+        <button
+          className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+          onClick={() => {
+            logout();
+            navigate("/login");
+          }}
+          title="تسجيل خروج"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
+      </div>
+    </aside>
+  );
+}
