@@ -25,6 +25,7 @@ import {
   KeyRound,
   Send,
   ListChecks,
+  Cloud,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -110,6 +111,7 @@ const SECTIONS: NavSection[] = [
       { to: "/tenants", label: "الشركات", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
       { to: "/audit-logs", label: "سجل الأحداث (HMAC)", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/security-events", label: "أحداث الأمان", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
+      { to: "/gdrive-backup", label: "نسخ Google Drive", icon: <Cloud className="h-4 w-4" />, minRole: "admin" },
       { to: "/activation", label: "الترخيص والتفعيل", icon: <KeyRound className="h-4 w-4" />, minRole: "admin" },
       { to: "/notifications", label: "الإشعارات", icon: <Bell className="h-4 w-4" />, minRole: "cashier" },
       { to: "/company-settings", label: "إعدادات الشركة", icon: <Settings className="h-4 w-4" />, minRole: "admin" },

@@ -25,6 +25,7 @@ const licensing = require('./licensing.cjs');
 const store = require('./store.cjs');
 const shipping = require('./shipping.cjs');
 const payments = require('./payments.cjs');
+const gdrive = require('./google-drive.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -481,6 +482,15 @@ ipcMain.handle('store:export-feed', safe(async (_e, { slug, outputPath }) => {
   return { ok: true, path: target };
 }));
 
+// --- Google Drive backup IPC ---
+ipcMain.handle('gdrive:state', safe(() => gdrive.state()));
+ipcMain.handle('gdrive:connect', safe(() => gdrive.startOAuth()));
+ipcMain.handle('gdrive:disconnect', safe(() => gdrive.disconnect()));
+ipcMain.handle('gdrive:run-now', safe(() => gdrive.runBackup({ force: true })));
+ipcMain.handle('gdrive:set-schedule', safe((_e, payload) => gdrive.setSchedule(payload || {})));
+ipcMain.handle('gdrive:local-fallback', safe(() => gdrive.localFallbackInfo()));
+gdrive.onUpdate((s) => send('gdrive:state-changed', s));
+
 // --- Licensing IPC ---
 ipcMain.handle('lic:status', safe(() => licensing.status()));
 ipcMain.handle('lic:activate', safe((_e, { key }) => licensing.activate(key)));
@@ -537,6 +547,8 @@ if (!gotLock) {
     dbMod.open(getDbPath());
     auth.ensureSeedTenantAndAdmin();
     whatsapp.attachApp(app);
+    gdrive.attachApp(app);
+    gdrive.start();
     createWindow();
     createTray();
     registerGlobalShortcuts();
@@ -552,6 +564,7 @@ if (!gotLock) {
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();
     if (backupTimer) clearInterval(backupTimer);
+    try { gdrive.stop(); } catch (_) { /* ignore */ }
   });
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin' && isQuitting) app.quit();

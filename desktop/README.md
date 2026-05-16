@@ -180,6 +180,34 @@ following plumbing:
   Replace `SYSTEMALAA_VENDOR_SECRET` (env var) with a real 32-byte
   random secret before shipping retail builds.
 
+## Google Drive backup (nightly, offline-safe, single-file)
+
+- **OAuth via PKCE** — no `client_secret` in the binary. The vendor
+  registers a Desktop OAuth client at Google Cloud Console and exports
+  `SYSTEMALAA_GOOGLE_CLIENT_ID` before shipping. Scope is the safest
+  one: `drive.file` (the app can only see files it created itself).
+- **One file, updated in place** — uploads use
+  `PATCH /upload/drive/v3/files/{fileId}?uploadType=media`, so every
+  night the same Drive file is replaced. The user's Drive usage stays
+  flat instead of accumulating one file per day. Old revisions auto-
+  expire from Drive after 30 days.
+- **Offline fallback that doesn't grow** — at the scheduled hour the
+  payload is always written to `<userData>/last-backup.bin` first,
+  overwriting yesterday's local snapshot. If `fetch` fails the run is
+  marked offline; the scheduler retries every 5 minutes and uploads as
+  soon as the network is back. No queue / no growing folder.
+- **AES-256-GCM at rest before upload** (toggle in the settings card).
+  The key is derived from the machine fingerprint + pepper, so even if
+  a Drive account is compromised the dumped file is unintelligible
+  without this exact machine.
+- **Daily, not hourly** — the scheduler is a 5-minute ticker; once a
+  successful backup has run for the current calendar day it skips
+  silently until tomorrow.
+- **UI** at *النسخة الاحتياطية - Google Drive*: connect button (opens
+  system browser), live status with file-id + size, schedule slider
+  (hour of day), encryption toggle, manual run button, last-attempt /
+  last-success / last-error tiles, local fallback path.
+
 ## Security hardening
 
 - **scrypt** (N=2^15, r=8, p=1, 32-byte output) for passwords and

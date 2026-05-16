@@ -125,6 +125,31 @@ declare global {
       exportFeed(payload: { slug: string; outputPath?: string }): Promise<IpcResult<{ ok: boolean; path: string }>>;
     };
 
+    gdrive: {
+      state(): Promise<IpcResult<{
+        connected: boolean;
+        enabled: boolean;
+        account_email: string | null;
+        account_name: string | null;
+        schedule_hour: number;
+        encrypt_payload: boolean;
+        last_success_at: string | null;
+        last_attempt_at: string | null;
+        last_size_bytes: number | null;
+        last_error: string | null;
+        backup_file_id: string | null;
+        backup_file_name: string | null;
+        in_flight: boolean;
+        client_id_set: boolean;
+      }>>;
+      connect(): Promise<IpcResult<any>>;
+      disconnect(): Promise<IpcResult<void>>;
+      runNow(): Promise<IpcResult<any>>;
+      setSchedule(payload: { scheduleHour?: number; encryptPayload?: boolean; enabled?: boolean }): Promise<IpcResult<any>>;
+      localFallback(): Promise<IpcResult<{ path: string; exists: boolean; size?: number; mtime?: string }>>;
+      onStateChanged(cb: (s: any) => void): () => void;
+    };
+
     licensing: {
       status(): Promise<IpcResult<{
         active: boolean;

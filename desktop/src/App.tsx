@@ -30,6 +30,7 @@ import { StoreOrdersScreen } from "@/screens/StoreOrdersScreen";
 import { CouponsScreen } from "@/screens/CouponsScreen";
 import { ShippingCarriersScreen } from "@/screens/ShippingCarriersScreen";
 import { PaymentGatewaysScreen } from "@/screens/PaymentGatewaysScreen";
+import { GoogleDriveBackupScreen } from "@/screens/GoogleDriveBackupScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -249,6 +250,14 @@ export default function App() {
                       element={
                         <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
                           <SP><PaymentGatewaysScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="gdrive-backup"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
+                          <SP><GoogleDriveBackupScreen /></SP>
                         </ProtectedRoute>
                       }
                     />

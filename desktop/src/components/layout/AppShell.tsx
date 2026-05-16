@@ -42,6 +42,7 @@ const TITLES: Record<string, string> = {
   "/coupons": "كوبونات الخصم",
   "/shipping-carriers": "شركات الشحن",
   "/payment-gateways": "وسائل الدفع",
+  "/gdrive-backup": "نسخ احتياطي - Google Drive",
 };
 
 export function AppShell() {

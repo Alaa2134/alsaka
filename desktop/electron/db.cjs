@@ -639,6 +639,27 @@ function bootstrap() {
     CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(tenant_id, code);
     CREATE INDEX IF NOT EXISTS idx_carriers_tenant ON shipping_carriers(tenant_id);
     CREATE INDEX IF NOT EXISTS idx_gateways_tenant ON payment_gateways(tenant_id);
+
+    -- Google Drive backup state. Single-row table (the desktop is
+    -- single-user-per-machine after device binding).
+    CREATE TABLE IF NOT EXISTS google_drive (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      enabled INTEGER NOT NULL DEFAULT 0,
+      refresh_token TEXT,
+      access_token TEXT,
+      token_expiry TEXT,
+      account_email TEXT,
+      account_name TEXT,
+      backup_file_id TEXT,
+      backup_file_name TEXT NOT NULL DEFAULT 'systemalaa-backup.db.enc',
+      schedule_hour INTEGER NOT NULL DEFAULT 2,
+      encrypt_payload INTEGER NOT NULL DEFAULT 1,
+      last_success_at TEXT,
+      last_attempt_at TEXT,
+      last_size_bytes INTEGER,
+      last_error TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 }
 
@@ -650,6 +671,7 @@ const SENSITIVE = {
   clients: new Set(['phone']),
   suppliers: new Set(['phone']),
   store_customers: new Set(['phone']),
+  google_drive: new Set(['refresh_token', 'access_token']),
 };
 
 function encryptRow(table, row) {

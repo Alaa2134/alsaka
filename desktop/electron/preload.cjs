@@ -79,6 +79,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     exportFeed: (payload) => invoke('store:export-feed', payload),
   },
 
+  // Google Drive backup
+  gdrive: {
+    state: () => invoke('gdrive:state'),
+    connect: () => invoke('gdrive:connect'),
+    disconnect: () => invoke('gdrive:disconnect'),
+    runNow: () => invoke('gdrive:run-now'),
+    setSchedule: (payload) => invoke('gdrive:set-schedule', payload),
+    localFallback: () => invoke('gdrive:local-fallback'),
+    onStateChanged: (cb) => on('gdrive:state-changed', cb),
+  },
+
   // Licensing (single-device activation)
   licensing: {
     status: () => invoke('lic:status'),
