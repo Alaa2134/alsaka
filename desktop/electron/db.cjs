@@ -660,6 +660,447 @@ function bootstrap() {
       last_error TEXT,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- ====================================================================
+    -- POS extensions: cashier shifts, held invoices, multi-pricing,
+    -- loyalty, gift cards, bundles, returns.
+    -- ====================================================================
+
+    CREATE TABLE IF NOT EXISTS cashier_shifts (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+      opened_at TEXT NOT NULL DEFAULT (datetime('now')),
+      closed_at TEXT,
+      opening_cash REAL NOT NULL DEFAULT 0,
+      closing_cash REAL,
+      expected_cash REAL,
+      cash_in REAL NOT NULL DEFAULT 0,
+      cash_out REAL NOT NULL DEFAULT 0,
+      total_sales REAL NOT NULL DEFAULT 0,
+      total_returns REAL NOT NULL DEFAULT 0,
+      invoice_count INTEGER NOT NULL DEFAULT 0,
+      difference REAL,
+      notes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS held_invoices (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      label TEXT,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      data_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS loyalty_accounts (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+      points INTEGER NOT NULL DEFAULT 0,
+      tier TEXT NOT NULL DEFAULT 'standard',
+      total_earned INTEGER NOT NULL DEFAULT 0,
+      total_redeemed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, client_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS loyalty_transactions (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL REFERENCES loyalty_accounts(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,  -- earn | redeem | adjust
+      points INTEGER NOT NULL,
+      invoice_id TEXT REFERENCES invoices(id) ON DELETE SET NULL,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS gift_cards (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      issued_to_name TEXT,
+      issued_to_phone TEXT,
+      initial_balance REAL NOT NULL,
+      current_balance REAL NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'EGP',
+      pin_hash TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      expires_at TEXT,
+      issued_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, code)
+    );
+
+    CREATE TABLE IF NOT EXISTS gift_card_redemptions (
+      id TEXT PRIMARY KEY,
+      gift_card_id TEXT NOT NULL REFERENCES gift_cards(id) ON DELETE CASCADE,
+      invoice_id TEXT REFERENCES invoices(id) ON DELETE SET NULL,
+      amount REAL NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS product_bundles (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      bundle_price REAL NOT NULL,
+      barcode TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS product_bundle_items (
+      id TEXT PRIMARY KEY,
+      bundle_id TEXT NOT NULL REFERENCES product_bundles(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      quantity REAL NOT NULL DEFAULT 1
+    );
+
+    -- ====================================================================
+    -- Inventory extensions
+    -- ====================================================================
+
+    CREATE TABLE IF NOT EXISTS product_variants (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      sku TEXT,
+      barcode TEXT,
+      name TEXT NOT NULL,           -- e.g. "أحمر - L"
+      attributes_json TEXT,         -- {"color":"red","size":"L"}
+      price REAL,
+      stock REAL NOT NULL DEFAULT 0,
+      image_url TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS stock_transfers (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      transfer_number INTEGER,
+      from_warehouse_id TEXT NOT NULL REFERENCES warehouses(id) ON DELETE RESTRICT,
+      to_warehouse_id TEXT NOT NULL REFERENCES warehouses(id) ON DELETE RESTRICT,
+      status TEXT NOT NULL DEFAULT 'pending', -- pending | in_transit | received | cancelled
+      notes TEXT,
+      created_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      received_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS stock_transfer_items (
+      id TEXT PRIMARY KEY,
+      transfer_id TEXT NOT NULL REFERENCES stock_transfers(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      quantity REAL NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS stock_counts (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      warehouse_id TEXT REFERENCES warehouses(id) ON DELETE SET NULL,
+      count_number INTEGER,
+      status TEXT NOT NULL DEFAULT 'open', -- open | committed | cancelled
+      notes TEXT,
+      created_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      committed_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS stock_count_items (
+      id TEXT PRIMARY KEY,
+      count_id TEXT NOT NULL REFERENCES stock_counts(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      system_qty REAL NOT NULL DEFAULT 0,
+      counted_qty REAL NOT NULL DEFAULT 0,
+      difference REAL NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS purchase_orders (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      order_number INTEGER,
+      supplier_id TEXT REFERENCES suppliers(id) ON DELETE SET NULL,
+      status TEXT NOT NULL DEFAULT 'draft', -- draft | sent | partial | received | cancelled
+      total REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      expected_at TEXT,
+      created_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS purchase_order_items (
+      id TEXT PRIMARY KEY,
+      po_id TEXT NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      quantity REAL NOT NULL DEFAULT 0,
+      received_quantity REAL NOT NULL DEFAULT 0,
+      cost REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0
+    );
+
+    -- ====================================================================
+    -- Accounting extensions: currencies, bank, payroll, budgets, recurring
+    -- ====================================================================
+
+    CREATE TABLE IF NOT EXISTS currencies (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,            -- ISO 4217: USD, EGP, ...
+      name TEXT NOT NULL,
+      symbol TEXT NOT NULL,
+      is_base INTEGER NOT NULL DEFAULT 0,
+      rate REAL NOT NULL DEFAULT 1,  -- against base
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, code)
+    );
+
+    CREATE TABLE IF NOT EXISTS bank_accounts (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      bank_name TEXT,
+      account_number TEXT,
+      iban TEXT,
+      currency TEXT NOT NULL DEFAULT 'EGP',
+      opening_balance REAL NOT NULL DEFAULT 0,
+      account_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS bank_transactions (
+      id TEXT PRIMARY KEY,
+      bank_account_id TEXT NOT NULL REFERENCES bank_accounts(id) ON DELETE CASCADE,
+      transaction_date TEXT NOT NULL,
+      description TEXT,
+      reference TEXT,
+      amount REAL NOT NULL,        -- positive = deposit, negative = withdrawal
+      matched_with TEXT,            -- journal entry id when reconciled
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS employees (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      national_id TEXT,
+      phone TEXT,
+      email TEXT,
+      position TEXT,
+      hire_date TEXT,
+      basic_salary REAL NOT NULL DEFAULT 0,
+      housing_allowance REAL NOT NULL DEFAULT 0,
+      transport_allowance REAL NOT NULL DEFAULT 0,
+      other_allowance REAL NOT NULL DEFAULT 0,
+      insurance_deduction REAL NOT NULL DEFAULT 0,
+      tax_deduction REAL NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS payroll_runs (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      run_month TEXT NOT NULL,    -- YYYY-MM
+      total_gross REAL NOT NULL DEFAULT 0,
+      total_net REAL NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, run_month)
+    );
+
+    CREATE TABLE IF NOT EXISTS payroll_lines (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL REFERENCES payroll_runs(id) ON DELETE CASCADE,
+      employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      gross REAL NOT NULL DEFAULT 0,
+      deductions REAL NOT NULL DEFAULT 0,
+      net REAL NOT NULL DEFAULT 0,
+      notes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS budgets (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      account_id TEXT NOT NULL REFERENCES chart_of_accounts(id) ON DELETE CASCADE,
+      year INTEGER NOT NULL,
+      month INTEGER NOT NULL,        -- 1..12
+      planned REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      UNIQUE(tenant_id, account_id, year, month)
+    );
+
+    CREATE TABLE IF NOT EXISTS recurring_invoices (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      template_json TEXT NOT NULL,    -- the line items + totals to clone
+      cycle TEXT NOT NULL,            -- daily | weekly | monthly | yearly
+      next_run_date TEXT NOT NULL,
+      end_date TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      last_run_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- ====================================================================
+    -- Restaurant / café mode
+    -- ====================================================================
+
+    CREATE TABLE IF NOT EXISTS restaurant_tables (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,        -- e.g. "T1", "VIP-3"
+      seats INTEGER NOT NULL DEFAULT 4,
+      zone TEXT,                 -- inside | terrace | rooftop
+      status TEXT NOT NULL DEFAULT 'free', -- free | occupied | reserved | cleaning
+      current_order_id TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS restaurant_orders (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      table_id TEXT REFERENCES restaurant_tables(id) ON DELETE SET NULL,
+      order_type TEXT NOT NULL DEFAULT 'dine_in', -- dine_in | takeaway | delivery
+      status TEXT NOT NULL DEFAULT 'open', -- open | paid | cancelled
+      user_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      subtotal REAL NOT NULL DEFAULT 0,
+      service_charge REAL NOT NULL DEFAULT 0,
+      tax REAL NOT NULL DEFAULT 0,
+      discount REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      invoice_id TEXT REFERENCES invoices(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS restaurant_order_items (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL REFERENCES restaurant_orders(id) ON DELETE CASCADE,
+      product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+      product_name TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 1,
+      price REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      kot_status TEXT NOT NULL DEFAULT 'new',  -- new | sent | preparing | ready | served | cancelled
+      sent_to_kitchen_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- ====================================================================
+    -- Returns (linked to original invoice)
+    -- ====================================================================
+
+    CREATE TABLE IF NOT EXISTS return_lines (
+      id TEXT PRIMARY KEY,
+      return_id TEXT NOT NULL REFERENCES returns(id) ON DELETE CASCADE,
+      invoice_item_id TEXT REFERENCES invoice_items(id) ON DELETE SET NULL,
+      product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+      product_name TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 0,
+      price REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0
+    );
+
+    -- ====================================================================
+    -- Webhooks + REST API keys + i18n
+    -- ====================================================================
+
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      url TEXT NOT NULL,
+      events TEXT NOT NULL,         -- comma-separated event names
+      secret TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS webhook_deliveries (
+      id TEXT PRIMARY KEY,
+      webhook_id TEXT NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+      event TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      status_code INTEGER,
+      response TEXT,
+      delivered_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      key_hash TEXT NOT NULL UNIQUE,
+      scopes TEXT NOT NULL DEFAULT 'read',  -- read | write | admin (comma-sep)
+      last_used_at TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- ====================================================================
+    -- WhatsApp message outbox (offline queue)
+    -- ====================================================================
+
+    CREATE TABLE IF NOT EXISTS whatsapp_outbox (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      to_phone TEXT NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'text',  -- text | image
+      body TEXT,
+      data_url TEXT,
+      caption TEXT,
+      status TEXT NOT NULL DEFAULT 'queued',  -- queued | sent | failed
+      attempt_count INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      sent_at TEXT
+    );
+
+    -- Add product extensions: variant tracking flag, multi-pricing,
+    -- expiry, ingredients (for restaurant), is_service flag.
+  `);
+
+  // Idempotent column additions for new POS features
+  maybeAdd('products', 'has_variants', 'INTEGER NOT NULL DEFAULT 0');
+  maybeAdd('products', 'wholesale_price', 'REAL');
+  maybeAdd('products', 'vip_price', 'REAL');
+  maybeAdd('products', 'expiry_date', 'TEXT');
+  maybeAdd('products', 'is_service', 'INTEGER NOT NULL DEFAULT 0');
+  maybeAdd('products', 'tax_rate', 'REAL NOT NULL DEFAULT 0');
+  maybeAdd('products', 'kitchen_section', 'TEXT');
+
+  maybeAdd('clients', 'pricing_tier', "TEXT NOT NULL DEFAULT 'retail'");
+
+  maybeAdd('invoices', 'shift_id', 'TEXT');
+  maybeAdd('invoices', 'is_return', 'INTEGER NOT NULL DEFAULT 0');
+  maybeAdd('invoices', 'parent_invoice_id', 'TEXT');
+  maybeAdd('invoices', 'currency', "TEXT NOT NULL DEFAULT 'EGP'");
+  maybeAdd('invoices', 'fx_rate', 'REAL NOT NULL DEFAULT 1');
+  maybeAdd('invoices', 'tax', 'REAL NOT NULL DEFAULT 0');
+  maybeAdd('invoices', 'loyalty_earned', 'INTEGER NOT NULL DEFAULT 0');
+  maybeAdd('invoices', 'loyalty_redeemed', 'INTEGER NOT NULL DEFAULT 0');
+  maybeAdd('invoices', 'gift_card_redeemed', 'REAL NOT NULL DEFAULT 0');
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_shifts_user ON cashier_shifts(user_id);
+    CREATE INDEX IF NOT EXISTS idx_held_tenant ON held_invoices(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_loyalty_client ON loyalty_accounts(client_id);
+    CREATE INDEX IF NOT EXISTS idx_gift_code ON gift_cards(tenant_id, code);
+    CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id);
+    CREATE INDEX IF NOT EXISTS idx_transfers_tenant ON stock_transfers(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_counts_tenant ON stock_counts(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_po_tenant ON purchase_orders(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_bank_tx_account ON bank_transactions(bank_account_id);
+    CREATE INDEX IF NOT EXISTS idx_recurring_next ON recurring_invoices(next_run_date);
+    CREATE INDEX IF NOT EXISTS idx_tables_tenant ON restaurant_tables(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_resto_orders_table ON restaurant_orders(table_id);
+    CREATE INDEX IF NOT EXISTS idx_resto_items_order ON restaurant_order_items(order_id);
+    CREATE INDEX IF NOT EXISTS idx_outbox_status ON whatsapp_outbox(status);
+    CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id);
   `);
 }
 
@@ -672,6 +1113,11 @@ const SENSITIVE = {
   suppliers: new Set(['phone']),
   store_customers: new Set(['phone']),
   google_drive: new Set(['refresh_token', 'access_token']),
+  gift_cards: new Set(['pin_hash']),
+  employees: new Set(['national_id', 'phone']),
+  webhooks: new Set(['secret']),
+  api_keys: new Set(['key_hash']),
+  whatsapp_outbox: new Set(['to_phone']),
 };
 
 function encryptRow(table, row) {
