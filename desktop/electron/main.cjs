@@ -22,6 +22,9 @@ const accounting = require('./accounting.cjs');
 const whatsapp = require('./whatsapp.cjs');
 const security = require('./security.cjs');
 const licensing = require('./licensing.cjs');
+const store = require('./store.cjs');
+const shipping = require('./shipping.cjs');
+const payments = require('./payments.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -438,6 +441,45 @@ ipcMain.handle(
     return { ok: true };
   }),
 );
+
+// --- Storefront IPC ---
+ipcMain.handle('store:get-settings', safe((_e, { tenantId }) => store.getStoreSettings(tenantId)));
+ipcMain.handle('store:ensure-settings', safe((_e, { tenantId, tenantName }) => store.ensureStoreSettings(tenantId, tenantName)));
+ipcMain.handle('store:update-settings', safe((_e, payload) => store.updateStoreSettings(payload)));
+ipcMain.handle('store:feed', safe((_e, { slug }) => store.buildStorefrontFeed(slug)));
+ipcMain.handle('store:validate-coupon', safe((_e, payload) => store.validateCoupon(payload)));
+ipcMain.handle('store:quote-shipping', safe((_e, payload) => {
+  const db = require('./db.cjs').get();
+  const carrier = db
+    .prepare(`SELECT * FROM shipping_carriers WHERE id = ? AND tenant_id = ?`)
+    .get(payload.carrierId, payload.tenantId);
+  if (!carrier) return { fee: 0, etaDays: null };
+  return shipping.quoteFor(carrier, { subtotal: payload.subtotal });
+}));
+ipcMain.handle('store:place-order', safe((_e, payload) => store.placeOrder(payload)));
+ipcMain.handle('store:update-order-status', safe((_e, payload) => store.updateOrderStatus(payload)));
+ipcMain.handle('store:track-order', safe((_e, payload) => store.trackOrder(payload)));
+ipcMain.handle('store:list-providers', safe(() => ({
+  shipping: Object.keys(shipping.providers),
+  payments: Object.keys(payments.providers),
+})));
+ipcMain.handle('store:create-checkout', safe((_e, { tenantId, gatewayId, order }) => {
+  const db = require('./db.cjs').get();
+  const gw = db.prepare(`SELECT * FROM payment_gateways WHERE id = ? AND tenant_id = ?`).get(gatewayId, tenantId);
+  if (!gw) throw new Error('gateway not found');
+  return payments.createCheckoutFor(gw, order);
+}));
+ipcMain.handle('store:export-feed', safe(async (_e, { slug, outputPath }) => {
+  const feed = store.buildStorefrontFeed(slug);
+  if (!feed) throw new Error('store not found');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const target = outputPath || path.join(getDocsDir(), 'storefront', `${slug}.json`);
+  const dir = path.dirname(target);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  await fs.promises.writeFile(target, JSON.stringify(feed, null, 2), 'utf8');
+  return { ok: true, path: target };
+}));
 
 // --- Licensing IPC ---
 ipcMain.handle('lic:status', safe(() => licensing.status()));

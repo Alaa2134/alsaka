@@ -100,6 +100,39 @@ desktop/
 └── package.json
 ```
 
+## E-commerce storefront
+
+Each tenant gets a public-facing online shop at `/<slug>` with the
+following plumbing:
+
+- **`store_settings`** — brand name, slug, tagline, logo, hero image,
+  primary colour (HSL), currency, contact info, social links, policies
+  (delivery / return / privacy / terms), inventory tracking toggles.
+- **Inventory linkage** — products opt in via `products.store_visible`.
+  The customer sees stock in real time; the desktop app decrements
+  inventory atomically on each order with stock guards (won't oversell
+  unless `allow_out_of_stock` is on).
+- **Coupons** — percent, fixed, or free-shipping. Usage limits, expiry,
+  minimum subtotal, max-discount cap, automatic usage counter.
+- **Shipping carriers** — pluggable provider model (Aramex, Bosta, J&T,
+  Mylerz, FedEx, custom). Each carrier stores its API credentials in
+  `config_json`; `electron/shipping.cjs` is the abstraction point for
+  drop-in real SDK calls.
+- **Payment gateways** — Paymob, Fawry, Vodafone Cash, InstaPay, Stripe,
+  PayPal, COD, bank transfer. Same `config_json` pattern; stubs return
+  the right shape so the checkout flow is end-to-end testable before
+  live keys are wired.
+- **Order workflow** — `new → confirmed → preparing → shipped →
+  delivered` (with `cancelled` / `returned` branches), full history in
+  `store_order_status_history`, change-tracker UI in the Store Orders
+  screen.
+- **Customers** — separate `store_customers` table (phone-encrypted)
+  with `orders_count`/`total_spent` rollups updated on every order.
+- **Standalone storefront SPA** lives under `store/` — a separate Vite
+  project ready to be deployed to any static host. See
+  `store/README.md`. The desktop app exports the tenant feed as a JSON
+  file the storefront can read directly.
+
 ## Accounting (full double-entry)
 
 - **Chart of Accounts** seeded with a standard Arabic palette (Assets,

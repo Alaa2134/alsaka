@@ -453,9 +453,192 @@ function bootstrap() {
     CREATE INDEX IF NOT EXISTS idx_jel_entry ON journal_entry_lines(entry_id);
     CREATE INDEX IF NOT EXISTS idx_jel_account ON journal_entry_lines(account_id);
     CREATE INDEX IF NOT EXISTS idx_suppliers_tenant ON suppliers(tenant_id);
-    CREATE INDEX IF NOT EXISTS idx_pi_tenant_date ON purchase_invoices(tenant_id, invoice_date);
-    CREATE INDEX IF NOT EXISTS idx_rv_tenant_date ON receipt_vouchers(tenant_id, voucher_date);
-    CREATE INDEX IF NOT EXISTS idx_pv_tenant_date ON payment_vouchers(tenant_id, voucher_date);
+    -- Storefront
+    CREATE TABLE IF NOT EXISTS store_settings (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL UNIQUE REFERENCES tenants(id) ON DELETE CASCADE,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      tagline TEXT,
+      description TEXT,
+      logo_url TEXT,
+      hero_image_url TEXT,
+      banner_image_url TEXT,
+      primary_color TEXT NOT NULL DEFAULT '221 83% 53%',
+      accent_color TEXT NOT NULL DEFAULT '262 83% 58%',
+      currency TEXT NOT NULL DEFAULT 'EGP',
+      currency_symbol TEXT NOT NULL DEFAULT 'ج.م',
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      whatsapp_phone TEXT,
+      facebook_url TEXT,
+      instagram_url TEXT,
+      tiktok_url TEXT,
+      working_hours TEXT,
+      delivery_note TEXT,
+      return_policy TEXT,
+      privacy_policy TEXT,
+      terms TEXT,
+      is_published INTEGER NOT NULL DEFAULT 1,
+      track_inventory INTEGER NOT NULL DEFAULT 1,
+      allow_out_of_stock INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Per-tenant storefront customers (separate from app_users).
+    CREATE TABLE IF NOT EXISTS store_customers (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      email TEXT,
+      password_hash TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      total_spent REAL NOT NULL DEFAULT 0,
+      orders_count INTEGER NOT NULL DEFAULT 0,
+      last_order_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, phone)
+    );
+
+    CREATE TABLE IF NOT EXISTS store_customer_addresses (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT NOT NULL REFERENCES store_customers(id) ON DELETE CASCADE,
+      label TEXT,
+      recipient_name TEXT,
+      phone TEXT,
+      country TEXT NOT NULL DEFAULT 'EG',
+      governorate TEXT,
+      city TEXT,
+      area TEXT,
+      street TEXT,
+      building TEXT,
+      floor TEXT,
+      apartment TEXT,
+      postal_code TEXT,
+      notes TEXT,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      lat REAL,
+      lng REAL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS coupons (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'percent',  -- percent|fixed|free_shipping
+      value REAL NOT NULL DEFAULT 0,
+      min_subtotal REAL NOT NULL DEFAULT 0,
+      max_discount REAL,
+      usage_limit INTEGER,
+      times_used INTEGER NOT NULL DEFAULT 0,
+      starts_at TEXT,
+      ends_at TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, code)
+    );
+
+    CREATE TABLE IF NOT EXISTS shipping_carriers (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      provider TEXT NOT NULL,  -- aramex|bosta|jnt|fedex|custom
+      config_json TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      flat_rate REAL NOT NULL DEFAULT 0,
+      free_above REAL,
+      estimated_days INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS payment_gateways (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      provider TEXT NOT NULL,  -- paymob|fawry|stripe|paypal|cod|bank_transfer
+      config_json TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      surcharge_percent REAL NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS store_order_status_history (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL REFERENCES store_orders(id) ON DELETE CASCADE,
+      from_status TEXT,
+      to_status TEXT NOT NULL,
+      note TEXT,
+      changed_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      changed_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS wishlists (
+      id TEXT PRIMARY KEY,
+      customer_id TEXT NOT NULL REFERENCES store_customers(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(customer_id, product_id)
+    );
+
+    -- Augment products with store-specific fields (no-op if columns exist)
+    -- SQLite doesn't support IF NOT EXISTS on ADD COLUMN, so we attempt and
+    -- swallow errors; see migration block in JS below.
+
+    -- Augment store_orders for full e-commerce flow
+    -- (created below via migration block to handle column additions safely)
+  `);
+
+  // ---- Idempotent column-add migrations -------------------------------
+  // SQLite has no IF NOT EXISTS for ADD COLUMN, so we probe and try-catch.
+  function pragmaCols(table) {
+    return new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((r) => r.name));
+  }
+  function maybeAdd(table, name, def) {
+    const cols = pragmaCols(table);
+    if (!cols.has(name)) {
+      try {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${def}`);
+      } catch (err) {
+        console.warn(`[SystemAlaa] could not add ${table}.${name}:`, err.message);
+      }
+    }
+  }
+  maybeAdd('products', 'store_visible', 'INTEGER NOT NULL DEFAULT 1');
+  maybeAdd('products', 'store_price', 'REAL');
+  maybeAdd('products', 'store_description', 'TEXT');
+  maybeAdd('products', 'store_image_urls', 'TEXT');
+  maybeAdd('products', 'store_featured', 'INTEGER NOT NULL DEFAULT 0');
+  maybeAdd('products', 'weight_kg', 'REAL NOT NULL DEFAULT 0');
+
+  maybeAdd('store_orders', 'order_number', 'INTEGER');
+  maybeAdd('store_orders', 'customer_id', 'TEXT REFERENCES store_customers(id) ON DELETE SET NULL');
+  maybeAdd('store_orders', 'address_id', 'TEXT');
+  maybeAdd('store_orders', 'shipping_address_json', 'TEXT');
+  maybeAdd('store_orders', 'shipping_carrier_id', 'TEXT');
+  maybeAdd('store_orders', 'shipping_fee', 'REAL NOT NULL DEFAULT 0');
+  maybeAdd('store_orders', 'payment_gateway_id', 'TEXT');
+  maybeAdd('store_orders', 'payment_status', 'TEXT NOT NULL DEFAULT "unpaid"');
+  maybeAdd('store_orders', 'payment_reference', 'TEXT');
+  maybeAdd('store_orders', 'tracking_number', 'TEXT');
+  maybeAdd('store_orders', 'discount', 'REAL NOT NULL DEFAULT 0');
+  maybeAdd('store_orders', 'coupon_id', 'TEXT REFERENCES coupons(id) ON DELETE SET NULL');
+  maybeAdd('store_orders', 'subtotal', 'REAL NOT NULL DEFAULT 0');
+  maybeAdd('store_orders', 'tax', 'REAL NOT NULL DEFAULT 0');
+  maybeAdd('store_orders', 'notes', 'TEXT');
+  maybeAdd('store_orders', 'updated_at', 'TEXT');
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_store_settings_slug ON store_settings(slug);
+    CREATE INDEX IF NOT EXISTS idx_store_customers_tenant ON store_customers(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_store_orders_status ON store_orders(status);
+    CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(tenant_id, code);
+    CREATE INDEX IF NOT EXISTS idx_carriers_tenant ON shipping_carriers(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_gateways_tenant ON payment_gateways(tenant_id);
   `);
 }
 
@@ -466,6 +649,7 @@ const SENSITIVE = {
   app_users: new Set(['two_factor_secret', 'backup_codes']),
   clients: new Set(['phone']),
   suppliers: new Set(['phone']),
+  store_customers: new Set(['phone']),
 };
 
 function encryptRow(table, row) {

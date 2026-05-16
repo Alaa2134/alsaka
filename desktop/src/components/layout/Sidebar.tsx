@@ -87,10 +87,18 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "المتجر والتواصل",
+    title: "المتجر الإلكتروني",
     items: [
       { to: "/store-management", label: "إدارة المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
-      { to: "/store-orders", label: "طلبات المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
+      { to: "/store-orders", label: "طلبات المتجر", icon: <ListChecks className="h-4 w-4" />, minRole: "manager" },
+      { to: "/coupons", label: "كوبونات الخصم", icon: <KeyRound className="h-4 w-4" />, minRole: "manager" },
+      { to: "/shipping-carriers", label: "شركات الشحن", icon: <Banknote className="h-4 w-4" />, minRole: "admin" },
+      { to: "/payment-gateways", label: "وسائل الدفع", icon: <Banknote className="h-4 w-4" />, minRole: "admin" },
+    ],
+  },
+  {
+    title: "التواصل",
+    items: [
       { to: "/whatsapp-settings", label: "واتساب", icon: <Send className="h-4 w-4" />, minRole: "admin" },
       { to: "/internal-chat", label: "المحادثات", icon: <MessageSquare className="h-4 w-4" />, minRole: "manager" },
     ],

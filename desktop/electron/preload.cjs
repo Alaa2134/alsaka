@@ -63,6 +63,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
     repostSalesInvoice: (payload) => invoke('acc:repost-sales-invoice', payload),
   },
 
+  // Storefront management
+  store: {
+    getSettings: (tenantId) => invoke('store:get-settings', { tenantId }),
+    ensureSettings: (payload) => invoke('store:ensure-settings', payload),
+    updateSettings: (payload) => invoke('store:update-settings', payload),
+    feed: (slug) => invoke('store:feed', { slug }),
+    validateCoupon: (payload) => invoke('store:validate-coupon', payload),
+    quoteShipping: (payload) => invoke('store:quote-shipping', payload),
+    placeOrder: (payload) => invoke('store:place-order', payload),
+    updateOrderStatus: (payload) => invoke('store:update-order-status', payload),
+    trackOrder: (payload) => invoke('store:track-order', payload),
+    listProviders: () => invoke('store:list-providers'),
+    createCheckout: (payload) => invoke('store:create-checkout', payload),
+    exportFeed: (payload) => invoke('store:export-feed', payload),
+  },
+
   // Licensing (single-device activation)
   licensing: {
     status: () => invoke('lic:status'),

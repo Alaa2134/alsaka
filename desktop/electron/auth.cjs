@@ -7,6 +7,7 @@ const dbMod = require('./db.cjs');
 const { deviceFingerprint } = require('./crypto.cjs');
 const accounting = require('./accounting.cjs');
 const security = require('./security.cjs');
+const store = require('./store.cjs');
 
 const BCRYPT_COST = 12;
 
@@ -16,8 +17,11 @@ function ensureSeedTenantAndAdmin() {
   if (tenantCount > 0) {
     // Tenant exists but may have been seeded before the accounting tables
     // were added — make sure the chart of accounts is in place.
-    const tenants = db.prepare(`SELECT id FROM tenants`).all();
-    for (const t of tenants) accounting.ensureChartOfAccounts(t.id);
+    const tenants = db.prepare(`SELECT id, name FROM tenants`).all();
+    for (const t of tenants) {
+      accounting.ensureChartOfAccounts(t.id);
+      store.ensureStoreSettings(t.id, t.name);
+    }
     return;
   }
 
@@ -42,6 +46,10 @@ function ensureSeedTenantAndAdmin() {
 
   // Seed the standard Arabic chart of accounts + system-account mapping.
   accounting.ensureChartOfAccounts(tenantId);
+
+  // Bootstrap the storefront so the new tenant has a published shop with
+  // a unique slug as soon as the desktop app boots.
+  store.ensureStoreSettings(tenantId, 'SystemAlaa');
 }
 
 function recordEvent({ tenantId, userId, eventType, metadata }) {

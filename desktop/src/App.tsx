@@ -25,6 +25,11 @@ import { PaymentVouchersScreen } from "@/screens/PaymentVouchersScreen";
 import { WhatsAppSettingsScreen } from "@/screens/WhatsAppSettingsScreen";
 import { AuditLogScreen } from "@/screens/AuditLogScreen";
 import { ActivationScreen } from "@/screens/ActivationScreen";
+import { StoreManagementScreen } from "@/screens/StoreManagementScreen";
+import { StoreOrdersScreen } from "@/screens/StoreOrdersScreen";
+import { CouponsScreen } from "@/screens/CouponsScreen";
+import { ShippingCarriersScreen } from "@/screens/ShippingCarriersScreen";
+import { PaymentGatewaysScreen } from "@/screens/PaymentGatewaysScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -61,8 +66,6 @@ const STUBS: Array<{
   { path: "/warehouses", title: "المخازن", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/reports", title: "التقارير التشغيلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/purchase-invoices", title: "فواتير المشتريات", allow: ["system_manager", "company_admin", "admin", "manager"] },
-  { path: "/store-management", title: "إدارة المتجر", allow: ["system_manager", "company_admin", "admin", "manager"] },
-  { path: "/store-orders", title: "طلبات المتجر", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/internal-chat", title: "المحادثات الداخلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/users", title: "المستخدمون", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/tenants", title: "الشركات", allow: ["system_manager"] },
@@ -206,6 +209,46 @@ export default function App() {
                       element={
                         <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
                           <SP><ActivationScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="store-management"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><StoreManagementScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="store-orders"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><StoreOrdersScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="coupons"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><CouponsScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="shipping-carriers"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
+                          <SP><ShippingCarriersScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="payment-gateways"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
+                          <SP><PaymentGatewaysScreen /></SP>
                         </ProtectedRoute>
                       }
                     />

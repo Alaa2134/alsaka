@@ -39,6 +39,9 @@ const TITLES: Record<string, string> = {
   "/invoice-page-settings": "إعدادات صفحة الفاتورة",
   "/links": "إدارة الروابط",
   "/activation": "الترخيص والتفعيل",
+  "/coupons": "كوبونات الخصم",
+  "/shipping-carriers": "شركات الشحن",
+  "/payment-gateways": "وسائل الدفع",
 };
 
 export function AppShell() {

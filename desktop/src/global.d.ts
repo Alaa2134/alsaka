@@ -110,6 +110,21 @@ declare global {
       repostSalesInvoice(payload: { tenantId: string; invoiceId: string; userId?: string }): Promise<IpcResult<{ ok: boolean }>>;
     };
 
+    store: {
+      getSettings(tenantId: string): Promise<IpcResult<any>>;
+      ensureSettings(payload: { tenantId: string; tenantName: string }): Promise<IpcResult<any>>;
+      updateSettings(payload: { tenantId: string; patch: Record<string, unknown> }): Promise<IpcResult<any>>;
+      feed(slug: string): Promise<IpcResult<any>>;
+      validateCoupon(payload: { tenantId: string; code: string; subtotal: number }): Promise<IpcResult<any>>;
+      quoteShipping(payload: { tenantId: string; carrierId: string; subtotal: number }): Promise<IpcResult<{ fee: number; etaDays: number | null }>>;
+      placeOrder(payload: any): Promise<IpcResult<{ ok: boolean; order: any }>>;
+      updateOrderStatus(payload: { tenantId: string; orderId: string; status: string; note?: string; userId?: string }): Promise<IpcResult<any>>;
+      trackOrder(payload: { orderNumber: number | string; phone?: string }): Promise<IpcResult<any>>;
+      listProviders(): Promise<IpcResult<{ shipping: string[]; payments: string[] }>>;
+      createCheckout(payload: { tenantId: string; gatewayId: string; order: any }): Promise<IpcResult<any>>;
+      exportFeed(payload: { slug: string; outputPath?: string }): Promise<IpcResult<{ ok: boolean; path: string }>>;
+    };
+
     licensing: {
       status(): Promise<IpcResult<{
         active: boolean;
