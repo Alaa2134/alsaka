@@ -89,7 +89,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Auth
   auth: {
+    boundUser: () => invoke('auth:bound-user'),
     login: (payload) => invoke('auth:login', payload),
+    loginBound: (payload) => invoke('auth:login-bound', payload),
+    claimDevice: (payload) => invoke('auth:claim-device', payload),
+    releaseDevice: (payload) => invoke('auth:release-device', payload),
     verifyAccessCode: (payload) => invoke('auth:verify-access-code', payload),
     setAccessCode: (payload) => invoke('auth:set-access-code', payload),
     setup2fa: (payload) => invoke('auth:setup-2fa', payload),

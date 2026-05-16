@@ -18,6 +18,28 @@ SQLite database (`better-sqlite3`).
 | Crypto | AES-256-GCM at rest for `two_factor_secret`, `backup_codes`, `clients.phone` |
 | Build | electron-builder → NSIS single-file `.exe` for Windows |
 
+## Login flow (one device per account)
+
+The app uses a two-step login model that **binds each account to exactly
+one machine**:
+
+1. **First time on a fresh device** — the user enters the *vendor-issued*
+   email + temporary password, then picks their own new password. The
+   account is now hardware-bound to this machine and the temporary
+   password is destroyed.
+2. **Every subsequent launch on the same machine** — the login screen
+   shows the bound account's email as a label and asks for the chosen
+   password only. The password must be entered every time (no "remember
+   me" — closing the app logs you out).
+3. **Any other machine** — the same credentials are refused with
+   `device-mismatch`. The bound account simply cannot log in elsewhere.
+
+If a customer changes hardware, the *Activation* screen has a "فك ربط
+هذا الجهاز" action that releases the binding and assigns a new temporary
+password. The customer then claims their account again on the new
+machine. The `system_manager` can do the same remotely via
+`window.electronAPI.auth.releaseDevice({ userId, newTemporaryPassword })`.
+
 ## First run
 
 ```bash
@@ -29,9 +51,11 @@ npm run dev:electron   # spins Vite + Electron with live reload
 Default seeded admin (created on first launch):
 
 ```
-admin@systemalaa.app / admin
-Access code: 000000  (set a new one from the access-code screen)
+admin@systemalaa.app / admin    ← temporary, only works once
 ```
+
+On first login you'll be asked to pick your own password — that's the
+one you use from now on, on this device only.
 
 The SQLite file lives at the Electron `userData` dir
 (`%APPDATA%/SystemAlaa/systemalaa.db` on Windows). Daily JSON backups land

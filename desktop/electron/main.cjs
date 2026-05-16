@@ -462,7 +462,11 @@ ipcMain.handle('wa:send-image', safe((_e, payload) => whatsapp.sendImage(payload
 whatsapp.onUpdate((state) => send('wa:state-changed', state));
 
 // --- Auth IPC ---
+ipcMain.handle('auth:bound-user', safe(() => auth.boundUser()));
 ipcMain.handle('auth:login', safe((_e, payload) => auth.login(payload)));
+ipcMain.handle('auth:login-bound', safe((_e, payload) => auth.loginBound(payload)));
+ipcMain.handle('auth:claim-device', safe((_e, payload) => auth.claimDevice(payload)));
+ipcMain.handle('auth:release-device', safe((_e, payload) => auth.releaseDevice(payload)));
 ipcMain.handle('auth:verify-access-code', safe((_e, payload) => auth.verifyAccessCode(payload)));
 ipcMain.handle('auth:set-access-code', safe((_e, payload) => auth.setAccessCode(payload)));
 ipcMain.handle('auth:setup-2fa', safe((_e, payload) => auth.setupTwoFactor(payload)));

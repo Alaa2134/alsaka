@@ -13,101 +13,121 @@ const STORAGE_KEY = "systemalaa.session";
 
 interface SessionState {
   user: AuthUser | null;
-  accessCodeVerified: boolean;
-  twoFactorVerified: boolean;
-  needsTwoFactor: boolean;
-  needsAccessCode: boolean;
+  // The user account already bound to this machine, if any. Drives the
+  // password-only vs first-time login flows on the LoginScreen.
+  boundUser: AuthUser | null;
+  // Set once we've fetched boundUser from the main process so the login
+  // screen doesn't flash the wrong form on startup.
+  boundLoaded: boolean;
 }
 
 interface AuthCtx extends SessionState {
-  login: (email: string, password: string) => Promise<LoginResult>;
-  verifyAccessCode: (code: string) => Promise<{ ok: boolean; error?: string }>;
-  verifyTwoFactor: (code: string) => Promise<{ ok: boolean; error?: string }>;
+  refreshBoundUser: () => Promise<void>;
+  // First-time activation on a fresh device. The vendor-issued credentials
+  // become useless after this — only the new password works, only here.
+  claimDevice: (args: {
+    email: string;
+    currentPassword: string;
+    newPassword: string;
+  }) => Promise<{ ok: boolean; error?: string }>;
+  // Password-only login on a device that has already been claimed.
+  loginBound: (password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
-  // Trigger from InactivityLock when the user has been idle.
   lock: () => void;
 }
 
 const initial: SessionState = {
   user: null,
-  accessCodeVerified: false,
-  twoFactorVerified: true,
-  needsTwoFactor: false,
-  needsAccessCode: false,
+  boundUser: null,
+  boundLoaded: false,
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
 
-function load(): SessionState {
+function loadPersisted(): Pick<SessionState, "user"> {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...initial, ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.user) return { user: parsed.user };
+    }
   } catch {
     /* ignore */
   }
-  return initial;
+  return { user: null };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<SessionState>(() => load());
+  const [state, setState] = useState<SessionState>(() => ({
+    ...initial,
+    ...loadPersisted(),
+  }));
 
+  // Persist user across reloads in this session (auto-cleared on app quit).
   useEffect(() => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (state.user) sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ user: state.user }));
+      else sessionStorage.removeItem(STORAGE_KEY);
     } catch {
       /* ignore */
     }
-  }, [state]);
+  }, [state.user]);
 
-  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
-    const result = await unwrap(api().auth.login({ email, password }));
-    if (!result.ok || !result.user) return result;
-    setState({
-      user: result.user,
-      accessCodeVerified: !result.needsAccessCode,
-      twoFactorVerified: !result.needsTwoFactor,
-      needsTwoFactor: !!result.needsTwoFactor,
-      needsAccessCode: !!result.needsAccessCode,
-    });
+  const refreshBoundUser = useCallback(async () => {
+    try {
+      const res = await unwrap(api().auth.boundUser());
+      setState((s) => ({
+        ...s,
+        boundUser: res.bound ? (res.user as AuthUser) : null,
+        boundLoaded: true,
+      }));
+    } catch {
+      setState((s) => ({ ...s, boundLoaded: true }));
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshBoundUser();
+  }, [refreshBoundUser]);
+
+  const claimDevice = useCallback(
+    async ({ email, currentPassword, newPassword }: {
+      email: string;
+      currentPassword: string;
+      newPassword: string;
+    }) => {
+      const result = await unwrap(
+        api().auth.claimDevice({ email, currentPassword, newPassword }),
+      );
+      if (result.ok && result.user) {
+        setState((s) => ({ ...s, user: result.user!, boundUser: result.user! }));
+      }
+      return result;
+    },
+    [],
+  );
+
+  const loginBound = useCallback(async (password: string) => {
+    const result = await unwrap(api().auth.loginBound({ password }));
+    if (result.ok && result.user) {
+      setState((s) => ({ ...s, user: result.user!, boundUser: result.user! }));
+    }
     return result;
   }, []);
 
-  const verifyAccessCode = useCallback(async (code: string) => {
-    if (!state.user) return { ok: false, error: "no-session" };
-    const res = await unwrap(
-      api().auth.verifyAccessCode({ userId: state.user.id, code }),
-    );
-    if (res.ok) setState((s) => ({ ...s, accessCodeVerified: true }));
-    return res;
-  }, [state.user]);
-
-  const verifyTwoFactor = useCallback(async (code: string) => {
-    if (!state.user) return { ok: false, error: "no-session" };
-    const res = await unwrap(api().auth.check2fa({ userId: state.user.id, code }));
-    if (res.ok) setState((s) => ({ ...s, twoFactorVerified: true, needsTwoFactor: false }));
-    return res;
-  }, [state.user]);
-
   const logout = useCallback(() => {
-    setState(initial);
-    try {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
+    setState((s) => ({ ...s, user: null }));
   }, []);
 
+  // The "lock" hook from InactivityLock — keep the boundUser so the lock
+  // screen can render the password-only prompt directly.
   const lock = useCallback(() => {
-    setState((s) =>
-      s.user
-        ? { ...s, accessCodeVerified: false, needsAccessCode: true }
-        : s,
-    );
+    setState((s) => ({ ...s, user: null }));
   }, []);
 
   const value = useMemo<AuthCtx>(
-    () => ({ ...state, login, verifyAccessCode, verifyTwoFactor, logout, lock }),
-    [state, login, verifyAccessCode, verifyTwoFactor, logout, lock],
+    () => ({ ...state, refreshBoundUser, claimDevice, loginBound, logout, lock }),
+    [state, refreshBoundUser, claimDevice, loginBound, logout, lock],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

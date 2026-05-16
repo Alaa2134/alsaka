@@ -11,7 +11,6 @@ import { AppShell } from "@/components/layout/AppShell";
 import { DesktopBridge } from "@/components/layout/DesktopBridge";
 import { Spinner } from "@/components/ui/spinner";
 import { LoginScreen } from "@/screens/LoginScreen";
-import { AccessCodeScreen } from "@/screens/AccessCodeScreen";
 import { DashboardScreen } from "@/screens/DashboardScreen";
 import { InvoiceScreen } from "@/screens/InvoiceScreen";
 import { InvoicesListScreen } from "@/screens/InvoicesListScreen";
@@ -90,7 +89,6 @@ export default function App() {
                 <Toaster richColors position="top-center" dir="rtl" />
                 <Routes>
                   <Route path="/login" element={<LoginScreen />} />
-                  <Route path="/access-code" element={<AccessCodeScreen />} />
 
                   <Route element={
                     <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier", "viewer"]}>

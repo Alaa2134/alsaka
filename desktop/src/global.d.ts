@@ -37,6 +37,7 @@ declare global {
     is_active: boolean;
     two_factor_enabled: boolean;
     last_login: string | null;
+    device_bound: boolean;
   }
 
   interface LoginResult {
@@ -45,6 +46,11 @@ declare global {
     user?: AuthUser;
     needsTwoFactor?: boolean;
     needsAccessCode?: boolean;
+  }
+
+  interface BoundUserResult {
+    bound: boolean;
+    user?: AuthUser;
   }
 
   interface DesktopAPI {
@@ -149,7 +155,18 @@ declare global {
     };
 
     auth: {
+      boundUser(): Promise<IpcResult<BoundUserResult>>;
       login(payload: { email: string; password: string }): Promise<IpcResult<LoginResult>>;
+      loginBound(payload: { password: string }): Promise<IpcResult<LoginResult>>;
+      claimDevice(payload: {
+        email: string;
+        currentPassword: string;
+        newPassword: string;
+      }): Promise<IpcResult<{ ok: boolean; error?: string; user?: AuthUser }>>;
+      releaseDevice(payload: {
+        userId: string;
+        newTemporaryPassword?: string | null;
+      }): Promise<IpcResult<{ ok: boolean; error?: string }>>;
       verifyAccessCode(payload: { userId: string; code: string }): Promise<IpcResult<{ ok: boolean; error?: string }>>;
       setAccessCode(payload: { userId: string; code: string }): Promise<IpcResult<{ ok: boolean; error?: string }>>;
       setup2fa(payload: { userId: string }): Promise<IpcResult<{ ok: boolean; secret?: string; otpauth?: string; error?: string }>>;

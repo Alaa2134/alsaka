@@ -64,7 +64,179 @@ function sanitizeUser(user) {
     is_active: !!decrypted.is_active,
     two_factor_enabled: !!decrypted.two_factor_secret,
     last_login: decrypted.last_login,
+    device_bound: !!decrypted.device_fingerprint,
   };
+}
+
+// Returns the user account that has already claimed this machine, or null
+// if the device is still "fresh" and needs first-time activation. Used by
+// the login screen to switch between the two flows.
+function boundUser() {
+  const db = dbMod.get();
+  const fp = deviceFingerprint();
+  const row = db
+    .prepare(
+      `SELECT * FROM app_users WHERE device_fingerprint = ? AND is_active = 1 LIMIT 1`,
+    )
+    .get(fp);
+  if (!row) return { bound: false };
+  const u = sanitizeUser(row);
+  return { bound: true, user: u };
+}
+
+// First-time activation on a fresh device. Validates the vendor-issued
+// credentials, then sets the customer's chosen password AND binds the
+// account to this exact machine's hardware fingerprint. After this call
+// the user logs in with `loginBound({ password })` from now on, and any
+// attempt to use these credentials on another machine is rejected.
+function claimDevice({ email, currentPassword, newPassword }) {
+  const db = dbMod.get();
+  const lockKey = `claim:${String(email || '').toLowerCase()}`;
+  if (security.isLocked(lockKey)) {
+    return { ok: false, error: 'locked-out' };
+  }
+  const user = db
+    .prepare(`SELECT * FROM app_users WHERE LOWER(email) = LOWER(?) AND is_active = 1`)
+    .get(email);
+  if (!user) {
+    security.recordFailure(lockKey);
+    return { ok: false, error: 'invalid-credentials' };
+  }
+  // If the user already claimed a different machine, refuse outright. The
+  // vendor would have to manually unbind it server-side / from the admin
+  // tooling before this can succeed elsewhere.
+  const fp = deviceFingerprint();
+  if (user.device_fingerprint && user.device_fingerprint !== fp) {
+    security.appendAudit({
+      tenantId: user.tenant_id,
+      userId: user.id,
+      action: 'claim.device-mismatch',
+    });
+    return { ok: false, error: 'device-mismatch' };
+  }
+  if (!security.verifyPassword(currentPassword, user.password_hash)) {
+    const status = security.recordFailure(lockKey);
+    security.appendAudit({
+      tenantId: user.tenant_id,
+      userId: user.id,
+      action: 'claim.bad-password',
+      data: status,
+    });
+    return { ok: false, error: 'invalid-credentials' };
+  }
+  if (!newPassword || String(newPassword).length < 6) {
+    return { ok: false, error: 'weak-password' };
+  }
+  // Refuse passwords identical to the temporary one to force a real change.
+  if (String(newPassword) === String(currentPassword)) {
+    return { ok: false, error: 'same-password' };
+  }
+
+  const passwordHash = security.hashPassword(String(newPassword));
+  db.prepare(
+    `UPDATE app_users SET password_hash = ?, device_fingerprint = ?, last_login = datetime('now') WHERE id = ?`,
+  ).run(passwordHash, fp, user.id);
+  security.resetFailures(lockKey);
+  security.appendAudit({
+    tenantId: user.tenant_id,
+    userId: user.id,
+    action: 'claim.success',
+  });
+  recordEvent({
+    tenantId: user.tenant_id,
+    userId: user.id,
+    eventType: 'device.claimed',
+  });
+
+  return {
+    ok: true,
+    user: sanitizeUser({ ...user, password_hash: passwordHash, device_fingerprint: fp }),
+  };
+}
+
+// Password-only login on a device that has already been claimed. Looks up
+// the bound user by hardware fingerprint, then verifies the password. The
+// email never crosses the wire from the renderer — the user just types
+// their password.
+function loginBound({ password }) {
+  const db = dbMod.get();
+  const fp = deviceFingerprint();
+  const user = db
+    .prepare(
+      `SELECT * FROM app_users WHERE device_fingerprint = ? AND is_active = 1 LIMIT 1`,
+    )
+    .get(fp);
+  if (!user) return { ok: false, error: 'not-bound' };
+
+  const lockKey = `bound:${user.id}`;
+  if (security.isLocked(lockKey)) {
+    return { ok: false, error: 'locked-out' };
+  }
+
+  if (!security.verifyPassword(password, user.password_hash)) {
+    const status = security.recordFailure(lockKey);
+    security.appendAudit({
+      tenantId: user.tenant_id,
+      userId: user.id,
+      action: 'login.failed',
+      data: { mode: 'bound', ...status },
+    });
+    recordEvent({
+      tenantId: user.tenant_id,
+      userId: user.id,
+      eventType: 'login.failed',
+      metadata: { mode: 'bound' },
+    });
+    return { ok: false, error: 'invalid-credentials' };
+  }
+
+  security.resetFailures(lockKey);
+  if (user.password_hash && user.password_hash.startsWith('$2')) {
+    db.prepare(`UPDATE app_users SET password_hash = ? WHERE id = ?`).run(
+      security.hashPassword(password),
+      user.id,
+    );
+  }
+  db.prepare(`UPDATE app_users SET last_login = datetime('now') WHERE id = ?`).run(user.id);
+  security.appendAudit({
+    tenantId: user.tenant_id,
+    userId: user.id,
+    action: 'login.success',
+    data: { mode: 'bound' },
+  });
+  recordEvent({
+    tenantId: user.tenant_id,
+    userId: user.id,
+    eventType: 'login.success',
+    metadata: { mode: 'bound' },
+  });
+  return { ok: true, user: sanitizeUser(user) };
+}
+
+// Vendor-only / system_manager utility: forcibly release a user's binding
+// so the same account can be re-claimed on a new machine. The new machine
+// will still need the user's password (or the vendor must reset it first).
+function releaseDevice({ userId, newTemporaryPassword = null }) {
+  const db = dbMod.get();
+  const u = db.prepare(`SELECT id, email, tenant_id FROM app_users WHERE id = ?`).get(userId);
+  if (!u) return { ok: false, error: 'no-user' };
+  const update = {
+    device_fingerprint: null,
+  };
+  if (newTemporaryPassword) {
+    update.password_hash = security.hashPassword(newTemporaryPassword);
+  }
+  const cols = Object.keys(update);
+  db.prepare(
+    `UPDATE app_users SET ${cols.map((c) => `${c} = @${c}`).join(', ')} WHERE id = @id`,
+  ).run({ ...update, id: userId });
+  security.appendAudit({
+    tenantId: u.tenant_id,
+    userId,
+    action: 'device.released',
+    data: { resetPassword: !!newTemporaryPassword },
+  });
+  return { ok: true };
 }
 
 function login({ email, password }) {
@@ -99,6 +271,18 @@ function login({ email, password }) {
       metadata: { reason: 'bad-password' },
     });
     return { ok: false, error: 'invalid-credentials' };
+  }
+
+  // Hard device binding: once an account has claimed a machine, the same
+  // credentials are useless anywhere else even via the email+password path.
+  const fp = deviceFingerprint();
+  if (user.device_fingerprint && user.device_fingerprint !== fp) {
+    security.appendAudit({
+      tenantId: user.tenant_id,
+      userId: user.id,
+      action: 'login.device-mismatch',
+    });
+    return { ok: false, error: 'device-mismatch' };
   }
 
   // Successful login → reset lockout counter and opportunistically upgrade
@@ -285,6 +469,10 @@ function createUser({ tenantId, email, name, password, role = 'cashier' }) {
 module.exports = {
   ensureSeedTenantAndAdmin,
   login,
+  loginBound,
+  claimDevice,
+  boundUser,
+  releaseDevice,
   verifyAccessCode,
   setAccessCode,
   setupTwoFactor,

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { ShieldCheck, KeyRound, Sparkles, AlertTriangle } from "lucide-react";
+import { ShieldCheck, KeyRound, Sparkles, AlertTriangle, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import { api, unwrap } from "@/lib/ipc";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +20,11 @@ interface Status {
 }
 
 export function ActivationScreen() {
+  const { user, refreshBoundUser, logout } = useAuth();
   const [status, setStatus] = useState<Status | null>(null);
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
+  const [tempPassword, setTempPassword] = useState("");
 
   const refresh = useCallback(async () => {
     try {
@@ -80,6 +83,32 @@ export function ActivationScreen() {
       toast.success("تم توليد كود تجريبي — اضغط تفعيل");
     } catch (err) {
       toast.error(String((err as Error).message || err));
+    }
+  };
+
+  const releaseThisDevice = async () => {
+    if (!user) return;
+    if (!tempPassword || tempPassword.length < 6) {
+      toast.error("اكتب باسورد مؤقت جديد (٦ أحرف على الأقل) ليستخدمه العميل في إعادة التفعيل");
+      return;
+    }
+    if (!confirm("سيتم فك ربط هذا الجهاز عن حسابك وتعيين الباسورد المؤقت. سيتم تسجيل خروجك. تأكيد؟")) return;
+    setBusy(true);
+    try {
+      const res = await unwrap(
+        api().auth.releaseDevice({ userId: user.id, newTemporaryPassword: tempPassword }),
+      );
+      if (res.ok) {
+        toast.success("تم فك ربط الجهاز ✓");
+        await refreshBoundUser();
+        logout();
+      } else {
+        toast.error(res.error || "تعذر الفك");
+      }
+    } catch (err) {
+      toast.error(String((err as Error).message || err));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -174,6 +203,34 @@ export function ActivationScreen() {
           </div>
         </CardContent>
       </Card>
+
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Unlink className="h-4 w-4" /> فك ربط هذا الجهاز عن حسابي
+            </CardTitle>
+            <CardDescription>
+              مفيد لو هتنقل التطبيق على جهاز آخر. هيتم تعيين باسورد مؤقت جديد، وعند تشغيل التطبيق على
+              أي جهاز هيدخل العميل بـ (بريده الإلكتروني + الباسورد المؤقت ده) ويختار باسورد جديد.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>باسورد مؤقت جديد</Label>
+              <Input
+                type="password"
+                value={tempPassword}
+                onChange={(e) => setTempPassword(e.target.value)}
+                placeholder="مثلاً: Temp-1234"
+              />
+            </div>
+            <Button variant="destructive" onClick={releaseThisDevice} disabled={busy}>
+              <Unlink className="h-4 w-4" /> فك ربط الجهاز
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
