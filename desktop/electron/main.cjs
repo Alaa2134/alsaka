@@ -18,6 +18,10 @@ const os = require('node:os');
 const dbMod = require('./db.cjs');
 const repo = require('./repo.cjs');
 const auth = require('./auth.cjs');
+const accounting = require('./accounting.cjs');
+const whatsapp = require('./whatsapp.cjs');
+const security = require('./security.cjs');
+const licensing = require('./licensing.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -98,7 +102,23 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html')).catch((err) => {
       console.error('[SystemAlaa] load failed', err);
     });
+    // Hard-disable DevTools and unsafe navigation in production builds.
+    mainWindow.webContents.on('devtools-opened', () => mainWindow.webContents.closeDevTools());
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+        event.preventDefault();
+      }
+    });
   }
+
+  // Refuse any navigation away from the app's own origin.
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const allowed = isDev ? DEV_URL : 'file://';
+    if (!url.startsWith(allowed)) {
+      event.preventDefault();
+      if (/^https?:\/\//.test(url)) shell.openExternal(url);
+    }
+  });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
@@ -393,6 +413,54 @@ ipcMain.handle('db:save-invoice', safe((_e, payload) => repo.saveInvoice(payload
 ipcMain.handle('db:search-products', safe((_e, opts) => repo.searchProducts(opts)));
 ipcMain.handle('db:dashboard', safe((_e, opts) => repo.dashboardStats(opts)));
 
+// --- Accounting IPC ---
+ipcMain.handle('acc:trial-balance', safe((_e, opts) => accounting.trialBalance(opts)));
+ipcMain.handle('acc:income-statement', safe((_e, opts) => accounting.incomeStatement(opts)));
+ipcMain.handle('acc:balance-sheet', safe((_e, opts) => accounting.balanceSheet(opts)));
+ipcMain.handle('acc:ledger', safe((_e, opts) => accounting.generalLedger(opts)));
+ipcMain.handle('acc:ar-aging', safe((_e, opts) => accounting.arAging(opts)));
+ipcMain.handle('acc:post-journal', safe((_e, payload) => accounting.postJournalEntry(payload)));
+ipcMain.handle('acc:save-purchase', safe((_e, payload) => accounting.savePurchaseInvoice(payload)));
+ipcMain.handle('acc:save-receipt', safe((_e, payload) => accounting.saveReceiptVoucher(payload)));
+ipcMain.handle('acc:save-payment', safe((_e, payload) => accounting.savePaymentVoucher(payload)));
+ipcMain.handle('acc:list-system-accounts', safe((_e, { tenantId }) => accounting.listSystemAccounts(tenantId)));
+ipcMain.handle(
+  'acc:set-system-account',
+  safe((_e, { tenantId, key, accountId }) => {
+    accounting.setSystemAccount(tenantId, key, accountId);
+    return { ok: true };
+  }),
+);
+ipcMain.handle(
+  'acc:repost-sales-invoice',
+  safe((_e, { tenantId, invoiceId, userId }) => {
+    accounting.postSalesInvoice({ tenantId, invoiceId, userId });
+    return { ok: true };
+  }),
+);
+
+// --- Licensing IPC ---
+ipcMain.handle('lic:status', safe(() => licensing.status()));
+ipcMain.handle('lic:activate', safe((_e, { key }) => licensing.activate(key)));
+ipcMain.handle('lic:deactivate', safe(() => licensing.deactivate()));
+// Vendor-only convenience: issue a key locally for testing. In production
+// the issuer runs on a server with the real secret — never ship this UI.
+ipcMain.handle('lic:issue', safe((_e, payload) => ({ key: licensing.issue(payload || {}) })));
+
+// --- Security IPC ---
+ipcMain.handle('sec:verify-audit-chain', safe(() => security.verifyAuditChain()));
+ipcMain.handle('sec:recent-audit', safe((_e, { limit = 100 } = {}) => security.recentAudit(limit)));
+
+// --- WhatsApp IPC ---
+ipcMain.handle('wa:initialize', safe(() => whatsapp.initialize()));
+ipcMain.handle('wa:logout', safe(() => whatsapp.logout()));
+ipcMain.handle('wa:state', safe(() => whatsapp.getState()));
+ipcMain.handle('wa:send-text', safe((_e, payload) => whatsapp.sendText(payload)));
+ipcMain.handle('wa:send-image', safe((_e, payload) => whatsapp.sendImage(payload)));
+
+// Push state updates from the WA client to the renderer
+whatsapp.onUpdate((state) => send('wa:state-changed', state));
+
 // --- Auth IPC ---
 ipcMain.handle('auth:login', safe((_e, payload) => auth.login(payload)));
 ipcMain.handle('auth:verify-access-code', safe((_e, payload) => auth.verifyAccessCode(payload)));
@@ -422,6 +490,7 @@ if (!gotLock) {
     ensureDirs();
     dbMod.open(getDbPath());
     auth.ensureSeedTenantAndAdmin();
+    whatsapp.attachApp(app);
     createWindow();
     createTray();
     registerGlobalShortcuts();

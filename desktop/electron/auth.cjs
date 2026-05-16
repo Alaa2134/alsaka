@@ -5,13 +5,21 @@ const { v4: uuid } = require('uuid');
 const { authenticator } = require('otplib');
 const dbMod = require('./db.cjs');
 const { deviceFingerprint } = require('./crypto.cjs');
+const accounting = require('./accounting.cjs');
+const security = require('./security.cjs');
 
 const BCRYPT_COST = 12;
 
 function ensureSeedTenantAndAdmin() {
   const db = dbMod.get();
   const tenantCount = db.prepare(`SELECT COUNT(*) AS n FROM tenants`).get().n;
-  if (tenantCount > 0) return;
+  if (tenantCount > 0) {
+    // Tenant exists but may have been seeded before the accounting tables
+    // were added — make sure the chart of accounts is in place.
+    const tenants = db.prepare(`SELECT id FROM tenants`).all();
+    for (const t of tenants) accounting.ensureChartOfAccounts(t.id);
+    return;
+  }
 
   const tenantId = uuid();
   db.prepare(
@@ -19,8 +27,8 @@ function ensureSeedTenantAndAdmin() {
   ).run(tenantId, 'SystemAlaa', 'systemalaa');
 
   const adminId = uuid();
-  const passwordHash = bcrypt.hashSync('admin', BCRYPT_COST);
-  const accessHash = bcrypt.hashSync('000000', BCRYPT_COST);
+  const passwordHash = security.hashPassword('admin');
+  const accessHash = security.hashPassword('000000');
   db.prepare(
     `INSERT INTO app_users (id, tenant_id, email, name, password_hash, access_code_hash, role, is_active)
      VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
@@ -31,6 +39,9 @@ function ensureSeedTenantAndAdmin() {
     adminId,
     'system_manager',
   );
+
+  // Seed the standard Arabic chart of accounts + system-account mapping.
+  accounting.ensureChartOfAccounts(tenantId);
 }
 
 function recordEvent({ tenantId, userId, eventType, metadata }) {
@@ -58,22 +69,53 @@ function sanitizeUser(user) {
 
 function login({ email, password }) {
   const db = dbMod.get();
+  const lockKey = `login:${String(email || '').toLowerCase()}`;
+  if (security.isLocked(lockKey)) {
+    security.appendAudit({ action: 'login.locked', data: { email } });
+    return { ok: false, error: 'locked-out' };
+  }
+
   const user = db
     .prepare(`SELECT * FROM app_users WHERE LOWER(email) = LOWER(?) AND is_active = 1`)
     .get(email);
   if (!user) {
+    const status = security.recordFailure(lockKey);
+    security.appendAudit({ action: 'login.failed', data: { email, reason: 'no-user', ...status } });
     recordEvent({ eventType: 'login.failed', metadata: { email, reason: 'no-user' } });
     return { ok: false, error: 'invalid-credentials' };
   }
-  if (!bcrypt.compareSync(password, user.password_hash)) {
-    recordEvent({ tenantId: user.tenant_id, userId: user.id, eventType: 'login.failed', metadata: { reason: 'bad-password' } });
+  if (!security.verifyPassword(password, user.password_hash)) {
+    const status = security.recordFailure(lockKey);
+    security.appendAudit({
+      tenantId: user.tenant_id,
+      userId: user.id,
+      action: 'login.failed',
+      data: { reason: 'bad-password', ...status },
+    });
+    recordEvent({
+      tenantId: user.tenant_id,
+      userId: user.id,
+      eventType: 'login.failed',
+      metadata: { reason: 'bad-password' },
+    });
     return { ok: false, error: 'invalid-credentials' };
+  }
+
+  // Successful login → reset lockout counter and opportunistically upgrade
+  // legacy bcrypt hashes to scrypt.
+  security.resetFailures(lockKey);
+  if (user.password_hash && user.password_hash.startsWith('$2')) {
+    db.prepare(`UPDATE app_users SET password_hash = ? WHERE id = ?`).run(
+      security.hashPassword(password),
+      user.id,
+    );
   }
 
   const decryptedUser = dbMod.decryptRow('app_users', user);
   const needsTwoFactor = !!decryptedUser.two_factor_secret;
 
   db.prepare(`UPDATE app_users SET last_login = datetime('now') WHERE id = ?`).run(user.id);
+  security.appendAudit({ tenantId: user.tenant_id, userId: user.id, action: 'login.success' });
   recordEvent({ tenantId: user.tenant_id, userId: user.id, eventType: 'login.success' });
 
   return {
@@ -100,7 +142,18 @@ function verifyAccessCode({ userId, code }) {
     return { ok: false, error: 'device-mismatch' };
   }
 
-  if (!bcrypt.compareSync(String(code), user.access_code_hash)) {
+  const lockKey = `access_code:${user.id}`;
+  if (security.isLocked(lockKey)) {
+    return { ok: false, error: 'locked-out' };
+  }
+  if (!security.verifyPassword(String(code), user.access_code_hash)) {
+    const status = security.recordFailure(lockKey);
+    security.appendAudit({
+      tenantId: user.tenant_id,
+      userId: user.id,
+      action: 'access_code.failed',
+      data: status,
+    });
     recordEvent({
       tenantId: user.tenant_id,
       userId: user.id,
@@ -108,6 +161,7 @@ function verifyAccessCode({ userId, code }) {
     });
     return { ok: false, error: 'invalid-code' };
   }
+  security.resetFailures(lockKey);
 
   // First successful verify on a fresh user binds the device fingerprint.
   if (!user.device_fingerprint) {
@@ -124,10 +178,11 @@ function verifyAccessCode({ userId, code }) {
 function setAccessCode({ userId, code }) {
   if (!/^\d{6}$/.test(String(code))) return { ok: false, error: 'invalid-format' };
   const db = dbMod.get();
-  const hash = bcrypt.hashSync(String(code), BCRYPT_COST);
+  const hash = security.hashPassword(String(code));
   db.prepare(
     `UPDATE app_users SET access_code_hash = ?, device_fingerprint = NULL WHERE id = ?`,
   ).run(hash, userId);
+  security.appendAudit({ userId, action: 'access_code.set' });
   return { ok: true };
 }
 
@@ -194,11 +249,12 @@ function changePassword({ userId, currentPassword, newPassword }) {
   const db = dbMod.get();
   const user = db.prepare(`SELECT password_hash FROM app_users WHERE id = ?`).get(userId);
   if (!user) return { ok: false, error: 'no-user' };
-  if (!bcrypt.compareSync(currentPassword, user.password_hash)) {
+  if (!security.verifyPassword(currentPassword, user.password_hash)) {
     return { ok: false, error: 'bad-current' };
   }
-  const hash = bcrypt.hashSync(newPassword, BCRYPT_COST);
+  const hash = security.hashPassword(newPassword);
   db.prepare(`UPDATE app_users SET password_hash = ? WHERE id = ?`).run(hash, userId);
+  security.appendAudit({ userId, action: 'password.changed' });
   return { ok: true };
 }
 
@@ -217,7 +273,7 @@ function listUsers({ tenantId }) {
 function createUser({ tenantId, email, name, password, role = 'cashier' }) {
   const db = dbMod.get();
   const id = uuid();
-  const hash = bcrypt.hashSync(password, BCRYPT_COST);
+  const hash = security.hashPassword(password);
   db.prepare(
     `INSERT INTO app_users (id, tenant_id, email, name, password_hash, role, is_active)
      VALUES (?, ?, ?, ?, ?, ?, 1)`,

@@ -18,6 +18,13 @@ import {
   Sun,
   Moon,
   RotateCcw,
+  BookOpen,
+  Receipt,
+  Banknote,
+  Building2,
+  KeyRound,
+  Send,
+  ListChecks,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -32,29 +39,75 @@ interface NavItem {
   minRole: Role;
 }
 
-const NAV: NavItem[] = [
-  { to: "/", label: "لوحة التحكم", icon: <LayoutDashboard className="h-4 w-4" />, minRole: "cashier" },
-  { to: "/invoice", label: "فاتورة جديدة", icon: <FileText className="h-4 w-4" />, minRole: "cashier" },
-  { to: "/invoices", label: "الفواتير", icon: <FileText className="h-4 w-4" />, minRole: "cashier" },
-  { to: "/returns", label: "المرتجعات", icon: <RotateCcw className="h-4 w-4" />, minRole: "cashier" },
-  { to: "/products", label: "المنتجات", icon: <Package className="h-4 w-4" />, minRole: "manager" },
-  { to: "/clients", label: "العملاء", icon: <Users className="h-4 w-4" />, minRole: "manager" },
-  { to: "/categories", label: "التصنيفات", icon: <Layers className="h-4 w-4" />, minRole: "manager" },
-  { to: "/warehouses", label: "المخازن", icon: <Warehouse className="h-4 w-4" />, minRole: "manager" },
-  { to: "/reports", label: "التقارير", icon: <LineChart className="h-4 w-4" />, minRole: "manager" },
-  { to: "/accounting", label: "المحاسبة", icon: <Calculator className="h-4 w-4" />, minRole: "manager" },
-  { to: "/store-management", label: "إدارة المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
-  { to: "/store-orders", label: "طلبات المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
-  { to: "/internal-chat", label: "المحادثات", icon: <MessageSquare className="h-4 w-4" />, minRole: "manager" },
-  { to: "/users", label: "المستخدمون", icon: <Users className="h-4 w-4" />, minRole: "admin" },
-  { to: "/tenants", label: "الشركات", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
-  { to: "/system", label: "لوحة النظام", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
-  { to: "/audit-logs", label: "سجل الأحداث", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
-  { to: "/security-events", label: "أحداث الأمان", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
-  { to: "/notifications", label: "الإشعارات", icon: <Bell className="h-4 w-4" />, minRole: "cashier" },
-  { to: "/whatsapp-settings", label: "إعدادات واتساب", icon: <Settings className="h-4 w-4" />, minRole: "admin" },
-  { to: "/company-settings", label: "إعدادات الشركة", icon: <Settings className="h-4 w-4" />, minRole: "admin" },
-  { to: "/account-settings", label: "حسابي", icon: <Settings className="h-4 w-4" />, minRole: "cashier" },
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const SECTIONS: NavSection[] = [
+  {
+    title: "العام",
+    items: [
+      { to: "/", label: "لوحة التحكم", icon: <LayoutDashboard className="h-4 w-4" />, minRole: "cashier" },
+    ],
+  },
+  {
+    title: "المبيعات",
+    items: [
+      { to: "/invoice", label: "فاتورة جديدة", icon: <FileText className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/invoices", label: "الفواتير", icon: <ListChecks className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/returns", label: "المرتجعات", icon: <RotateCcw className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/clients", label: "العملاء", icon: <Users className="h-4 w-4" />, minRole: "manager" },
+    ],
+  },
+  {
+    title: "المشتريات والمخزون",
+    items: [
+      { to: "/purchase-invoices", label: "فواتير المشتريات", icon: <FileText className="h-4 w-4" />, minRole: "manager" },
+      { to: "/suppliers", label: "الموردون", icon: <Building2 className="h-4 w-4" />, minRole: "manager" },
+      { to: "/products", label: "المنتجات", icon: <Package className="h-4 w-4" />, minRole: "manager" },
+      { to: "/categories", label: "التصنيفات", icon: <Layers className="h-4 w-4" />, minRole: "manager" },
+      { to: "/warehouses", label: "المخازن", icon: <Warehouse className="h-4 w-4" />, minRole: "manager" },
+    ],
+  },
+  {
+    title: "المالية والخزينة",
+    items: [
+      { to: "/receipt-vouchers", label: "إيصالات القبض", icon: <Receipt className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/payment-vouchers", label: "إيصالات الصرف", icon: <Banknote className="h-4 w-4" />, minRole: "manager" },
+    ],
+  },
+  {
+    title: "المحاسبة",
+    items: [
+      { to: "/chart-of-accounts", label: "دليل الحسابات", icon: <BookOpen className="h-4 w-4" />, minRole: "manager" },
+      { to: "/journals", label: "القيود اليومية", icon: <FileText className="h-4 w-4" />, minRole: "manager" },
+      { to: "/accounting", label: "التقارير المحاسبية", icon: <Calculator className="h-4 w-4" />, minRole: "manager" },
+      { to: "/reports", label: "التقارير التشغيلية", icon: <LineChart className="h-4 w-4" />, minRole: "manager" },
+    ],
+  },
+  {
+    title: "المتجر والتواصل",
+    items: [
+      { to: "/store-management", label: "إدارة المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
+      { to: "/store-orders", label: "طلبات المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
+      { to: "/whatsapp-settings", label: "واتساب", icon: <Send className="h-4 w-4" />, minRole: "admin" },
+      { to: "/internal-chat", label: "المحادثات", icon: <MessageSquare className="h-4 w-4" />, minRole: "manager" },
+    ],
+  },
+  {
+    title: "النظام",
+    items: [
+      { to: "/users", label: "المستخدمون", icon: <Users className="h-4 w-4" />, minRole: "admin" },
+      { to: "/tenants", label: "الشركات", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
+      { to: "/audit-logs", label: "سجل الأحداث (HMAC)", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
+      { to: "/security-events", label: "أحداث الأمان", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
+      { to: "/activation", label: "الترخيص والتفعيل", icon: <KeyRound className="h-4 w-4" />, minRole: "admin" },
+      { to: "/notifications", label: "الإشعارات", icon: <Bell className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/company-settings", label: "إعدادات الشركة", icon: <Settings className="h-4 w-4" />, minRole: "admin" },
+      { to: "/account-settings", label: "حسابي", icon: <Settings className="h-4 w-4" />, minRole: "cashier" },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -63,7 +116,10 @@ export function Sidebar() {
   const navigate = useNavigate();
   const role = user?.role;
 
-  const visible = NAV.filter((n) => atLeast(role, n.minRole));
+  const visibleSections = SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((n) => atLeast(role, n.minRole)),
+  })).filter((s) => s.items.length > 0);
 
   return (
     <aside className="no-print w-64 shrink-0 h-full border-l border-border bg-card flex flex-col">
@@ -84,24 +140,33 @@ export function Sidebar() {
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
-        {visible.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-soft"
-                  : "text-foreground hover:bg-secondary",
-              )
-            }
-          >
-            {item.icon}
-            <span className="truncate">{item.label}</span>
-          </NavLink>
+      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+        {visibleSections.map((section) => (
+          <div key={section.title}>
+            <div className="px-3 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              {section.title}
+            </div>
+            <div className="space-y-0.5">
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-soft"
+                        : "text-foreground hover:bg-secondary",
+                    )
+                  }
+                >
+                  {item.icon}
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 

@@ -3,6 +3,7 @@
 // never sees ciphertext.
 const { v4: uuid } = require('uuid');
 const dbMod = require('./db.cjs');
+const accounting = require('./accounting.cjs');
 
 const allowedTables = new Set([
   'products',
@@ -154,6 +155,20 @@ function saveInvoice({ invoice, items }) {
   });
 
   const id = txn();
+
+  // Auto-post the matching double-entry journal entry. Failure here must not
+  // roll back the invoice itself — accounting can be re-posted manually if a
+  // system account is misconfigured.
+  try {
+    accounting.postSalesInvoice({
+      tenantId: invoice.tenant_id,
+      invoiceId: id,
+      userId: invoice.user_id,
+    });
+  } catch (err) {
+    console.warn('[SystemAlaa] sales auto-post skipped:', err.message);
+  }
+
   const saved = getById('invoices', id);
   const items2 = dbMod.decryptRows(
     'invoice_items',

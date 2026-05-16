@@ -264,6 +264,175 @@ function bootstrap() {
       synced INTEGER NOT NULL DEFAULT 0
     );
 
+    -- ====================================================================
+    -- Accounting (full double-entry bookkeeping)
+    -- ====================================================================
+
+    -- Chart of Accounts (دليل / شجرة الحسابات)
+    CREATE TABLE IF NOT EXISTS chart_of_accounts (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      name TEXT NOT NULL,
+      name_en TEXT,
+      account_type TEXT NOT NULL,   -- asset|liability|equity|revenue|expense
+      account_subtype TEXT,
+      parent_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      is_group INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      currency TEXT NOT NULL DEFAULT 'EGP',
+      description TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, code)
+    );
+
+    -- Fiscal periods (الفترات المحاسبية)
+    CREATE TABLE IF NOT EXISTS fiscal_periods (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      is_closed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Journal entries (القيود اليومية)
+    CREATE TABLE IF NOT EXISTS journal_entries (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      entry_number INTEGER,
+      entry_date TEXT NOT NULL DEFAULT (date('now')),
+      reference TEXT,
+      description TEXT,
+      source_type TEXT,
+      source_id TEXT,
+      total_debit REAL NOT NULL DEFAULT 0,
+      total_credit REAL NOT NULL DEFAULT 0,
+      is_posted INTEGER NOT NULL DEFAULT 1,
+      created_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS journal_entry_lines (
+      id TEXT PRIMARY KEY,
+      entry_id TEXT NOT NULL REFERENCES journal_entries(id) ON DELETE CASCADE,
+      account_id TEXT NOT NULL REFERENCES chart_of_accounts(id) ON DELETE RESTRICT,
+      debit REAL NOT NULL DEFAULT 0,
+      credit REAL NOT NULL DEFAULT 0,
+      description TEXT,
+      cost_center_id TEXT REFERENCES cost_centers(id) ON DELETE SET NULL,
+      line_no INTEGER NOT NULL DEFAULT 0
+    );
+
+    -- Suppliers (الموردون)
+    CREATE TABLE IF NOT EXISTS suppliers (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      tax_number TEXT,
+      balance REAL NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Purchase invoices (فواتير المشتريات)
+    CREATE TABLE IF NOT EXISTS purchase_invoices (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      supplier_id TEXT REFERENCES suppliers(id) ON DELETE SET NULL,
+      user_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      number INTEGER,
+      invoice_date TEXT NOT NULL DEFAULT (date('now')),
+      subtotal REAL NOT NULL DEFAULT 0,
+      tax REAL NOT NULL DEFAULT 0,
+      discount REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      paid REAL NOT NULL DEFAULT 0,
+      remaining REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'open',
+      reference TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS purchase_invoice_items (
+      id TEXT PRIMARY KEY,
+      invoice_id TEXT NOT NULL REFERENCES purchase_invoices(id) ON DELETE CASCADE,
+      product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+      product_name TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 1,
+      cost REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0
+    );
+
+    -- Receipt vouchers (إيصالات القبض - cash in)
+    CREATE TABLE IF NOT EXISTS receipt_vouchers (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      voucher_number INTEGER,
+      voucher_date TEXT NOT NULL DEFAULT (date('now')),
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      cash_account_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      counter_account_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      amount REAL NOT NULL,
+      method TEXT,
+      description TEXT,
+      reference TEXT,
+      user_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Payment vouchers (إيصالات الصرف - cash out)
+    CREATE TABLE IF NOT EXISTS payment_vouchers (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      voucher_number INTEGER,
+      voucher_date TEXT NOT NULL DEFAULT (date('now')),
+      supplier_id TEXT REFERENCES suppliers(id) ON DELETE SET NULL,
+      cash_account_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      counter_account_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      amount REAL NOT NULL,
+      method TEXT,
+      description TEXT,
+      reference TEXT,
+      user_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Cost centers (مراكز التكلفة)
+    CREATE TABLE IF NOT EXISTS cost_centers (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      name TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, code)
+    );
+
+    -- Fixed assets (الأصول الثابتة)
+    CREATE TABLE IF NOT EXISTS fixed_assets (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      category TEXT,
+      acquisition_date TEXT NOT NULL,
+      cost REAL NOT NULL DEFAULT 0,
+      salvage_value REAL NOT NULL DEFAULT 0,
+      useful_life_years INTEGER NOT NULL DEFAULT 5,
+      depreciation_method TEXT NOT NULL DEFAULT 'straight_line',
+      asset_account_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      depreciation_account_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      accumulated_depreciation_account_id TEXT REFERENCES chart_of_accounts(id) ON DELETE SET NULL,
+      is_disposed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Indexes
     CREATE INDEX IF NOT EXISTS idx_products_tenant ON products(tenant_id);
     CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(tenant_id, barcode);
@@ -276,6 +445,17 @@ function bootstrap() {
     CREATE INDEX IF NOT EXISTS idx_security_events_tenant ON security_events(tenant_id);
     CREATE INDEX IF NOT EXISTS idx_security_events_date ON security_events(created_at);
     CREATE INDEX IF NOT EXISTS idx_pending_ops_synced ON pending_operations(synced);
+
+    CREATE INDEX IF NOT EXISTS idx_coa_tenant ON chart_of_accounts(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_coa_parent ON chart_of_accounts(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_je_tenant_date ON journal_entries(tenant_id, entry_date);
+    CREATE INDEX IF NOT EXISTS idx_je_source ON journal_entries(source_type, source_id);
+    CREATE INDEX IF NOT EXISTS idx_jel_entry ON journal_entry_lines(entry_id);
+    CREATE INDEX IF NOT EXISTS idx_jel_account ON journal_entry_lines(account_id);
+    CREATE INDEX IF NOT EXISTS idx_suppliers_tenant ON suppliers(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_pi_tenant_date ON purchase_invoices(tenant_id, invoice_date);
+    CREATE INDEX IF NOT EXISTS idx_rv_tenant_date ON receipt_vouchers(tenant_id, voucher_date);
+    CREATE INDEX IF NOT EXISTS idx_pv_tenant_date ON payment_vouchers(tenant_id, voucher_date);
   `);
 }
 
@@ -285,6 +465,7 @@ function bootstrap() {
 const SENSITIVE = {
   app_users: new Set(['two_factor_secret', 'backup_codes']),
   clients: new Set(['phone']),
+  suppliers: new Set(['phone']),
 };
 
 function encryptRow(table, row) {

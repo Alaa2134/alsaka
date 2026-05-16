@@ -17,6 +17,15 @@ import { InvoiceScreen } from "@/screens/InvoiceScreen";
 import { InvoicesListScreen } from "@/screens/InvoicesListScreen";
 import { ProductsScreen } from "@/screens/ProductsScreen";
 import { ClientsScreen } from "@/screens/ClientsScreen";
+import { SuppliersScreen } from "@/screens/SuppliersScreen";
+import { ChartOfAccountsScreen } from "@/screens/ChartOfAccountsScreen";
+import { JournalsScreen } from "@/screens/JournalsScreen";
+import { AccountingReportsScreen } from "@/screens/AccountingReportsScreen";
+import { ReceiptVouchersScreen } from "@/screens/ReceiptVouchersScreen";
+import { PaymentVouchersScreen } from "@/screens/PaymentVouchersScreen";
+import { WhatsAppSettingsScreen } from "@/screens/WhatsAppSettingsScreen";
+import { AuditLogScreen } from "@/screens/AuditLogScreen";
+import { ActivationScreen } from "@/screens/ActivationScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -51,18 +60,16 @@ const STUBS: Array<{
   { path: "/returns", title: "المرتجعات", allow: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/categories", title: "التصنيفات", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/warehouses", title: "المخازن", allow: ["system_manager", "company_admin", "admin", "manager"] },
-  { path: "/reports", title: "التقارير", allow: ["system_manager", "company_admin", "admin", "manager"] },
-  { path: "/accounting", title: "المحاسبة", allow: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/reports", title: "التقارير التشغيلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
+  { path: "/purchase-invoices", title: "فواتير المشتريات", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/store-management", title: "إدارة المتجر", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/store-orders", title: "طلبات المتجر", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/internal-chat", title: "المحادثات الداخلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/users", title: "المستخدمون", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/tenants", title: "الشركات", allow: ["system_manager"] },
   { path: "/system", title: "لوحة النظام", allow: ["system_manager"] },
-  { path: "/audit-logs", title: "سجل الأحداث", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/security-events", title: "أحداث الأمان", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/notifications", title: "الإشعارات", allow: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
-  { path: "/whatsapp-settings", title: "إعدادات واتساب", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/company-settings", title: "إعدادات الشركة", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/account-settings", title: "حسابي", allow: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/subscription", title: "الاشتراك", allow: ["system_manager", "company_admin", "admin"] },
@@ -129,6 +136,78 @@ export default function App() {
                       element={
                         <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
                           <SP><ClientsScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="suppliers"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><SuppliersScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="chart-of-accounts"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><ChartOfAccountsScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="journals"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><JournalsScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="accounting"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><AccountingReportsScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="receipt-vouchers"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}>
+                          <SP><ReceiptVouchersScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="payment-vouchers"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><PaymentVouchersScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="whatsapp-settings"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
+                          <SP><WhatsAppSettingsScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="audit-logs"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
+                          <SP><AuditLogScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="activation"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
+                          <SP><ActivationScreen /></SP>
                         </ProtectedRoute>
                       }
                     />

@@ -76,6 +76,71 @@ desktop/
 └── package.json
 ```
 
+## Accounting (full double-entry)
+
+- **Chart of Accounts** seeded with a standard Arabic palette (Assets,
+  Liabilities, Equity, Revenue, Expenses — 40+ accounts) plus a
+  system-account mapping (`sales_revenue`, `accounts_receivable`,
+  `accounts_payable`, `vat_payable`, `inventory`, `cogs`, `cash_default`,
+  `capital`, `retained_earnings`).
+- **Journal entries** with double-entry validation: every entry is
+  rejected if `total_debit ≠ total_credit`.
+- **Auto-posting** from operational documents:
+  - Sales invoice → `DR Cash/AR` + `CR Sales` + `CR VAT` (+ optional
+    `DR COGS / CR Inventory` from product cost).
+  - Purchase invoice → `DR Inventory + DR VAT` / `CR Cash/AP`.
+  - Receipt voucher → `DR Cash / CR AR`.
+  - Payment voucher → `DR AP / CR Cash`.
+- **Reports**: Trial Balance, Income Statement, Balance Sheet (with
+  balanced-check), General Ledger per account, AR Aging (current /
+  1-30 / 31-60 / 61-90 / 90+ buckets).
+
+## WhatsApp integration
+
+- QR-code login from the *إعدادات واتساب* screen (same flow as WhatsApp
+  Web — scan once, session is persisted to `<userData>/wa-session/`).
+- After a sales invoice is saved, the app renders it as a high-DPI PNG
+  (via `html2canvas`) and sends it to the client's phone with a caption
+  containing the invoice number and total — fully automatic when the
+  client has a phone number on file.
+- Manual send button on the invoice screen as a fallback.
+- A test-message panel inside *إعدادات واتساب* lets you verify the
+  connection without saving an invoice.
+
+> Note: `whatsapp-web.js` ships Puppeteer under the hood and downloads
+> Chromium on install (~170 MB) — first install is slower than usual.
+
+## Licensing — one key, one device
+
+- Activation key format `SA-<TIER>-<EXPIRY>-<NONCE>-<HMAC10>`, signed
+  with an HMAC-SHA256 vendor secret.
+- **Hard device binding**: on first activation the key is stored
+  together with this machine's hardware fingerprint hash. The same key
+  on a different machine is refused.
+- A 30-day free trial starts automatically on first launch (no key
+  needed) so you can test before activating.
+- `electron/licensing.cjs::issue()` mints keys for your own testing.
+  Replace `SYSTEMALAA_VENDOR_SECRET` (env var) with a real 32-byte
+  random secret before shipping retail builds.
+
+## Security hardening
+
+- **scrypt** (N=2^15, r=8, p=1, 32-byte output) for passwords and
+  access codes. Legacy bcrypt hashes upgrade automatically on the next
+  successful login.
+- **Brute-force lockout**: 5 wrong attempts (per email and per access
+  code) → 15-minute cooldown, persisted to the `lockouts` table so a
+  process restart doesn't reset it.
+- **HMAC-chained audit log** (`audit_chain` table): every row's HMAC
+  covers the previous row's HMAC, so tampering with any row breaks the
+  whole chain. The *سجل الأحداث* screen runs the verifier and shows a
+  green badge when intact and a red badge with the broken row when not.
+- **AES-256-GCM at rest** for `two_factor_secret`, `backup_codes`,
+  `clients.phone`, `suppliers.phone`. Key derived from machine
+  fingerprint + pepper.
+- **Hardened renderer in production**: DevTools blocked, `F12` /
+  `Ctrl+Shift+I` swallowed, `will-navigate` refuses any non-app origin.
+
 ## Implemented (functional today)
 
 - **Frameless window** with custom RTL titlebar (minimize/maximize/close)

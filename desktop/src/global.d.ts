@@ -89,6 +89,65 @@ declare global {
       dashboard(opts: { tenantId: string }): Promise<IpcResult<any>>;
     };
 
+    accounting: {
+      trialBalance(opts: { tenantId: string; from?: string | null; to?: string | null }): Promise<IpcResult<any>>;
+      incomeStatement(opts: { tenantId: string; from?: string | null; to?: string | null }): Promise<IpcResult<any>>;
+      balanceSheet(opts: { tenantId: string; asOf?: string | null }): Promise<IpcResult<any>>;
+      ledger(opts: { tenantId: string; accountId: string; from?: string | null; to?: string | null }): Promise<IpcResult<any>>;
+      arAging(opts: { tenantId: string; asOf?: string | null }): Promise<IpcResult<any[]>>;
+      postJournal(payload: any): Promise<IpcResult<string>>;
+      savePurchase(payload: { invoice: any; items: any[]; autoPost?: boolean }): Promise<IpcResult<any>>;
+      saveReceipt(payload: any): Promise<IpcResult<any>>;
+      savePayment(payload: any): Promise<IpcResult<any>>;
+      listSystemAccounts(payload: { tenantId: string }): Promise<IpcResult<Record<string, string>>>;
+      setSystemAccount(payload: { tenantId: string; key: string; accountId: string }): Promise<IpcResult<{ ok: boolean }>>;
+      repostSalesInvoice(payload: { tenantId: string; invoiceId: string; userId?: string }): Promise<IpcResult<{ ok: boolean }>>;
+    };
+
+    licensing: {
+      status(): Promise<IpcResult<{
+        active: boolean;
+        reason: string;
+        tier?: string;
+        expiry?: string;
+        key_masked?: string;
+        trialRemainingDays?: number;
+        trialStartedAt?: string;
+        message?: string;
+      }>>;
+      activate(key: string): Promise<IpcResult<{
+        ok: boolean;
+        error?: string;
+        tier?: string;
+        expiry?: string;
+        alreadyActivated?: boolean;
+        rebound?: boolean;
+      }>>;
+      deactivate(): Promise<IpcResult<{ ok: boolean }>>;
+      issue(payload?: { tier?: string; expiry?: string; nonce?: string }): Promise<IpcResult<{ key: string }>>;
+    };
+
+    security: {
+      verifyAuditChain(): Promise<IpcResult<{ ok: boolean; total: number; brokenAt?: number }>>;
+      recentAudit(opts?: { limit?: number }): Promise<IpcResult<Array<{
+        id: number;
+        tenant_id: string | null;
+        user_id: string | null;
+        action: string;
+        data: string | null;
+        timestamp: string;
+      }>>>;
+    };
+
+    whatsapp: {
+      initialize(): Promise<IpcResult<{ state: string; qr?: string | null; error?: string | null }>>;
+      logout(): Promise<IpcResult<void>>;
+      state(): Promise<IpcResult<{ state: string; qr?: string | null; error?: string | null }>>;
+      sendText(payload: { to: string; body: string }): Promise<IpcResult<{ ok: boolean; chatId: string }>>;
+      sendImage(payload: { to: string; dataUrl: string; caption?: string; filename?: string }): Promise<IpcResult<{ ok: boolean; chatId: string }>>;
+      onStateChanged(cb: (state: { state: string; qr?: string | null; error?: string | null }) => void): () => void;
+    };
+
     auth: {
       login(payload: { email: string; password: string }): Promise<IpcResult<LoginResult>>;
       verifyAccessCode(payload: { userId: string; code: string }): Promise<IpcResult<{ ok: boolean; error?: string }>>;

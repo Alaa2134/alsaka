@@ -6,7 +6,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { Printer, Save, Trash2, Plus } from "lucide-react";
+import { Printer, Save, Trash2, Plus, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, unwrap } from "@/lib/ipc";
@@ -20,6 +20,7 @@ import {
   type Suggestion,
   type AutoSuggestHandle,
 } from "@/components/shared/AutoSuggestInput";
+import { buildInvoiceImage } from "@/components/invoice/InvoiceImageBuilder";
 
 interface ProductRow {
   id: string;
@@ -34,6 +35,13 @@ interface ClientLite {
   id: string;
   name: string;
   phone: string | null;
+}
+
+interface SavedInvoiceSnapshot {
+  invoice: any;
+  items: any[];
+  clientName: string;
+  clientPhone: string | null;
 }
 
 const newRowId = () =>
@@ -61,6 +69,8 @@ export function InvoiceScreen() {
   const [productResults, setProductResults] = useState<Suggestion[]>([]);
   const [barcodeQuery, setBarcodeQuery] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lastSaved, setLastSaved] = useState<SavedInvoiceSnapshot | null>(null);
+  const [sendingWa, setSendingWa] = useState(false);
 
   const barcodeRef = useRef<AutoSuggestHandle | null>(null);
 
@@ -238,6 +248,15 @@ export function InvoiceScreen() {
           items,
         }),
       );
+      const savedClient = clients.find((c) => c.id === clientId);
+      const snapshot: SavedInvoiceSnapshot = {
+        invoice: result.invoice,
+        items: result.items,
+        clientName: savedClient?.name || clientName,
+        clientPhone: savedClient?.phone || null,
+      };
+      setLastSaved(snapshot);
+
       toast.success(`تم حفظ الفاتورة #${(result.invoice as any).number ?? (result.invoice as any).id.slice(0, 6)}`);
       try {
         await window.electronAPI?.notify({
@@ -252,6 +271,13 @@ export function InvoiceScreen() {
       } catch {
         /* ignore */
       }
+
+      // If WhatsApp is connected AND the client has a phone, auto-send the
+      // invoice image. Failure is non-fatal — the invoice itself is saved.
+      if (snapshot.clientPhone) {
+        sendInvoiceToWhatsApp(snapshot).catch(() => undefined);
+      }
+
       reset();
     } catch (err) {
       toast.error(String((err as Error).message || err));
@@ -259,6 +285,53 @@ export function InvoiceScreen() {
       setBusy(false);
     }
   };
+
+  const sendInvoiceToWhatsApp = useCallback(async (snapshot: SavedInvoiceSnapshot) => {
+    if (!snapshot.clientPhone) {
+      toast.error("لا يوجد رقم هاتف للعميل");
+      return;
+    }
+    setSendingWa(true);
+    try {
+      const wa = await unwrap(api().whatsapp.state());
+      if (wa.state !== "ready") {
+        toast.error("واتساب غير متصل — اذهب لإعدادات واتساب");
+        return;
+      }
+      const dataUrl = await buildInvoiceImage({
+        number: snapshot.invoice.number ?? snapshot.invoice.id.slice(0, 6),
+        date: new Intl.DateTimeFormat("ar-EG-u-nu-latn", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(new Date(snapshot.invoice.created_at || Date.now())),
+        clientName: snapshot.clientName,
+        clientPhone: snapshot.clientPhone || undefined,
+        items: snapshot.items.map((it: any) => ({
+          product_name: it.product_name,
+          quantity: it.quantity,
+          price: it.price,
+          total: it.total,
+        })),
+        subtotal: snapshot.invoice.total,
+        discount: snapshot.invoice.discount,
+        paid: snapshot.invoice.paid,
+        remaining: snapshot.invoice.remaining,
+      });
+      await unwrap(
+        api().whatsapp.sendImage({
+          to: snapshot.clientPhone,
+          dataUrl,
+          caption: `فاتورة رقم ${snapshot.invoice.number ?? ""}\nالإجمالي: ${money(snapshot.invoice.total)}`,
+          filename: `invoice-${snapshot.invoice.number || snapshot.invoice.id.slice(0, 6)}.png`,
+        }),
+      );
+      toast.success("تم إرسال الفاتورة على واتساب ✓");
+    } catch (err) {
+      toast.error("تعذر إرسال الفاتورة على واتساب: " + String((err as Error).message || err));
+    } finally {
+      setSendingWa(false);
+    }
+  }, []);
 
   // Global keyboard shortcuts: F2 new row, F9 print, Ctrl+S save
   useEffect(() => {
@@ -461,13 +534,22 @@ export function InvoiceScreen() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-row-reverse gap-2">
+        <div className="mt-4 flex flex-row-reverse gap-2 flex-wrap">
           <Button onClick={() => save()} disabled={busy}>
             <Save className="h-4 w-4" /> حفظ (Ctrl+S)
           </Button>
           <Button variant="outline" onClick={() => window.electronAPI?.print().catch(() => undefined)}>
             <Printer className="h-4 w-4" /> طباعة (F9)
           </Button>
+          {lastSaved && lastSaved.clientPhone && (
+            <Button
+              variant="success"
+              onClick={() => sendInvoiceToWhatsApp(lastSaved)}
+              disabled={sendingWa}
+            >
+              <Send className="h-4 w-4" /> إرسال آخر فاتورة على واتساب
+            </Button>
+          )}
           <Button variant="ghost" onClick={reset}>
             تفريغ
           </Button>

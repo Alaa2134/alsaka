@@ -47,6 +47,46 @@ contextBridge.exposeInMainWorld('electronAPI', {
     dashboard: (opts) => invoke('db:dashboard', opts),
   },
 
+  // Accounting
+  accounting: {
+    trialBalance: (opts) => invoke('acc:trial-balance', opts),
+    incomeStatement: (opts) => invoke('acc:income-statement', opts),
+    balanceSheet: (opts) => invoke('acc:balance-sheet', opts),
+    ledger: (opts) => invoke('acc:ledger', opts),
+    arAging: (opts) => invoke('acc:ar-aging', opts),
+    postJournal: (payload) => invoke('acc:post-journal', payload),
+    savePurchase: (payload) => invoke('acc:save-purchase', payload),
+    saveReceipt: (payload) => invoke('acc:save-receipt', payload),
+    savePayment: (payload) => invoke('acc:save-payment', payload),
+    listSystemAccounts: (payload) => invoke('acc:list-system-accounts', payload),
+    setSystemAccount: (payload) => invoke('acc:set-system-account', payload),
+    repostSalesInvoice: (payload) => invoke('acc:repost-sales-invoice', payload),
+  },
+
+  // Licensing (single-device activation)
+  licensing: {
+    status: () => invoke('lic:status'),
+    activate: (key) => invoke('lic:activate', { key }),
+    deactivate: () => invoke('lic:deactivate'),
+    issue: (payload) => invoke('lic:issue', payload),
+  },
+
+  // Security / tamper-evident audit chain
+  security: {
+    verifyAuditChain: () => invoke('sec:verify-audit-chain'),
+    recentAudit: (opts) => invoke('sec:recent-audit', opts || {}),
+  },
+
+  // WhatsApp (whatsapp-web.js powered)
+  whatsapp: {
+    initialize: () => invoke('wa:initialize'),
+    logout: () => invoke('wa:logout'),
+    state: () => invoke('wa:state'),
+    sendText: (payload) => invoke('wa:send-text', payload),
+    sendImage: (payload) => invoke('wa:send-image', payload),
+    onStateChanged: (cb) => on('wa:state-changed', cb),
+  },
+
   // Auth
   auth: {
     login: (payload) => invoke('auth:login', payload),
