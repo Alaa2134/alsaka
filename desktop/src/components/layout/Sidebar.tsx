@@ -57,6 +57,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: "/invoice", label: "فاتورة جديدة", icon: <FileText className="h-4 w-4" />, minRole: "cashier" },
       { to: "/invoices", label: "الفواتير", icon: <ListChecks className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/invoice-designer", label: "مصمم الفاتورة", icon: <Settings className="h-4 w-4" />, minRole: "manager" },
       { to: "/returns", label: "المرتجعات", icon: <RotateCcw className="h-4 w-4" />, minRole: "cashier" },
       { to: "/clients", label: "العملاء", icon: <Users className="h-4 w-4" />, minRole: "manager" },
     ],

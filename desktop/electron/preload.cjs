@@ -79,6 +79,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
     exportFeed: (payload) => invoke('store:export-feed', payload),
   },
 
+  // UI preferences
+  ui: {
+    getPrefs: (payload) => invoke('ui:get-prefs', payload),
+    setPrefs: (payload) => invoke('ui:set-prefs', payload),
+  },
+
+  // Cashier shifts
+  shifts: {
+    active: (userId) => invoke('shifts:active', { userId }),
+    open: (payload) => invoke('shifts:open', payload),
+    close: (payload) => invoke('shifts:close', payload),
+    xReport: (shiftId) => invoke('shifts:x-report', { shiftId }),
+    list: (payload) => invoke('shifts:list', payload),
+  },
+
   // Google Drive backup
   gdrive: {
     state: () => invoke('gdrive:state'),

@@ -26,6 +26,8 @@ const store = require('./store.cjs');
 const shipping = require('./shipping.cjs');
 const payments = require('./payments.cjs');
 const gdrive = require('./google-drive.cjs');
+const shifts = require('./shifts.cjs');
+const uiPrefs = require('./ui-prefs.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -481,6 +483,17 @@ ipcMain.handle('store:export-feed', safe(async (_e, { slug, outputPath }) => {
   await fs.promises.writeFile(target, JSON.stringify(feed, null, 2), 'utf8');
   return { ok: true, path: target };
 }));
+
+// --- UI preferences IPC ---
+ipcMain.handle('ui:get-prefs', safe((_e, payload) => uiPrefs.getPrefs(payload)));
+ipcMain.handle('ui:set-prefs', safe((_e, payload) => uiPrefs.setPrefs(payload)));
+
+// --- Cashier shifts IPC ---
+ipcMain.handle('shifts:active', safe((_e, { userId }) => shifts.activeShift(userId)));
+ipcMain.handle('shifts:open', safe((_e, payload) => shifts.open(payload)));
+ipcMain.handle('shifts:close', safe((_e, payload) => shifts.close(payload)));
+ipcMain.handle('shifts:x-report', safe((_e, { shiftId }) => shifts.xReport(shiftId)));
+ipcMain.handle('shifts:list', safe((_e, payload) => shifts.listRecent(payload)));
 
 // --- Google Drive backup IPC ---
 ipcMain.handle('gdrive:state', safe(() => gdrive.state()));

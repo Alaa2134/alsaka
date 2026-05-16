@@ -125,6 +125,25 @@ declare global {
       exportFeed(payload: { slug: string; outputPath?: string }): Promise<IpcResult<{ ok: boolean; path: string }>>;
     };
 
+    ui: {
+      getPrefs(payload: { tenantId: string; userId: string }): Promise<IpcResult<{
+        pos_layout: string;
+        invoice_template_json: string | null;
+        store_theme_json: string | null;
+        language: string;
+        density: string;
+      }>>;
+      setPrefs(payload: { tenantId: string; userId: string; patch: Record<string, unknown> }): Promise<IpcResult<any>>;
+    };
+
+    shifts: {
+      active(userId: string): Promise<IpcResult<any>>;
+      open(payload: { tenantId: string; userId: string; openingCash?: number; notes?: string }): Promise<IpcResult<{ ok: boolean; error?: string; shift?: any }>>;
+      close(payload: { shiftId: string; closingCash?: number; cashOut?: number; notes?: string }): Promise<IpcResult<{ ok: boolean; error?: string; shift?: any }>>;
+      xReport(shiftId: string): Promise<IpcResult<any>>;
+      list(payload: { tenantId: string; limit?: number }): Promise<IpcResult<any[]>>;
+    };
+
     gdrive: {
       state(): Promise<IpcResult<{
         connected: boolean;

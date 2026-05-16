@@ -1101,6 +1101,21 @@ function bootstrap() {
     CREATE INDEX IF NOT EXISTS idx_resto_items_order ON restaurant_order_items(order_id);
     CREATE INDEX IF NOT EXISTS idx_outbox_status ON whatsapp_outbox(status);
     CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id);
+
+    -- Per-user UI preferences (POS layout, invoice template, etc.).
+    -- One row per (tenant, user). Default values applied at read time.
+    CREATE TABLE IF NOT EXISTS ui_preferences (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES app_users(id) ON DELETE CASCADE,
+      pos_layout TEXT NOT NULL DEFAULT 'classic',  -- classic | grid | restaurant | quick | dual
+      invoice_template_json TEXT,                  -- drag-drop design state
+      store_theme_json TEXT,                       -- store builder state
+      language TEXT NOT NULL DEFAULT 'ar',
+      density TEXT NOT NULL DEFAULT 'comfortable', -- comfortable | compact
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, user_id)
+    );
   `);
 }
 

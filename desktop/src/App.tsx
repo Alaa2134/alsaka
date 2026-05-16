@@ -31,6 +31,7 @@ import { CouponsScreen } from "@/screens/CouponsScreen";
 import { ShippingCarriersScreen } from "@/screens/ShippingCarriersScreen";
 import { PaymentGatewaysScreen } from "@/screens/PaymentGatewaysScreen";
 import { GoogleDriveBackupScreen } from "@/screens/GoogleDriveBackupScreen";
+import { InvoiceDesignerScreen } from "@/components/designer/InvoiceDesigner";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -76,7 +77,6 @@ const STUBS: Array<{
   { path: "/company-settings", title: "إعدادات الشركة", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/account-settings", title: "حسابي", allow: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/subscription", title: "الاشتراك", allow: ["system_manager", "company_admin", "admin"] },
-  { path: "/invoice-designer", title: "مصمم الفواتير", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/invoice-page-settings", title: "إعدادات صفحة الفاتورة", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/links", title: "إدارة الروابط", allow: ["system_manager", "company_admin", "admin", "manager"] },
 ];
@@ -250,6 +250,14 @@ export default function App() {
                       element={
                         <ProtectedRoute allow={["system_manager", "company_admin", "admin"]}>
                           <SP><PaymentGatewaysScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="invoice-designer"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><InvoiceDesignerScreen /></SP>
                         </ProtectedRoute>
                       }
                     />
