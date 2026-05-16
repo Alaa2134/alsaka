@@ -43,6 +43,20 @@ const TITLES: Record<string, string> = {
   "/shipping-carriers": "شركات الشحن",
   "/payment-gateways": "وسائل الدفع",
   "/gdrive-backup": "نسخ احتياطي - Google Drive",
+  "/shifts": "ورديات الكاشير",
+  "/held-invoices": "الفواتير المعلقة",
+  "/loyalty": "نقاط العملاء",
+  "/gift-cards": "بطاقات الهدايا",
+  "/bundles": "العروض المجمعة",
+  "/currencies": "العملات",
+  "/bank-accounts": "الحسابات البنكية",
+  "/employees": "الموظفون والمرتبات",
+  "/cost-centers": "مراكز التكلفة",
+  "/fixed-assets": "الأصول الثابتة",
+  "/recurring-invoices": "الفواتير المتكررة",
+  "/webhooks": "Webhooks",
+  "/api-keys": "مفاتيح API",
+  "/restaurant-tables": "طاولات المطعم",
 };
 
 export function AppShell() {

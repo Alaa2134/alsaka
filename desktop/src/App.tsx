@@ -32,6 +32,20 @@ import { ShippingCarriersScreen } from "@/screens/ShippingCarriersScreen";
 import { PaymentGatewaysScreen } from "@/screens/PaymentGatewaysScreen";
 import { GoogleDriveBackupScreen } from "@/screens/GoogleDriveBackupScreen";
 import { InvoiceDesignerScreen } from "@/components/designer/InvoiceDesigner";
+import { CashierShiftsScreen } from "@/screens/CashierShiftsScreen";
+import { HeldInvoicesScreen } from "@/screens/HeldInvoicesScreen";
+import { LoyaltyScreen } from "@/screens/LoyaltyScreen";
+import { GiftCardsScreen } from "@/screens/GiftCardsScreen";
+import { BundlesScreen } from "@/screens/BundlesScreen";
+import { CurrenciesScreen } from "@/screens/CurrenciesScreen";
+import { BankAccountsScreen } from "@/screens/BankAccountsScreen";
+import { EmployeesScreen } from "@/screens/EmployeesScreen";
+import { CostCentersScreen } from "@/screens/CostCentersScreen";
+import { FixedAssetsScreen } from "@/screens/FixedAssetsScreen";
+import { RecurringInvoicesScreen } from "@/screens/RecurringInvoicesScreen";
+import { WebhooksScreen } from "@/screens/WebhooksScreen";
+import { ApiKeysScreen } from "@/screens/ApiKeysScreen";
+import { RestaurantTablesScreen } from "@/screens/RestaurantTablesScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -253,6 +267,20 @@ export default function App() {
                         </ProtectedRoute>
                       }
                     />
+                    <Route path="shifts" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><CashierShiftsScreen /></SP></ProtectedRoute>} />
+                    <Route path="held-invoices" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><HeldInvoicesScreen /></SP></ProtectedRoute>} />
+                    <Route path="loyalty" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><LoyaltyScreen /></SP></ProtectedRoute>} />
+                    <Route path="gift-cards" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><GiftCardsScreen /></SP></ProtectedRoute>} />
+                    <Route path="bundles" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><BundlesScreen /></SP></ProtectedRoute>} />
+                    <Route path="currencies" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><CurrenciesScreen /></SP></ProtectedRoute>} />
+                    <Route path="bank-accounts" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BankAccountsScreen /></SP></ProtectedRoute>} />
+                    <Route path="employees" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><EmployeesScreen /></SP></ProtectedRoute>} />
+                    <Route path="cost-centers" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><CostCentersScreen /></SP></ProtectedRoute>} />
+                    <Route path="fixed-assets" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><FixedAssetsScreen /></SP></ProtectedRoute>} />
+                    <Route path="recurring-invoices" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><RecurringInvoicesScreen /></SP></ProtectedRoute>} />
+                    <Route path="webhooks" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><WebhooksScreen /></SP></ProtectedRoute>} />
+                    <Route path="api-keys" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ApiKeysScreen /></SP></ProtectedRoute>} />
+                    <Route path="restaurant-tables" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><RestaurantTablesScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="invoice-designer"
                       element={
