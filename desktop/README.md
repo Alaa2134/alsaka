@@ -13,6 +13,7 @@ This monorepo holds **four** apps:
 | `store/` | Public storefront SPA — one site per tenant |
 | `mobile/` | Mobile PWA cashier that uses the REST API |
 | `customer-display/` | Second-monitor display facing the customer at checkout |
+| `owner-dashboard/` | Web dashboard for the shop owner — live KPIs, invoices, payroll, store orders — accessible from anywhere |
 
 ## Tech
 

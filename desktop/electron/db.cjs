@@ -1199,6 +1199,46 @@ function bootstrap() {
     );
     CREATE INDEX IF NOT EXISTS idx_quotations_tenant ON quotations(tenant_id);
 
+    -- Connections: per-tenant OAuth tokens / access tokens for external
+    -- services (GitHub, Vercel, Netlify, Cloudflare, Meta, etc.). The
+    -- tokens are AES-encrypted at rest via the standard column-
+    -- encryption helper.
+    CREATE TABLE IF NOT EXISTS connections (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL,         -- github | vercel | netlify | cloudflare | meta | google_drive ...
+      access_token TEXT,
+      refresh_token TEXT,
+      token_type TEXT,                -- bearer | personal | pat | oauth
+      scopes TEXT,
+      account_login TEXT,
+      account_email TEXT,
+      account_name TEXT,
+      avatar_url TEXT,
+      extra_json TEXT,                -- provider-specific metadata (team_id, project_id...)
+      connected_at TEXT NOT NULL DEFAULT (datetime('now')),
+      last_used_at TEXT,
+      UNIQUE(tenant_id, provider)
+    );
+
+    -- Publishing deployments: a record per push so the customer sees
+    -- a deploy history (URL, status, timestamp).
+    CREATE TABLE IF NOT EXISTS deployments (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      target TEXT NOT NULL,           -- store | menu | mobile | customer-display
+      provider TEXT NOT NULL,         -- vercel | netlify | github_pages | custom
+      url TEXT,
+      status TEXT NOT NULL DEFAULT 'pending', -- pending | building | ready | error
+      commit_sha TEXT,
+      error TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      finished_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_connections_tenant ON connections(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_deployments_tenant ON deployments(tenant_id);
+
     -- Per-user UI preferences (POS layout, invoice template, etc.).
     -- One row per (tenant, user). Default values applied at read time.
     CREATE TABLE IF NOT EXISTS ui_preferences (
@@ -1231,6 +1271,7 @@ const SENSITIVE = {
   api_keys: new Set(['key_hash']),
   whatsapp_outbox: new Set(['to_phone']),
   marketplace_integrations: new Set(['api_credentials_json']),
+  connections: new Set(['access_token', 'refresh_token']),
 };
 
 function encryptRow(table, row) {

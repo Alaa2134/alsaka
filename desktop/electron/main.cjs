@@ -38,6 +38,7 @@ const bulkImport = require('./bulk-import.cjs');
 const aiVision = require('./ai-vision.cjs');
 const aiInsights = require('./ai-insights.cjs');
 const qrMenu = require('./qr-menu.cjs');
+const connectors = require('./connectors.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -544,6 +545,18 @@ ipcMain.handle('qrmenu:set-config', safe((_e, payload) => qrMenu.setMenuConfig(p
 ipcMain.handle('qrmenu:tables', safe((_e, payload) => qrMenu.listTablesWithQr(payload)));
 ipcMain.handle('qrmenu:general', safe((_e, payload) => qrMenu.generalMenuQr(payload)));
 ipcMain.handle('qrmenu:feed', safe((_e, { slug }) => qrMenu.buildMenuFeed({ slug })));
+
+// --- Connectors IPC ---
+ipcMain.handle('conn:providers', safe(() => connectors.listProviders()));
+ipcMain.handle('conn:list', safe((_e, { tenantId }) => connectors.listForTenant(tenantId)));
+ipcMain.handle('conn:disconnect', safe((_e, payload) => connectors.disconnect(payload)));
+ipcMain.handle('conn:gh-start', safe(() => connectors.githubStartDeviceFlow()));
+ipcMain.handle('conn:gh-poll', safe((_e, payload) => connectors.githubPollForToken(payload)));
+ipcMain.handle('conn:gh-test', safe((_e, payload) => connectors.githubTest(payload)));
+ipcMain.handle('conn:vercel', safe((_e, payload) => connectors.vercelConnect(payload)));
+ipcMain.handle('conn:vercel-test', safe((_e, payload) => connectors.vercelTest(payload)));
+ipcMain.handle('conn:netlify', safe((_e, payload) => connectors.netlifyConnect(payload)));
+ipcMain.handle('conn:cloudflare', safe((_e, payload) => connectors.cloudflareConnect(payload)));
 
 // --- Cashier shifts IPC ---
 ipcMain.handle('shifts:active', safe((_e, { userId }) => shifts.activeShift(userId)));

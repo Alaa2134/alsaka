@@ -152,6 +152,94 @@ async function handle(req, res) {
       return send(res, 200, repo.dashboardStats({ tenantId: auth.tenantId }));
     }
 
+    // GET /v1/employees
+    if (req.method === 'GET' && path === '/v1/employees') {
+      const rows = repo.list('employees', { tenantId: auth.tenantId, limit: 500 });
+      return send(res, 200, { data: rows });
+    }
+
+    // GET /v1/suppliers
+    if (req.method === 'GET' && path === '/v1/suppliers') {
+      const rows = repo.list('suppliers', { tenantId: auth.tenantId, limit: 500 });
+      return send(res, 200, { data: rows });
+    }
+
+    // GET /v1/branches
+    if (req.method === 'GET' && path === '/v1/branches') {
+      const rows = repo.list('branches', { tenantId: auth.tenantId, limit: 100 });
+      return send(res, 200, { data: rows });
+    }
+
+    // GET /v1/payroll → latest payroll runs + lines
+    if (req.method === 'GET' && path === '/v1/payroll') {
+      const runs = repo.list('payroll_runs', {
+        tenantId: auth.tenantId,
+        limit: 24,
+        orderBy: 'run_month DESC',
+      });
+      return send(res, 200, { data: runs });
+    }
+
+    // GET /v1/notifications
+    if (req.method === 'GET' && path === '/v1/notifications') {
+      const rows = repo.list('notifications', {
+        tenantId: auth.tenantId,
+        limit: 100,
+        orderBy: 'created_at DESC',
+      });
+      return send(res, 200, { data: rows });
+    }
+
+    // GET /v1/store-orders
+    if (req.method === 'GET' && path === '/v1/store-orders') {
+      const rows = repo.list('store_orders', { tenantId: auth.tenantId, limit: 200 });
+      return send(res, 200, { data: rows });
+    }
+
+    // GET /v1/analytics/sales?days=30 — daily sales series for the
+    // owner dashboard charts. Returns [{ date: "YYYY-MM-DD",
+    // sales: number, invoices: number }] up to `days` rows.
+    if (req.method === 'GET' && path === '/v1/analytics/sales') {
+      const days = Math.min(Number(url.searchParams.get('days') || '30'), 365);
+      const rows = dbMod.get().prepare(
+        `SELECT date(created_at) AS date,
+                SUM(total) AS sales,
+                COUNT(*) AS invoices
+           FROM invoices
+          WHERE tenant_id = ?
+            AND created_at >= datetime('now', '-' || ? || ' days')
+            AND is_return = 0
+          GROUP BY date(created_at)
+          ORDER BY date ASC`,
+      ).all(auth.tenantId, days);
+      return send(res, 200, { data: rows });
+    }
+
+    // GET /v1/analytics/top-products?days=30&limit=10
+    if (req.method === 'GET' && path === '/v1/analytics/top-products') {
+      const days = Math.min(Number(url.searchParams.get('days') || '30'), 365);
+      const limit = Math.min(Number(url.searchParams.get('limit') || '10'), 100);
+      const rows = dbMod.get().prepare(
+        `SELECT p.id, p.name,
+                SUM(ii.quantity) AS qty,
+                SUM(ii.total) AS revenue
+           FROM invoice_items ii
+           JOIN invoices i ON i.id = ii.invoice_id
+           JOIN products p ON p.id = ii.product_id
+          WHERE i.tenant_id = ? AND i.created_at >= datetime('now', '-' || ? || ' days')
+          GROUP BY p.id
+          ORDER BY revenue DESC
+          LIMIT ?`,
+      ).all(auth.tenantId, days, limit);
+      return send(res, 200, { data: rows });
+    }
+
+    // GET /v1/analytics/ar-aging — open invoices with how late
+    if (req.method === 'GET' && path === '/v1/analytics/ar-aging') {
+      const accounting = require('./accounting.cjs');
+      return send(res, 200, { data: accounting.arAging({ tenantId: auth.tenantId }) });
+    }
+
     send(res, 404, { error: 'not found' });
   } catch (err) {
     console.error('[SystemAlaa API] error:', err);

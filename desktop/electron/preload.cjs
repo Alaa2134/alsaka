@@ -107,6 +107,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     drainNow: () => invoke('wa-queue:drain-now'),
   },
 
+  // Per-tenant connectors (GitHub, Vercel, Netlify, Cloudflare...)
+  connectors: {
+    providers: () => invoke('conn:providers'),
+    list: (tenantId) => invoke('conn:list', { tenantId }),
+    disconnect: (payload) => invoke('conn:disconnect', payload),
+    githubStart: () => invoke('conn:gh-start'),
+    githubPoll: (payload) => invoke('conn:gh-poll', payload),
+    githubTest: (payload) => invoke('conn:gh-test', payload),
+    vercel: (payload) => invoke('conn:vercel', payload),
+    vercelTest: (payload) => invoke('conn:vercel-test', payload),
+    netlify: (payload) => invoke('conn:netlify', payload),
+    cloudflare: (payload) => invoke('conn:cloudflare', payload),
+  },
+
   // QR Menu (table-based ordering by phone scan)
   qrMenu: {
     config: (tenantId) => invoke('qrmenu:config', { tenantId }),
