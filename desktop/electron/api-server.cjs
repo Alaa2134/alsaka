@@ -83,7 +83,7 @@ async function handle(req, res) {
     const path = url.pathname;
 
     // Public health check
-    if (path === '/health') return send(res, 200, { ok: true, server: 'SystemAlaa', port: PORT });
+    if (path === '/health') return send(res, 200, { ok: true, server: 'Horus', port: PORT });
 
     // Public store feed (matches the standalone storefront)
     if (req.method === 'GET' && path.startsWith('/v1/store/')) {

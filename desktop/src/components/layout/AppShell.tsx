@@ -79,13 +79,14 @@ const TITLES: Record<string, string> = {
   "/ai-insights": "رؤى الذكاء الاصطناعي",
   "/visual-catalog": "كتالوج بالصور (AI Vision)",
   "/qr-menu": "مينيو QR للطاولات",
+  "/connections": "ربط الحسابات والخدمات",
 };
 
 export function AppShell() {
   const location = useLocation();
   const { online } = useOffline();
   const { i18n } = useTranslation();
-  const title = TITLES[location.pathname] || "SystemAlaa";
+  const title = TITLES[location.pathname] || "Horus";
   const toggleLang = () => i18n.changeLanguage(i18n.language === "ar" ? "en" : "ar");
 
   return (

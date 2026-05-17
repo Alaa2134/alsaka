@@ -29,7 +29,7 @@ export function WhatsAppSettingsScreen() {
   const [qrSvg, setQrSvg] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [testPhone, setTestPhone] = useState("");
-  const [testBody, setTestBody] = useState("رسالة تجريبية من SystemAlaa ✅");
+  const [testBody, setTestBody] = useState("رسالة تجريبية من Horus ✅");
 
   const refresh = useCallback(async () => {
     try {

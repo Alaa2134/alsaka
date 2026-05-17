@@ -61,7 +61,7 @@ export function StoreManagementScreen() {
     if (!tenantId) return;
     let s = await unwrap(api().store.getSettings(tenantId));
     if (!s) {
-      s = await unwrap(api().store.ensureSettings({ tenantId, tenantName: "SystemAlaa" }));
+      s = await unwrap(api().store.ensureSettings({ tenantId, tenantName: "Horus" }));
     }
     setSettings(s as StoreSettings);
   }, [tenantId]);

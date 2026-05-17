@@ -63,7 +63,7 @@ export function ThermalPrinterScreen() {
     setBusy(true);
     try {
       await unwrap(api().thermal.print({
-        companyName: "SystemAlaa",
+        companyName: "Horus System",
         companyAddress: "Cairo, Egypt",
         companyPhone: "+201234567890",
         number: "TEST-001",

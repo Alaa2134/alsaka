@@ -66,6 +66,12 @@ import { BulkImportScreen } from "@/screens/BulkImportScreen";
 import { AIInsightsScreen } from "@/screens/AIInsightsScreen";
 import { VisualCatalogScreen } from "@/screens/VisualCatalogScreen";
 import { QRMenuBuilderScreen } from "@/screens/QRMenuBuilderScreen";
+import { CategoriesScreen } from "@/screens/CategoriesScreen";
+import { WarehousesScreen } from "@/screens/WarehousesScreen";
+import { ReturnsScreen } from "@/screens/ReturnsScreen";
+import { NotificationsScreen } from "@/screens/NotificationsScreen";
+import { UsersScreen } from "@/screens/UsersScreen";
+import { ConnectionsScreen } from "@/screens/ConnectionsScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -97,17 +103,11 @@ const STUBS: Array<{
   title: string;
   allow: Role[];
 }> = [
-  { path: "/returns", title: "المرتجعات", allow: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
-  { path: "/categories", title: "التصنيفات", allow: ["system_manager", "company_admin", "admin", "manager"] },
-  { path: "/warehouses", title: "المخازن", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/reports", title: "التقارير التشغيلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
-  { path: "/purchase-invoices", title: "فواتير المشتريات", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/internal-chat", title: "المحادثات الداخلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
-  { path: "/users", title: "المستخدمون", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/tenants", title: "الشركات", allow: ["system_manager"] },
   { path: "/system", title: "لوحة النظام", allow: ["system_manager"] },
   { path: "/security-events", title: "أحداث الأمان", allow: ["system_manager", "company_admin", "admin"] },
-  { path: "/notifications", title: "الإشعارات", allow: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/company-settings", title: "إعدادات الشركة", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/account-settings", title: "حسابي", allow: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/subscription", title: "الاشتراك", allow: ["system_manager", "company_admin", "admin"] },
@@ -320,6 +320,12 @@ export default function App() {
                     <Route path="ai-insights" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><AIInsightsScreen /></SP></ProtectedRoute>} />
                     <Route path="visual-catalog" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><VisualCatalogScreen /></SP></ProtectedRoute>} />
                     <Route path="qr-menu" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><QRMenuBuilderScreen /></SP></ProtectedRoute>} />
+                    <Route path="categories" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><CategoriesScreen /></SP></ProtectedRoute>} />
+                    <Route path="warehouses" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><WarehousesScreen /></SP></ProtectedRoute>} />
+                    <Route path="returns" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><ReturnsScreen /></SP></ProtectedRoute>} />
+                    <Route path="notifications" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><NotificationsScreen /></SP></ProtectedRoute>} />
+                    <Route path="users" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><UsersScreen /></SP></ProtectedRoute>} />
+                    <Route path="connections" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ConnectionsScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="store-theme-builder"
                       element={
