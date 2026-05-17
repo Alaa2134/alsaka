@@ -107,11 +107,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     drainNow: () => invoke('wa-queue:drain-now'),
   },
 
-  // AI assistant (Claude / Anthropic)
+  // AI assistant (Claude / Anthropic) + vision + insights
   ai: {
     chat: (payload) => invoke('ai:chat', payload),
     getKey: (tenantId) => invoke('ai:get-key', { tenantId }),
     setKey: (tenantId, apiKey) => invoke('ai:set-key', { tenantId, apiKey }),
+    visionSuggest: (payload) => invoke('ai:vision-suggest', payload),
+    forecast: (payload) => invoke('ai:forecast', payload),
+    anomalies: (payload) => invoke('ai:anomalies', payload),
+    explain: (payload) => invoke('ai:explain', payload),
   },
 
   // Embedded REST API server

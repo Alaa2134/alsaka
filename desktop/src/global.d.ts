@@ -159,6 +159,10 @@ declare global {
       chat(payload: { tenantId: string; messages: Array<{ role: string; content: string }> }): Promise<IpcResult<{ ok: boolean; text: string; usage?: any }>>;
       getKey(tenantId: string): Promise<IpcResult<{ has_key: boolean }>>;
       setKey(tenantId: string, apiKey: string): Promise<IpcResult<{ ok: boolean }>>;
+      visionSuggest(payload: { tenantId: string; imageDataUrl: string }): Promise<IpcResult<{ ok: boolean; suggestion?: any; raw?: string; error?: string }>>;
+      forecast(payload: { tenantId: string; horizonDays?: number }): Promise<IpcResult<any[]>>;
+      anomalies(payload: { tenantId: string; lookbackDays?: number }): Promise<IpcResult<any[]>>;
+      explain(payload: { tenantId: string; findings: any[]; forecast: any[] }): Promise<IpcResult<{ explanation: string | null }>>;
     };
 
     apiServer: {

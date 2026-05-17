@@ -152,6 +152,8 @@ const SECTIONS: NavSection[] = [
       { to: "/whatsapp-settings", label: "واتساب", icon: <Send className="h-4 w-4" />, minRole: "admin" },
       { to: "/internal-chat", label: "المحادثات", icon: <MessageSquare className="h-4 w-4" />, minRole: "manager" },
       { to: "/ai-assistant", label: "المساعد الذكي", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
+      { to: "/ai-insights", label: "رؤى ذكية (Forecast)", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
+      { to: "/visual-catalog", label: "كتالوج بالصور (AI)", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
     ],
   },
   {

@@ -63,6 +63,8 @@ import { MarketplaceIntegrationsScreen } from "@/screens/MarketplaceIntegrations
 import { PluginsScreen } from "@/screens/PluginsScreen";
 import { QuotationsScreen } from "@/screens/QuotationsScreen";
 import { BulkImportScreen } from "@/screens/BulkImportScreen";
+import { AIInsightsScreen } from "@/screens/AIInsightsScreen";
+import { VisualCatalogScreen } from "@/screens/VisualCatalogScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -314,6 +316,8 @@ export default function App() {
                     <Route path="plugins" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><PluginsScreen /></SP></ProtectedRoute>} />
                     <Route path="quotations" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><QuotationsScreen /></SP></ProtectedRoute>} />
                     <Route path="bulk-import" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BulkImportScreen /></SP></ProtectedRoute>} />
+                    <Route path="ai-insights" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><AIInsightsScreen /></SP></ProtectedRoute>} />
+                    <Route path="visual-catalog" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><VisualCatalogScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="store-theme-builder"
                       element={

@@ -76,6 +76,8 @@ const TITLES: Record<string, string> = {
   "/plugins": "Plugins",
   "/quotations": "عروض الأسعار",
   "/bulk-import": "استيراد جماعي",
+  "/ai-insights": "رؤى الذكاء الاصطناعي",
+  "/visual-catalog": "كتالوج بالصور (AI Vision)",
 };
 
 export function AppShell() {

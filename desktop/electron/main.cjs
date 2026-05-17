@@ -35,6 +35,8 @@ const apiServer = require('./api-server.cjs');
 const thermalPrinter = require('./thermal-printer.cjs');
 const schedulers = require('./schedulers.cjs');
 const bulkImport = require('./bulk-import.cjs');
+const aiVision = require('./ai-vision.cjs');
+const aiInsights = require('./ai-insights.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -528,6 +530,12 @@ ipcMain.handle('import:clients', safe((_e, payload) => bulkImport.importClients(
 ipcMain.handle('sched:run-recurring', safe(() => { schedulers.runRecurring(); return { ok: true }; }));
 ipcMain.handle('sched:run-reminders', safe(() => { schedulers.runReservationReminders(); return { ok: true }; }));
 ipcMain.handle('sched:run-expiry', safe(() => { schedulers.runExpiryAlerts(); return { ok: true }; }));
+
+// --- AI Vision + Insights IPC ---
+ipcMain.handle('ai:vision-suggest', safe((_e, payload) => aiVision.suggestProduct(payload)));
+ipcMain.handle('ai:forecast', safe((_e, payload) => aiInsights.forecastDemand(payload)));
+ipcMain.handle('ai:anomalies', safe((_e, payload) => aiInsights.detectAnomalies(payload)));
+ipcMain.handle('ai:explain', safe((_e, payload) => aiInsights.explainInsights(payload)));
 
 // --- Cashier shifts IPC ---
 ipcMain.handle('shifts:active', safe((_e, { userId }) => shifts.activeShift(userId)));
