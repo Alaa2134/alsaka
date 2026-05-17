@@ -1102,6 +1102,71 @@ function bootstrap() {
     CREATE INDEX IF NOT EXISTS idx_outbox_status ON whatsapp_outbox(status);
     CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook ON webhook_deliveries(webhook_id);
 
+    -- ====================================================================
+    -- Multi-branch, reservations, kitchen display, plugin marketplace
+    -- ====================================================================
+
+    CREATE TABLE IF NOT EXISTS branches (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      name TEXT NOT NULL,
+      address TEXT,
+      phone TEXT,
+      manager_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      industry_template TEXT,  -- retail | restaurant | pharmacy | salon | services
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, code)
+    );
+
+    CREATE TABLE IF NOT EXISTS reservations (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      branch_id TEXT REFERENCES branches(id) ON DELETE CASCADE,
+      table_id TEXT REFERENCES restaurant_tables(id) ON DELETE SET NULL,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      employee_id TEXT REFERENCES employees(id) ON DELETE SET NULL,
+      service_name TEXT,
+      starts_at TEXT NOT NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 60,
+      party_size INTEGER NOT NULL DEFAULT 1,
+      notes TEXT,
+      status TEXT NOT NULL DEFAULT 'confirmed',  -- pending | confirmed | seated | completed | cancelled
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS kitchen_screens (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      sections TEXT,                -- comma-separated kitchen sections to watch
+      auto_advance INTEGER NOT NULL DEFAULT 1,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS plugins (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      vendor TEXT,
+      version TEXT,
+      manifest_url TEXT,
+      manifest_json TEXT,
+      is_enabled INTEGER NOT NULL DEFAULT 0,
+      installed_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS marketplace_integrations (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL,        -- talabat | mrsool | jumia | shopify | woocommerce | uber_eats
+      api_credentials_json TEXT,
+      is_enabled INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Per-user UI preferences (POS layout, invoice template, etc.).
     -- One row per (tenant, user). Default values applied at read time.
     CREATE TABLE IF NOT EXISTS ui_preferences (
@@ -1133,6 +1198,7 @@ const SENSITIVE = {
   webhooks: new Set(['secret']),
   api_keys: new Set(['key_hash']),
   whatsapp_outbox: new Set(['to_phone']),
+  marketplace_integrations: new Set(['api_credentials_json']),
 };
 
 function encryptRow(table, row) {

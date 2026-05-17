@@ -55,6 +55,12 @@ import { StockTransfersScreen } from "@/screens/StockTransfersScreen";
 import { StockCountsScreen } from "@/screens/StockCountsScreen";
 import { PurchaseOrdersScreen } from "@/screens/PurchaseOrdersScreen";
 import { BankTransactionsScreen } from "@/screens/BankTransactionsScreen";
+import { IndustryTemplatesScreen } from "@/screens/IndustryTemplatesScreen";
+import { BranchesScreen } from "@/screens/BranchesScreen";
+import { ReservationsScreen } from "@/screens/ReservationsScreen";
+import { KitchenDisplayScreen } from "@/screens/KitchenDisplayScreen";
+import { MarketplaceIntegrationsScreen } from "@/screens/MarketplaceIntegrationsScreen";
+import { PluginsScreen } from "@/screens/PluginsScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -298,6 +304,12 @@ export default function App() {
                     <Route path="stock-counts" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><StockCountsScreen /></SP></ProtectedRoute>} />
                     <Route path="purchase-orders" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><PurchaseOrdersScreen /></SP></ProtectedRoute>} />
                     <Route path="bank-transactions" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BankTransactionsScreen /></SP></ProtectedRoute>} />
+                    <Route path="industry-templates" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><IndustryTemplatesScreen /></SP></ProtectedRoute>} />
+                    <Route path="branches" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BranchesScreen /></SP></ProtectedRoute>} />
+                    <Route path="reservations" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><ReservationsScreen /></SP></ProtectedRoute>} />
+                    <Route path="kitchen-display" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><KitchenDisplayScreen /></SP></ProtectedRoute>} />
+                    <Route path="marketplace" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><MarketplaceIntegrationsScreen /></SP></ProtectedRoute>} />
+                    <Route path="plugins" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><PluginsScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="store-theme-builder"
                       element={

@@ -68,6 +68,12 @@ const TITLES: Record<string, string> = {
   "/stock-counts": "الجرد",
   "/purchase-orders": "أوامر الشراء",
   "/bank-transactions": "الحركات البنكية",
+  "/industry-templates": "قوالب الأنشطة",
+  "/branches": "الفروع",
+  "/reservations": "الحجوزات",
+  "/kitchen-display": "شاشة المطبخ",
+  "/marketplace": "Marketplace Integrations",
+  "/plugins": "Plugins",
 };
 
 export function AppShell() {

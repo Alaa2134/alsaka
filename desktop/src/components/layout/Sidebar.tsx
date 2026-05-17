@@ -47,6 +47,11 @@ import {
   ClipboardList,
   FileSignature,
   ArrowDownToLine,
+  Calendar,
+  ChefHat,
+  Plug,
+  Globe,
+  Store,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -87,6 +92,8 @@ const SECTIONS: NavSection[] = [
       { to: "/gift-cards", label: "بطاقات الهدايا", icon: <Gift className="h-4 w-4" />, minRole: "manager" },
       { to: "/bundles", label: "العروض المجمعة", icon: <Boxes className="h-4 w-4" />, minRole: "manager" },
       { to: "/restaurant-tables", label: "طاولات المطعم", icon: <Utensils className="h-4 w-4" />, minRole: "manager" },
+      { to: "/kitchen-display", label: "شاشة المطبخ (KDS)", icon: <ChefHat className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/reservations", label: "الحجوزات", icon: <Calendar className="h-4 w-4" />, minRole: "cashier" },
     ],
   },
   {
@@ -149,6 +156,10 @@ const SECTIONS: NavSection[] = [
     title: "النظام",
     items: [
       { to: "/users", label: "المستخدمون", icon: <Users className="h-4 w-4" />, minRole: "admin" },
+      { to: "/branches", label: "الفروع", icon: <Store className="h-4 w-4" />, minRole: "admin" },
+      { to: "/industry-templates", label: "قوالب الأنشطة", icon: <Sparkles className="h-4 w-4" />, minRole: "admin" },
+      { to: "/marketplace", label: "Marketplace", icon: <Globe className="h-4 w-4" />, minRole: "admin" },
+      { to: "/plugins", label: "Plugins", icon: <Plug className="h-4 w-4" />, minRole: "admin" },
       { to: "/tenants", label: "الشركات", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
       { to: "/webhooks", label: "Webhooks", icon: <Webhook className="h-4 w-4" />, minRole: "admin" },
       { to: "/api-keys", label: "مفاتيح API", icon: <Key className="h-4 w-4" />, minRole: "admin" },

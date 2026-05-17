@@ -18,6 +18,26 @@ SQLite database (`better-sqlite3`).
 | Crypto | AES-256-GCM at rest for `two_factor_secret`, `backup_codes`, `clients.phone` |
 | Build | electron-builder → NSIS single-file `.exe` for Windows |
 
+## Platform-grade features at a glance
+
+| Domain | Capabilities |
+|---|---|
+| **POS** | 5 selectable cashier layouts (Classic / Touch Grid / Restaurant / Quick Service / Dual screen), multi-pricing (retail/wholesale/VIP), hold & resume invoices, partial returns, cashier shifts with X/Z reports |
+| **Invoice Designer** | Drag-style section reorder, paper size (A4/A5/thermal 80/58), 6 colour presets, live preview, per-user templates |
+| **Storefront** | Per-tenant public shop, live theme builder with desktop/mobile preview, coupons, shipping carriers (Aramex/Bosta/J&T/...), payment gateways (Paymob/Fawry/Stripe/...), order workflow |
+| **Restaurant mode** | Table floor plan with zones, KOT to kitchen, Kitchen Display Screen (KDS) with timer alerts, reservations |
+| **Accounting** | Double-entry, Arabic chart of accounts seeded, journal entries, trial balance, income statement, balance sheet, AR aging, multi-currency, bank accounts + transactions, fixed assets, cost centers, budgets, payroll, recurring invoices |
+| **Inventory** | Multi-warehouse, product variants (size/colour/SKU), stock transfers, physical stock counts, purchase orders, expiry dates |
+| **Customers** | Loyalty points with tiers, gift cards, product bundles |
+| **AI** | Anthropic Claude chat assistant with live business context (today/week/month sales, top sellers, low stock) |
+| **Integrations** | WhatsApp QR login + auto-send invoice images + offline outbox, REST API + scoped keys, webhooks with HMAC signing, Marketplace catalog (Talabat, Mrsool, Jahez, Uber Eats, Jumia, Noon, Salla, Zid, Shopify, WooCommerce, ...), ZATCA/ETA QR for e-invoices, thermal printer (ESC/POS USB/network) |
+| **Multi-tenant** | Branches with manager assignment, 8 industry templates (retail / supermarket / restaurant / coffee shop / pharmacy / salon / professional services / auto workshop) that one-click set the entire experience |
+| **Security** | scrypt password stretching, 5-fail/15-min lockout, HMAC-chained audit log, AES-256-GCM at rest, hardware-bound device login, hardened renderer (no DevTools in prod), CSP, single-instance |
+| **Backups** | Nightly Google Drive backup via OAuth-PKCE, file is updated in place (storage stays flat), offline-safe fallback to local file, daily JSON snapshot |
+| **Voice POS** | Arabic Web Speech commands (افتح المنتجات، فاتورة جديدة، طباعة، حفظ، ركّز الباركود...) |
+| **i18n** | Arabic/English toggle in the title bar, document direction flips automatically |
+| **Licensing** | One-key-one-device activation with HMAC-signed keys + 30-day trial |
+
 ## Login flow (one device per account)
 
 The app uses a two-step login model that **binds each account to exactly
