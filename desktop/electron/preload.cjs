@@ -121,6 +121,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     stop: () => invoke('api:stop'),
   },
 
+  // Thermal receipt printer (ESC/POS)
+  thermal: {
+    config: () => invoke('thermal:config'),
+    setConfig: (payload) => invoke('thermal:set-config', payload),
+    print: (payload) => invoke('thermal:print', payload),
+    probe: () => invoke('thermal:probe'),
+  },
+
   // Google Drive backup
   gdrive: {
     state: () => invoke('gdrive:state'),

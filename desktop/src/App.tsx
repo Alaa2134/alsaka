@@ -49,6 +49,12 @@ import { ApiKeysScreen } from "@/screens/ApiKeysScreen";
 import { RestaurantTablesScreen } from "@/screens/RestaurantTablesScreen";
 import { AIAssistantScreen } from "@/screens/AIAssistantScreen";
 import { ApiServerScreen } from "@/screens/ApiServerScreen";
+import { ThermalPrinterScreen } from "@/screens/ThermalPrinterScreen";
+import { ProductVariantsScreen } from "@/screens/ProductVariantsScreen";
+import { StockTransfersScreen } from "@/screens/StockTransfersScreen";
+import { StockCountsScreen } from "@/screens/StockCountsScreen";
+import { PurchaseOrdersScreen } from "@/screens/PurchaseOrdersScreen";
+import { BankTransactionsScreen } from "@/screens/BankTransactionsScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -286,6 +292,12 @@ export default function App() {
                     <Route path="restaurant-tables" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><RestaurantTablesScreen /></SP></ProtectedRoute>} />
                     <Route path="ai-assistant" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><AIAssistantScreen /></SP></ProtectedRoute>} />
                     <Route path="api-server" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ApiServerScreen /></SP></ProtectedRoute>} />
+                    <Route path="thermal-printer" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ThermalPrinterScreen /></SP></ProtectedRoute>} />
+                    <Route path="product-variants" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><ProductVariantsScreen /></SP></ProtectedRoute>} />
+                    <Route path="stock-transfers" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><StockTransfersScreen /></SP></ProtectedRoute>} />
+                    <Route path="stock-counts" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><StockCountsScreen /></SP></ProtectedRoute>} />
+                    <Route path="purchase-orders" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><PurchaseOrdersScreen /></SP></ProtectedRoute>} />
+                    <Route path="bank-transactions" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BankTransactionsScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="store-theme-builder"
                       element={

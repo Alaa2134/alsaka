@@ -41,6 +41,12 @@ import {
   Sparkles,
   Server,
   Palette,
+  Printer,
+  Tag,
+  ArrowRightLeft,
+  ClipboardList,
+  FileSignature,
+  ArrowDownToLine,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -88,7 +94,11 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: "/purchase-invoices", label: "فواتير المشتريات", icon: <FileText className="h-4 w-4" />, minRole: "manager" },
       { to: "/suppliers", label: "الموردون", icon: <Building2 className="h-4 w-4" />, minRole: "manager" },
+      { to: "/purchase-orders", label: "أوامر الشراء (PO)", icon: <FileSignature className="h-4 w-4" />, minRole: "manager" },
       { to: "/products", label: "المنتجات", icon: <Package className="h-4 w-4" />, minRole: "manager" },
+      { to: "/product-variants", label: "متغيرات المنتج", icon: <Tag className="h-4 w-4" />, minRole: "manager" },
+      { to: "/stock-transfers", label: "تحويلات المخزون", icon: <ArrowRightLeft className="h-4 w-4" />, minRole: "manager" },
+      { to: "/stock-counts", label: "الجرد", icon: <ClipboardList className="h-4 w-4" />, minRole: "manager" },
       { to: "/categories", label: "التصنيفات", icon: <Layers className="h-4 w-4" />, minRole: "manager" },
       { to: "/warehouses", label: "المخازن", icon: <Warehouse className="h-4 w-4" />, minRole: "manager" },
     ],
@@ -109,6 +119,7 @@ const SECTIONS: NavSection[] = [
       { to: "/reports", label: "التقارير التشغيلية", icon: <LineChart className="h-4 w-4" />, minRole: "manager" },
       { to: "/currencies", label: "العملات", icon: <Coins className="h-4 w-4" />, minRole: "admin" },
       { to: "/bank-accounts", label: "الحسابات البنكية", icon: <Landmark className="h-4 w-4" />, minRole: "admin" },
+      { to: "/bank-transactions", label: "الحركات البنكية", icon: <ArrowDownToLine className="h-4 w-4" />, minRole: "admin" },
       { to: "/fixed-assets", label: "الأصول الثابتة", icon: <Building className="h-4 w-4" />, minRole: "admin" },
       { to: "/cost-centers", label: "مراكز التكلفة", icon: <Layers className="h-4 w-4" />, minRole: "admin" },
       { to: "/employees", label: "الموظفون والمرتبات", icon: <Users className="h-4 w-4" />, minRole: "admin" },
@@ -142,6 +153,7 @@ const SECTIONS: NavSection[] = [
       { to: "/webhooks", label: "Webhooks", icon: <Webhook className="h-4 w-4" />, minRole: "admin" },
       { to: "/api-keys", label: "مفاتيح API", icon: <Key className="h-4 w-4" />, minRole: "admin" },
       { to: "/api-server", label: "REST API Server", icon: <Server className="h-4 w-4" />, minRole: "admin" },
+      { to: "/thermal-printer", label: "الطابعة الحرارية", icon: <Printer className="h-4 w-4" />, minRole: "admin" },
       { to: "/audit-logs", label: "سجل الأحداث (HMAC)", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/security-events", label: "أحداث الأمان", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/gdrive-backup", label: "نسخ Google Drive", icon: <Cloud className="h-4 w-4" />, minRole: "admin" },

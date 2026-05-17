@@ -32,6 +32,7 @@ const zatca = require('./zatca.cjs');
 const waQueue = require('./whatsapp-queue.cjs');
 const aiAssistant = require('./ai-assistant.cjs');
 const apiServer = require('./api-server.cjs');
+const thermalPrinter = require('./thermal-printer.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -510,6 +511,12 @@ ipcMain.handle('ai:set-key', safe((_e, { tenantId, apiKey }) => aiAssistant.setA
 ipcMain.handle('api:state', safe(() => apiServer.getServerState()));
 ipcMain.handle('api:start', safe(() => apiServer.start()));
 ipcMain.handle('api:stop', safe(() => { apiServer.stop(); return { ok: true }; }));
+
+// --- Thermal printer IPC ---
+ipcMain.handle('thermal:config', safe(() => thermalPrinter.getConfig()));
+ipcMain.handle('thermal:set-config', safe((_e, payload) => thermalPrinter.setConfig(payload)));
+ipcMain.handle('thermal:print', safe((_e, payload) => thermalPrinter.printReceipt(payload)));
+ipcMain.handle('thermal:probe', safe(() => thermalPrinter.probe()));
 
 // --- Cashier shifts IPC ---
 ipcMain.handle('shifts:active', safe((_e, { userId }) => shifts.activeShift(userId)));

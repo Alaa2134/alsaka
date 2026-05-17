@@ -167,6 +167,13 @@ declare global {
       stop(): Promise<IpcResult<{ ok: boolean }>>;
     };
 
+    thermal: {
+      config(): Promise<IpcResult<any>>;
+      setConfig(payload: { tenantId: string; patch: Record<string, unknown> }): Promise<IpcResult<any>>;
+      print(payload: any): Promise<IpcResult<{ ok: boolean }>>;
+      probe(): Promise<IpcResult<{ available: boolean; connected?: boolean; reason?: string; error?: string }>>;
+    };
+
     gdrive: {
       state(): Promise<IpcResult<{
         connected: boolean;

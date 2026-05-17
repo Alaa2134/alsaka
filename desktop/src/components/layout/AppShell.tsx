@@ -1,9 +1,11 @@
 import { Outlet, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
 import { useOffline } from "@/contexts/OfflineContext";
 import { Badge } from "@/components/ui/badge";
-import { Wifi, WifiOff } from "lucide-react";
+import { Wifi, WifiOff, Languages } from "lucide-react";
+import { VoiceCommands } from "@/components/shared/VoiceCommands";
 
 const TITLES: Record<string, string> = {
   "/": "لوحة التحكم",
@@ -60,12 +62,20 @@ const TITLES: Record<string, string> = {
   "/ai-assistant": "المساعد الذكي",
   "/api-server": "REST API Server",
   "/store-theme-builder": "مصمم واجهة المتجر",
+  "/thermal-printer": "الطابعة الحرارية",
+  "/product-variants": "متغيرات المنتج",
+  "/stock-transfers": "تحويلات المخزون",
+  "/stock-counts": "الجرد",
+  "/purchase-orders": "أوامر الشراء",
+  "/bank-transactions": "الحركات البنكية",
 };
 
 export function AppShell() {
   const location = useLocation();
   const { online } = useOffline();
+  const { i18n } = useTranslation();
   const title = TITLES[location.pathname] || "SystemAlaa";
+  const toggleLang = () => i18n.changeLanguage(i18n.language === "ar" ? "en" : "ar");
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
@@ -76,6 +86,15 @@ export function AppShell() {
           <header className="no-print h-14 border-b border-border px-5 flex items-center justify-between bg-card/60 backdrop-blur">
             <h1 className="text-lg font-semibold">{title}</h1>
             <div className="flex items-center gap-2">
+              <VoiceCommands />
+              <button
+                onClick={toggleLang}
+                className="inline-flex items-center gap-1.5 rounded-md bg-secondary hover:bg-secondary/80 px-2.5 py-1.5 text-xs font-medium no-print"
+                title="تبديل اللغة"
+              >
+                <Languages className="h-3.5 w-3.5" />
+                {i18n.language === "ar" ? "EN" : "ع"}
+              </button>
               {online ? (
                 <Badge variant="success" className="gap-1">
                   <Wifi className="h-3 w-3" /> متصل
