@@ -53,6 +53,7 @@ import {
   Globe,
   Store,
   Upload,
+  QrCode,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -95,6 +96,7 @@ const SECTIONS: NavSection[] = [
       { to: "/bundles", label: "العروض المجمعة", icon: <Boxes className="h-4 w-4" />, minRole: "manager" },
       { to: "/restaurant-tables", label: "طاولات المطعم", icon: <Utensils className="h-4 w-4" />, minRole: "manager" },
       { to: "/kitchen-display", label: "شاشة المطبخ (KDS)", icon: <ChefHat className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/qr-menu", label: "مينيو QR للطاولات", icon: <QrCode className="h-4 w-4" />, minRole: "manager" },
       { to: "/reservations", label: "الحجوزات", icon: <Calendar className="h-4 w-4" />, minRole: "cashier" },
     ],
   },

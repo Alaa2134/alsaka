@@ -7,14 +7,18 @@ import { CartPage } from "@/pages/Cart";
 import { CheckoutPage } from "@/pages/Checkout";
 import { ConfirmationPage } from "@/pages/Confirmation";
 import { TrackPage } from "@/pages/Track";
+import { MenuPage } from "@/pages/Menu";
 
-// SystemAlaa Storefront — public, customer-facing SPA. Each tenant gets a
+// Horus Storefront — public, customer-facing SPA. Each tenant gets a
 // route segment `/<slug>` and all storefront state hangs off that slug.
+// The `/menu/<slug>` route is dedicated to restaurants (scanned via
+// QR at the table) and has its own mobile-first layout.
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/demo" replace />} />
+        <Route path="/menu/:slug" element={<MenuPage />} />
         <Route path="/:slug" element={<StoreLayout />}>
           <Route index element={<HomePage />} />
           <Route path="products" element={<ProductsPage />} />

@@ -107,6 +107,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     drainNow: () => invoke('wa-queue:drain-now'),
   },
 
+  // QR Menu (table-based ordering by phone scan)
+  qrMenu: {
+    config: (tenantId) => invoke('qrmenu:config', { tenantId }),
+    setConfig: (payload) => invoke('qrmenu:set-config', payload),
+    tables: (tenantId) => invoke('qrmenu:tables', { tenantId }),
+    general: (tenantId) => invoke('qrmenu:general', { tenantId }),
+    feed: (slug) => invoke('qrmenu:feed', { slug }),
+  },
+
   // AI assistant (Claude / Anthropic) + vision + insights
   ai: {
     chat: (payload) => invoke('ai:chat', payload),

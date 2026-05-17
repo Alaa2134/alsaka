@@ -78,6 +78,7 @@ const TITLES: Record<string, string> = {
   "/bulk-import": "استيراد جماعي",
   "/ai-insights": "رؤى الذكاء الاصطناعي",
   "/visual-catalog": "كتالوج بالصور (AI Vision)",
+  "/qr-menu": "مينيو QR للطاولات",
 };
 
 export function AppShell() {

@@ -8,6 +8,7 @@ const { URL } = require('node:url');
 const dbMod = require('./db.cjs');
 const repo = require('./repo.cjs');
 const store = require('./store.cjs');
+const qrMenu = require('./qr-menu.cjs');
 
 const PORT = Number(process.env.SYSTEMALAA_API_PORT || 27817);
 let server = null;
@@ -89,6 +90,14 @@ async function handle(req, res) {
       const slug = path.split('/')[3];
       const feed = store.buildStorefrontFeed(slug);
       if (!feed) return send(res, 404, { error: 'store not found' });
+      return send(res, 200, feed);
+    }
+
+    // Public menu feed (QR menu pages on customer phones)
+    if (req.method === 'GET' && path.startsWith('/menu/')) {
+      const slug = decodeURIComponent(path.split('/')[2] || '');
+      const feed = qrMenu.buildMenuFeed({ slug });
+      if (!feed) return send(res, 404, { error: 'menu not found' });
       return send(res, 200, feed);
     }
 

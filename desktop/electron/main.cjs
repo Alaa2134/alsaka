@@ -37,6 +37,7 @@ const schedulers = require('./schedulers.cjs');
 const bulkImport = require('./bulk-import.cjs');
 const aiVision = require('./ai-vision.cjs');
 const aiInsights = require('./ai-insights.cjs');
+const qrMenu = require('./qr-menu.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -536,6 +537,13 @@ ipcMain.handle('ai:vision-suggest', safe((_e, payload) => aiVision.suggestProduc
 ipcMain.handle('ai:forecast', safe((_e, payload) => aiInsights.forecastDemand(payload)));
 ipcMain.handle('ai:anomalies', safe((_e, payload) => aiInsights.detectAnomalies(payload)));
 ipcMain.handle('ai:explain', safe((_e, payload) => aiInsights.explainInsights(payload)));
+
+// --- QR Menu IPC ---
+ipcMain.handle('qrmenu:config', safe((_e, { tenantId }) => qrMenu.getMenuConfig(tenantId)));
+ipcMain.handle('qrmenu:set-config', safe((_e, payload) => qrMenu.setMenuConfig(payload)));
+ipcMain.handle('qrmenu:tables', safe((_e, payload) => qrMenu.listTablesWithQr(payload)));
+ipcMain.handle('qrmenu:general', safe((_e, payload) => qrMenu.generalMenuQr(payload)));
+ipcMain.handle('qrmenu:feed', safe((_e, { slug }) => qrMenu.buildMenuFeed({ slug })));
 
 // --- Cashier shifts IPC ---
 ipcMain.handle('shifts:active', safe((_e, { userId }) => shifts.activeShift(userId)));

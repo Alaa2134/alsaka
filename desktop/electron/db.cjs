@@ -1072,6 +1072,7 @@ function bootstrap() {
   maybeAdd('products', 'is_service', 'INTEGER NOT NULL DEFAULT 0');
   maybeAdd('products', 'tax_rate', 'REAL NOT NULL DEFAULT 0');
   maybeAdd('products', 'kitchen_section', 'TEXT');
+  maybeAdd('products', 'menu_section', 'TEXT');
 
   maybeAdd('clients', 'pricing_tier', "TEXT NOT NULL DEFAULT 'retail'");
 

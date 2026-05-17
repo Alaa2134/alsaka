@@ -65,6 +65,7 @@ import { QuotationsScreen } from "@/screens/QuotationsScreen";
 import { BulkImportScreen } from "@/screens/BulkImportScreen";
 import { AIInsightsScreen } from "@/screens/AIInsightsScreen";
 import { VisualCatalogScreen } from "@/screens/VisualCatalogScreen";
+import { QRMenuBuilderScreen } from "@/screens/QRMenuBuilderScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -318,6 +319,7 @@ export default function App() {
                     <Route path="bulk-import" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BulkImportScreen /></SP></ProtectedRoute>} />
                     <Route path="ai-insights" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><AIInsightsScreen /></SP></ProtectedRoute>} />
                     <Route path="visual-catalog" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><VisualCatalogScreen /></SP></ProtectedRoute>} />
+                    <Route path="qr-menu" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><QRMenuBuilderScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="store-theme-builder"
                       element={

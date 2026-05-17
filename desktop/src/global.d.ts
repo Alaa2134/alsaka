@@ -155,6 +155,14 @@ declare global {
       drainNow(): Promise<IpcResult<void>>;
     };
 
+    qrMenu: {
+      config(tenantId: string): Promise<IpcResult<any>>;
+      setConfig(payload: { tenantId: string; patch: Record<string, unknown> }): Promise<IpcResult<any>>;
+      tables(tenantId: string): Promise<IpcResult<Array<{ id: string; name: string; zone: string | null; seats: number; status: string; url: string; qr: string }>>>;
+      general(tenantId: string): Promise<IpcResult<{ url: string; qr: string }>>;
+      feed(slug: string): Promise<IpcResult<any>>;
+    };
+
     ai: {
       chat(payload: { tenantId: string; messages: Array<{ role: string; content: string }> }): Promise<IpcResult<{ ok: boolean; text: string; usage?: any }>>;
       getKey(tenantId: string): Promise<IpcResult<{ has_key: boolean }>>;
