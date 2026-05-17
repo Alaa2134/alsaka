@@ -94,6 +94,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
     list: (payload) => invoke('shifts:list', payload),
   },
 
+  // ZATCA / ETA QR
+  zatca: {
+    qr: (payload) => invoke('zatca:qr', payload),
+  },
+
+  // WhatsApp offline queue
+  waQueue: {
+    enqueue: (payload) => invoke('wa-queue:enqueue', payload),
+    pending: (payload) => invoke('wa-queue:pending', payload),
+    recent: (payload) => invoke('wa-queue:recent', payload),
+    drainNow: () => invoke('wa-queue:drain-now'),
+  },
+
+  // AI assistant (Claude / Anthropic)
+  ai: {
+    chat: (payload) => invoke('ai:chat', payload),
+    getKey: (tenantId) => invoke('ai:get-key', { tenantId }),
+    setKey: (tenantId, apiKey) => invoke('ai:set-key', { tenantId, apiKey }),
+  },
+
+  // Embedded REST API server
+  apiServer: {
+    state: () => invoke('api:state'),
+    start: () => invoke('api:start'),
+    stop: () => invoke('api:stop'),
+  },
+
   // Google Drive backup
   gdrive: {
     state: () => invoke('gdrive:state'),

@@ -21,6 +21,7 @@
     "lint": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
     "@fontsource/cairo": "^5.2.7",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-dialog": "^1.1.14",

@@ -144,6 +144,29 @@ declare global {
       list(payload: { tenantId: string; limit?: number }): Promise<IpcResult<any[]>>;
     };
 
+    zatca: {
+      qr(payload: { sellerName: string; vatNumber: string; timestamp?: string; totalWithVat: number; vatTotal: number }): Promise<IpcResult<string>>;
+    };
+
+    waQueue: {
+      enqueue(payload: { tenantId: string; to: string; body?: string; dataUrl?: string; caption?: string; kind?: string }): Promise<IpcResult<{ ok: boolean; id: string }>>;
+      pending(payload: { tenantId: string }): Promise<IpcResult<any[]>>;
+      recent(payload: { tenantId: string; limit?: number }): Promise<IpcResult<any[]>>;
+      drainNow(): Promise<IpcResult<void>>;
+    };
+
+    ai: {
+      chat(payload: { tenantId: string; messages: Array<{ role: string; content: string }> }): Promise<IpcResult<{ ok: boolean; text: string; usage?: any }>>;
+      getKey(tenantId: string): Promise<IpcResult<{ has_key: boolean }>>;
+      setKey(tenantId: string, apiKey: string): Promise<IpcResult<{ ok: boolean }>>;
+    };
+
+    apiServer: {
+      state(): Promise<IpcResult<{ listening: boolean; port: number }>>;
+      start(): Promise<IpcResult<{ ok: boolean; port: number }>>;
+      stop(): Promise<IpcResult<{ ok: boolean }>>;
+    };
+
     gdrive: {
       state(): Promise<IpcResult<{
         connected: boolean;

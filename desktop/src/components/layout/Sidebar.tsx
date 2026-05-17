@@ -38,6 +38,8 @@ import {
   Webhook,
   Key,
   Utensils,
+  Sparkles,
+  Server,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -127,6 +129,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: "/whatsapp-settings", label: "واتساب", icon: <Send className="h-4 w-4" />, minRole: "admin" },
       { to: "/internal-chat", label: "المحادثات", icon: <MessageSquare className="h-4 w-4" />, minRole: "manager" },
+      { to: "/ai-assistant", label: "المساعد الذكي", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
     ],
   },
   {
@@ -136,6 +139,7 @@ const SECTIONS: NavSection[] = [
       { to: "/tenants", label: "الشركات", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
       { to: "/webhooks", label: "Webhooks", icon: <Webhook className="h-4 w-4" />, minRole: "admin" },
       { to: "/api-keys", label: "مفاتيح API", icon: <Key className="h-4 w-4" />, minRole: "admin" },
+      { to: "/api-server", label: "REST API Server", icon: <Server className="h-4 w-4" />, minRole: "admin" },
       { to: "/audit-logs", label: "سجل الأحداث (HMAC)", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/security-events", label: "أحداث الأمان", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/gdrive-backup", label: "نسخ Google Drive", icon: <Cloud className="h-4 w-4" />, minRole: "admin" },

@@ -28,6 +28,10 @@ const payments = require('./payments.cjs');
 const gdrive = require('./google-drive.cjs');
 const shifts = require('./shifts.cjs');
 const uiPrefs = require('./ui-prefs.cjs');
+const zatca = require('./zatca.cjs');
+const waQueue = require('./whatsapp-queue.cjs');
+const aiAssistant = require('./ai-assistant.cjs');
+const apiServer = require('./api-server.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -488,6 +492,25 @@ ipcMain.handle('store:export-feed', safe(async (_e, { slug, outputPath }) => {
 ipcMain.handle('ui:get-prefs', safe((_e, payload) => uiPrefs.getPrefs(payload)));
 ipcMain.handle('ui:set-prefs', safe((_e, payload) => uiPrefs.setPrefs(payload)));
 
+// --- ZATCA/ETA QR IPC ---
+ipcMain.handle('zatca:qr', safe((_e, payload) => zatca.buildQrPayload(payload)));
+
+// --- WhatsApp queue IPC ---
+ipcMain.handle('wa-queue:enqueue', safe((_e, payload) => waQueue.enqueue(payload)));
+ipcMain.handle('wa-queue:pending', safe((_e, payload) => waQueue.listPending(payload)));
+ipcMain.handle('wa-queue:recent', safe((_e, payload) => waQueue.listRecent(payload)));
+ipcMain.handle('wa-queue:drain-now', safe(() => waQueue.drainOnce()));
+
+// --- AI assistant IPC ---
+ipcMain.handle('ai:chat', safe((_e, payload) => aiAssistant.chat(payload)));
+ipcMain.handle('ai:get-key', safe((_e, { tenantId }) => ({ has_key: !!aiAssistant.getApiKey(tenantId) })));
+ipcMain.handle('ai:set-key', safe((_e, { tenantId, apiKey }) => aiAssistant.setApiKey(tenantId, apiKey)));
+
+// --- REST API server IPC ---
+ipcMain.handle('api:state', safe(() => apiServer.getServerState()));
+ipcMain.handle('api:start', safe(() => apiServer.start()));
+ipcMain.handle('api:stop', safe(() => { apiServer.stop(); return { ok: true }; }));
+
 // --- Cashier shifts IPC ---
 ipcMain.handle('shifts:active', safe((_e, { userId }) => shifts.activeShift(userId)));
 ipcMain.handle('shifts:open', safe((_e, payload) => shifts.open(payload)));
@@ -562,6 +585,8 @@ if (!gotLock) {
     whatsapp.attachApp(app);
     gdrive.attachApp(app);
     gdrive.start();
+    waQueue.startDrainer();
+    apiServer.start().catch((err) => console.warn('[SystemAlaa] API server failed to start:', err.message));
     createWindow();
     createTray();
     registerGlobalShortcuts();
@@ -578,6 +603,8 @@ if (!gotLock) {
     globalShortcut.unregisterAll();
     if (backupTimer) clearInterval(backupTimer);
     try { gdrive.stop(); } catch (_) { /* ignore */ }
+    try { waQueue.stopDrainer(); } catch (_) { /* ignore */ }
+    try { apiServer.stop(); } catch (_) { /* ignore */ }
   });
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin' && isQuitting) app.quit();

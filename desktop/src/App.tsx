@@ -46,6 +46,8 @@ import { RecurringInvoicesScreen } from "@/screens/RecurringInvoicesScreen";
 import { WebhooksScreen } from "@/screens/WebhooksScreen";
 import { ApiKeysScreen } from "@/screens/ApiKeysScreen";
 import { RestaurantTablesScreen } from "@/screens/RestaurantTablesScreen";
+import { AIAssistantScreen } from "@/screens/AIAssistantScreen";
+import { ApiServerScreen } from "@/screens/ApiServerScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -281,6 +283,8 @@ export default function App() {
                     <Route path="webhooks" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><WebhooksScreen /></SP></ProtectedRoute>} />
                     <Route path="api-keys" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ApiKeysScreen /></SP></ProtectedRoute>} />
                     <Route path="restaurant-tables" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><RestaurantTablesScreen /></SP></ProtectedRoute>} />
+                    <Route path="ai-assistant" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><AIAssistantScreen /></SP></ProtectedRoute>} />
+                    <Route path="api-server" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ApiServerScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="invoice-designer"
                       element={

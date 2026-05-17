@@ -57,6 +57,8 @@ const TITLES: Record<string, string> = {
   "/webhooks": "Webhooks",
   "/api-keys": "مفاتيح API",
   "/restaurant-tables": "طاولات المطعم",
+  "/ai-assistant": "المساعد الذكي",
+  "/api-server": "REST API Server",
 };
 
 export function AppShell() {
