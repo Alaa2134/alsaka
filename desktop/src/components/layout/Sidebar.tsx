@@ -40,6 +40,7 @@ import {
   Utensils,
   Sparkles,
   Server,
+  Palette,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -118,6 +119,7 @@ const SECTIONS: NavSection[] = [
     title: "المتجر الإلكتروني",
     items: [
       { to: "/store-management", label: "إدارة المتجر", icon: <ShoppingBag className="h-4 w-4" />, minRole: "manager" },
+      { to: "/store-theme-builder", label: "مصمم واجهة المتجر", icon: <Palette className="h-4 w-4" />, minRole: "manager" },
       { to: "/store-orders", label: "طلبات المتجر", icon: <ListChecks className="h-4 w-4" />, minRole: "manager" },
       { to: "/coupons", label: "كوبونات الخصم", icon: <KeyRound className="h-4 w-4" />, minRole: "manager" },
       { to: "/shipping-carriers", label: "شركات الشحن", icon: <Banknote className="h-4 w-4" />, minRole: "admin" },

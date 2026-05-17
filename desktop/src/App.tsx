@@ -32,6 +32,7 @@ import { ShippingCarriersScreen } from "@/screens/ShippingCarriersScreen";
 import { PaymentGatewaysScreen } from "@/screens/PaymentGatewaysScreen";
 import { GoogleDriveBackupScreen } from "@/screens/GoogleDriveBackupScreen";
 import { InvoiceDesignerScreen } from "@/components/designer/InvoiceDesigner";
+import { StoreThemeBuilderScreen } from "@/components/designer/StoreThemeBuilder";
 import { CashierShiftsScreen } from "@/screens/CashierShiftsScreen";
 import { HeldInvoicesScreen } from "@/screens/HeldInvoicesScreen";
 import { LoyaltyScreen } from "@/screens/LoyaltyScreen";
@@ -285,6 +286,14 @@ export default function App() {
                     <Route path="restaurant-tables" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><RestaurantTablesScreen /></SP></ProtectedRoute>} />
                     <Route path="ai-assistant" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><AIAssistantScreen /></SP></ProtectedRoute>} />
                     <Route path="api-server" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ApiServerScreen /></SP></ProtectedRoute>} />
+                    <Route
+                      path="store-theme-builder"
+                      element={
+                        <ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}>
+                          <SP><StoreThemeBuilderScreen /></SP>
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route
                       path="invoice-designer"
                       element={

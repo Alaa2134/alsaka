@@ -59,6 +59,7 @@ const TITLES: Record<string, string> = {
   "/restaurant-tables": "طاولات المطعم",
   "/ai-assistant": "المساعد الذكي",
   "/api-server": "REST API Server",
+  "/store-theme-builder": "مصمم واجهة المتجر",
 };
 
 export function AppShell() {
