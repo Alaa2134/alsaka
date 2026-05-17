@@ -74,6 +74,8 @@ const TITLES: Record<string, string> = {
   "/kitchen-display": "شاشة المطبخ",
   "/marketplace": "Marketplace Integrations",
   "/plugins": "Plugins",
+  "/quotations": "عروض الأسعار",
+  "/bulk-import": "استيراد جماعي",
 };
 
 export function AppShell() {

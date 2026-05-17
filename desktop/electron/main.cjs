@@ -33,6 +33,8 @@ const waQueue = require('./whatsapp-queue.cjs');
 const aiAssistant = require('./ai-assistant.cjs');
 const apiServer = require('./api-server.cjs');
 const thermalPrinter = require('./thermal-printer.cjs');
+const schedulers = require('./schedulers.cjs');
+const bulkImport = require('./bulk-import.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -518,6 +520,15 @@ ipcMain.handle('thermal:set-config', safe((_e, payload) => thermalPrinter.setCon
 ipcMain.handle('thermal:print', safe((_e, payload) => thermalPrinter.printReceipt(payload)));
 ipcMain.handle('thermal:probe', safe(() => thermalPrinter.probe()));
 
+// --- Bulk import IPC ---
+ipcMain.handle('import:products', safe((_e, payload) => bulkImport.importProducts(payload)));
+ipcMain.handle('import:clients', safe((_e, payload) => bulkImport.importClients(payload)));
+
+// --- Schedulers manual triggers ---
+ipcMain.handle('sched:run-recurring', safe(() => { schedulers.runRecurring(); return { ok: true }; }));
+ipcMain.handle('sched:run-reminders', safe(() => { schedulers.runReservationReminders(); return { ok: true }; }));
+ipcMain.handle('sched:run-expiry', safe(() => { schedulers.runExpiryAlerts(); return { ok: true }; }));
+
 // --- Cashier shifts IPC ---
 ipcMain.handle('shifts:active', safe((_e, { userId }) => shifts.activeShift(userId)));
 ipcMain.handle('shifts:open', safe((_e, payload) => shifts.open(payload)));
@@ -593,6 +604,7 @@ if (!gotLock) {
     gdrive.attachApp(app);
     gdrive.start();
     waQueue.startDrainer();
+    schedulers.start();
     apiServer.start().catch((err) => console.warn('[SystemAlaa] API server failed to start:', err.message));
     createWindow();
     createTray();
@@ -611,6 +623,7 @@ if (!gotLock) {
     if (backupTimer) clearInterval(backupTimer);
     try { gdrive.stop(); } catch (_) { /* ignore */ }
     try { waQueue.stopDrainer(); } catch (_) { /* ignore */ }
+    try { schedulers.stop(); } catch (_) { /* ignore */ }
     try { apiServer.stop(); } catch (_) { /* ignore */ }
   });
   app.on('window-all-closed', () => {

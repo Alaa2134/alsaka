@@ -61,6 +61,8 @@ import { ReservationsScreen } from "@/screens/ReservationsScreen";
 import { KitchenDisplayScreen } from "@/screens/KitchenDisplayScreen";
 import { MarketplaceIntegrationsScreen } from "@/screens/MarketplaceIntegrationsScreen";
 import { PluginsScreen } from "@/screens/PluginsScreen";
+import { QuotationsScreen } from "@/screens/QuotationsScreen";
+import { BulkImportScreen } from "@/screens/BulkImportScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -310,6 +312,8 @@ export default function App() {
                     <Route path="kitchen-display" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><KitchenDisplayScreen /></SP></ProtectedRoute>} />
                     <Route path="marketplace" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><MarketplaceIntegrationsScreen /></SP></ProtectedRoute>} />
                     <Route path="plugins" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><PluginsScreen /></SP></ProtectedRoute>} />
+                    <Route path="quotations" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><QuotationsScreen /></SP></ProtectedRoute>} />
+                    <Route path="bulk-import" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BulkImportScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="store-theme-builder"
                       element={

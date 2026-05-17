@@ -174,6 +174,17 @@ declare global {
       probe(): Promise<IpcResult<{ available: boolean; connected?: boolean; reason?: string; error?: string }>>;
     };
 
+    bulk: {
+      importProducts(payload: { tenantId: string; csv: string; replaceExisting?: boolean }): Promise<IpcResult<{ ok: boolean; created?: number; updated?: number; failed?: number; errors?: string[]; error?: string }>>;
+      importClients(payload: { tenantId: string; csv: string; replaceExisting?: boolean }): Promise<IpcResult<{ ok: boolean; created?: number; updated?: number; failed?: number; errors?: string[]; error?: string }>>;
+    };
+
+    schedulers: {
+      runRecurring(): Promise<IpcResult<{ ok: boolean }>>;
+      runReminders(): Promise<IpcResult<{ ok: boolean }>>;
+      runExpiry(): Promise<IpcResult<{ ok: boolean }>>;
+    };
+
     gdrive: {
       state(): Promise<IpcResult<{
         connected: boolean;

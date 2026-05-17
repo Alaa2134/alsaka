@@ -52,6 +52,7 @@ import {
   Plug,
   Globe,
   Store,
+  Upload,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -83,6 +84,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { to: "/invoice", label: "فاتورة جديدة", icon: <FileText className="h-4 w-4" />, minRole: "cashier" },
       { to: "/invoices", label: "الفواتير", icon: <ListChecks className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/quotations", label: "عروض الأسعار", icon: <FileText className="h-4 w-4" />, minRole: "manager" },
       { to: "/invoice-designer", label: "مصمم الفاتورة", icon: <Settings className="h-4 w-4" />, minRole: "manager" },
       { to: "/returns", label: "المرتجعات", icon: <RotateCcw className="h-4 w-4" />, minRole: "cashier" },
       { to: "/held-invoices", label: "الفواتير المعلقة", icon: <Pause className="h-4 w-4" />, minRole: "cashier" },
@@ -160,6 +162,7 @@ const SECTIONS: NavSection[] = [
       { to: "/industry-templates", label: "قوالب الأنشطة", icon: <Sparkles className="h-4 w-4" />, minRole: "admin" },
       { to: "/marketplace", label: "Marketplace", icon: <Globe className="h-4 w-4" />, minRole: "admin" },
       { to: "/plugins", label: "Plugins", icon: <Plug className="h-4 w-4" />, minRole: "admin" },
+      { to: "/bulk-import", label: "استيراد جماعي (CSV)", icon: <Upload className="h-4 w-4" />, minRole: "admin" },
       { to: "/tenants", label: "الشركات", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
       { to: "/webhooks", label: "Webhooks", icon: <Webhook className="h-4 w-4" />, minRole: "admin" },
       { to: "/api-keys", label: "مفاتيح API", icon: <Key className="h-4 w-4" />, minRole: "admin" },

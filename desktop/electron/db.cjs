@@ -1161,11 +1161,42 @@ function bootstrap() {
     CREATE TABLE IF NOT EXISTS marketplace_integrations (
       id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-      provider TEXT NOT NULL,        -- talabat | mrsool | jumia | shopify | woocommerce | uber_eats
+      provider TEXT NOT NULL,
       api_credentials_json TEXT,
       is_enabled INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Quotations (عروض الأسعار) — Quote → Accept → Invoice pipeline
+    CREATE TABLE IF NOT EXISTS quotations (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      quote_number INTEGER,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      user_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      issue_date TEXT NOT NULL DEFAULT (date('now')),
+      valid_until TEXT,
+      subtotal REAL NOT NULL DEFAULT 0,
+      tax REAL NOT NULL DEFAULT 0,
+      discount REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'draft',
+      notes TEXT,
+      converted_invoice_id TEXT REFERENCES invoices(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS quotation_items (
+      id TEXT PRIMARY KEY,
+      quotation_id TEXT NOT NULL REFERENCES quotations(id) ON DELETE CASCADE,
+      product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+      product_name TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 1,
+      price REAL NOT NULL DEFAULT 0,
+      total REAL NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_quotations_tenant ON quotations(tenant_id);
 
     -- Per-user UI preferences (POS layout, invoice template, etc.).
     -- One row per (tenant, user). Default values applied at read time.

@@ -129,6 +129,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     probe: () => invoke('thermal:probe'),
   },
 
+  // Bulk CSV import
+  bulk: {
+    importProducts: (payload) => invoke('import:products', payload),
+    importClients: (payload) => invoke('import:clients', payload),
+  },
+
+  // Scheduler manual triggers
+  schedulers: {
+    runRecurring: () => invoke('sched:run-recurring'),
+    runReminders: () => invoke('sched:run-reminders'),
+    runExpiry: () => invoke('sched:run-expiry'),
+  },
+
   // Google Drive backup
   gdrive: {
     state: () => invoke('gdrive:state'),
