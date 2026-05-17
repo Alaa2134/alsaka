@@ -167,7 +167,7 @@ function buildAppMenu() {
       ? [{
           label: app.name,
           submenu: [
-            { role: 'about', label: 'حول SystemAlaa' },
+            { role: 'about', label: 'حول Horus' },
             { type: 'separator' },
             { role: 'hide' },
             { role: 'hideOthers' },
@@ -238,12 +238,12 @@ function buildAppMenu() {
       label: 'مساعدة',
       submenu: [
         {
-          label: 'حول SystemAlaa',
+          label: 'حول Horus',
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
-              title: 'حول SystemAlaa',
-              message: 'SystemAlaa Desktop',
+              title: 'حول Horus System',
+              message: 'Horus System Desktop',
               detail:
                 `الإصدار: ${app.getVersion()}\n` +
                 `Electron: ${process.versions.electron}\n` +
@@ -266,7 +266,7 @@ function createTray() {
     console.warn('[SystemAlaa] tray unavailable:', err.message);
     return;
   }
-  tray.setToolTip('SystemAlaa');
+  tray.setToolTip('Horus System');
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: 'فتح', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
@@ -319,7 +319,7 @@ ipcMain.handle('window:close', () => mainWindow?.close());
 ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
 
 ipcMain.handle('app:get-info', () => ({
-  appName: 'SystemAlaa',
+  appName: 'Horus System',
   version: app.getVersion(),
   platform: process.platform,
   arch: process.arch,
@@ -361,7 +361,7 @@ ipcMain.handle('app:notify', (_e, { title, body, silent = false } = {}) => {
   if (!Notification.isSupported()) return false;
   try {
     new Notification({
-      title: title || 'SystemAlaa',
+      title: title || 'Horus',
       body: body || '',
       silent,
       icon: resolveIconPath() || undefined,

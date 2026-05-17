@@ -15,6 +15,7 @@ import { money, arDate } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
+import { WhatsAppInlineCard } from "@/components/shared/WhatsAppInlineCard";
 
 interface Stats {
   salesToday: number;
@@ -95,6 +96,7 @@ export function DashboardScreen() {
 
   return (
     <div className="space-y-6">
+      <WhatsAppInlineCard />
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         {tiles.map((t, idx) => (
           <motion.div

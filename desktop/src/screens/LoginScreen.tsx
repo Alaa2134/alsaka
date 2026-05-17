@@ -119,10 +119,10 @@ export function LoginScreen() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background to-secondary/60">
       <Card className="w-full max-w-md shadow-elevated">
         <CardHeader className="text-center">
-          <div className="mx-auto h-14 w-14 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground text-2xl font-bold mb-2">
-            S
+          <div className="mx-auto h-14 w-14 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground text-3xl font-bold mb-2">
+            𓁹
           </div>
-          <CardTitle className="text-2xl">SystemAlaa</CardTitle>
+          <CardTitle className="text-2xl">Horus System</CardTitle>
           {showBound ? (
             <CardDescription className="space-y-1">
               <div>تسجيل دخول</div>

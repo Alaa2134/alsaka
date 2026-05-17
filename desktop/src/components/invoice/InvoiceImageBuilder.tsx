@@ -52,7 +52,7 @@ export async function buildInvoiceImage(opts: BuildOptions): Promise<string> {
     <div style="padding:32px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid hsl(221 83% 53%)">
         <div>
-          <div style="font-size:28px;font-weight:700;color:hsl(221 83% 53%)">${escapeHtml(opts.company?.name || "SystemAlaa")}</div>
+          <div style="font-size:28px;font-weight:700;color:hsl(221 83% 53%)">${escapeHtml(opts.company?.name || "Horus")}</div>
           ${opts.company?.address ? `<div style="font-size:12px;color:#64748b">${escapeHtml(opts.company.address)}</div>` : ""}
           ${opts.company?.phone ? `<div style="font-size:12px;color:#64748b">${escapeHtml(opts.company.phone)}</div>` : ""}
         </div>
@@ -98,7 +98,7 @@ export async function buildInvoiceImage(opts: BuildOptions): Promise<string> {
       </div>
 
       <div style="margin-top:32px;text-align:center;font-size:11px;color:#94a3b8">
-        شكرًا لتعاملكم معنا · SystemAlaa
+        شكرًا لتعاملكم معنا · Horus System
       </div>
     </div>`;
 

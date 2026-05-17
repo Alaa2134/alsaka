@@ -1,12 +1,12 @@
 {
-  "name": "systemalaa-desktop",
+  "name": "horus-desktop",
   "version": "1.0.0",
-  "description": "SystemAlaa - Arabic RTL invoice & inventory desktop app",
+  "description": "Horus System — Arabic-first commerce, accounting & POS platform",
   "private": true,
   "main": "electron/main.cjs",
   "author": {
-    "name": "SystemAlaa",
-    "email": "support@systemalaa.app"
+    "name": "Horus System",
+    "email": "support@horus.app"
   },
   "scripts": {
     "dev": "vite",
@@ -86,9 +86,9 @@
     "wait-on": "^8.0.1"
   },
   "build": {
-    "appId": "app.systemalaa.desktop",
-    "productName": "SystemAlaa",
-    "copyright": "Copyright (c) SystemAlaa",
+    "appId": "app.horus.desktop",
+    "productName": "Horus System",
+    "copyright": "Copyright (c) Horus System",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -120,7 +120,7 @@
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "SystemAlaa",
+      "shortcutName": "Horus System",
       "installerLanguages": ["ar-EG", "en-US"]
     },
     "mac": {

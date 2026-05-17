@@ -50,7 +50,7 @@ export function TitleBar() {
       <div className="flex-1" />
       <div className="flex items-center gap-2 px-3 text-xs font-cairo">
         {version ? <span className="opacity-50 tabular-nums">v{version}</span> : null}
-        <span className="font-semibold tracking-wide">SystemAlaa</span>
+        <span className="font-semibold tracking-wide">𓁹 Horus</span>
       </div>
     </div>
   );

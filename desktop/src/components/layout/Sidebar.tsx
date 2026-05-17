@@ -196,11 +196,11 @@ export function Sidebar() {
     <aside className="no-print w-64 shrink-0 h-full border-l border-border bg-card flex flex-col">
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-md gradient-primary flex items-center justify-center text-primary-foreground font-bold">
-            S
+          <div className="h-9 w-9 rounded-md gradient-primary flex items-center justify-center text-primary-foreground font-bold text-base">
+            𓁹
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold leading-tight">SystemAlaa</div>
+            <div className="font-semibold leading-tight">Horus</div>
             <div className="text-xs text-muted-foreground truncate">
               {user?.name || user?.email}
             </div>

@@ -10,9 +10,9 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "SystemAlaa Mobile",
-        short_name: "Alaa",
-        description: "كاشير محمول لـ SystemAlaa",
+        name: "Horus Mobile",
+        short_name: "Horus",
+        description: "كاشير محمول لـ Horus System",
         theme_color: "#3b82f6",
         background_color: "#0f172a",
         display: "standalone",

@@ -28,7 +28,7 @@ function ensureSeedTenantAndAdmin() {
   const tenantId = uuid();
   db.prepare(
     `INSERT INTO tenants (id, name, slug, is_active) VALUES (?, ?, ?, 1)`,
-  ).run(tenantId, 'SystemAlaa', 'systemalaa');
+  ).run(tenantId, 'Horus', 'horus');
 
   const adminId = uuid();
   const passwordHash = security.hashPassword('admin');
@@ -49,7 +49,7 @@ function ensureSeedTenantAndAdmin() {
 
   // Bootstrap the storefront so the new tenant has a published shop with
   // a unique slug as soon as the desktop app boots.
-  store.ensureStoreSettings(tenantId, 'SystemAlaa');
+  store.ensureStoreSettings(tenantId, 'Horus');
 }
 
 function recordEvent({ tenantId, userId, eventType, metadata }) {
@@ -383,7 +383,7 @@ function setupTwoFactor({ userId }) {
   const user = db.prepare(`SELECT email FROM app_users WHERE id = ?`).get(userId);
   if (!user) return { ok: false, error: 'no-user' };
   const secret = authenticator.generateSecret();
-  const otpauth = authenticator.keyuri(user.email, 'SystemAlaa', secret);
+  const otpauth = authenticator.keyuri(user.email, 'Horus System', secret);
   // Stored only after the user confirms (verifyTwoFactor)
   return { ok: true, secret, otpauth };
 }
