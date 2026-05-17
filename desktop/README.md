@@ -1,8 +1,18 @@
 # SystemAlaa Desktop
 
-Arabic RTL invoice & inventory desktop app — built **from scratch** as an
-Electron + React + TypeScript + Vite + Tailwind project with an embedded
-SQLite database (`better-sqlite3`).
+The ultimate Arabic-first commerce platform for the Middle East &
+beyond: a hardware-bound, encrypted desktop POS + accounting + e-
+commerce + AI brain — paired with a public storefront SPA, a mobile
+PWA cashier, and a customer-facing second-screen display.
+
+This monorepo holds **four** apps:
+
+| Directory | What it is |
+|---|---|
+| `desktop/` | Main Electron POS + back-office (this README) |
+| `store/` | Public storefront SPA — one site per tenant |
+| `mobile/` | Mobile PWA cashier that uses the REST API |
+| `customer-display/` | Second-monitor display facing the customer at checkout |
 
 ## Tech
 
