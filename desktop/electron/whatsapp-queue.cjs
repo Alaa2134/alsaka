@@ -4,6 +4,7 @@
 const { v4: uuid } = require('uuid');
 const dbMod = require('./db.cjs');
 const whatsapp = require('./whatsapp.cjs');
+const whatsappCloud = require('./whatsapp-cloud.cjs');
 
 let drainTimer = null;
 let draining = false;
@@ -44,16 +45,31 @@ async function drainOnce() {
   if (draining) return;
   draining = true;
   try {
-    const state = whatsapp.getState();
-    if (state.state !== 'ready') return;
     const db = dbMod.get();
+    const waState = whatsapp.getState();
     const queue = dbMod.decryptRows(
       'whatsapp_outbox',
       db.prepare(`SELECT * FROM whatsapp_outbox WHERE status = 'queued' ORDER BY created_at ASC LIMIT 50`).all(),
     );
     for (const msg of queue) {
+      // Prefer Cloud API per tenant if configured; otherwise fall back
+      // to the QR-based whatsapp-web.js client if it's ready.
+      const cloudEnabled = whatsappCloud.isEnabled(msg.tenant_id);
+      if (!cloudEnabled && waState.state !== 'ready') continue;
       try {
-        if (msg.kind === 'image' && msg.data_url) {
+        if (cloudEnabled) {
+          if (msg.kind === 'image' && msg.data_url) {
+            // For Cloud API we need a hosted URL, not a data: URL. If the
+            // outbox only has a data URL we skip — the renderer should
+            // upload to its own host first.
+            if (!/^https?:\/\//i.test(msg.data_url)) {
+              throw new Error('Cloud API needs a hosted image URL (https://). Use QR-based WA or host the image first.');
+            }
+            await whatsappCloud.sendImage({ tenantId: msg.tenant_id, to: msg.to_phone, link: msg.data_url, caption: msg.caption || '' });
+          } else {
+            await whatsappCloud.sendText({ tenantId: msg.tenant_id, to: msg.to_phone, text: msg.body || '' });
+          }
+        } else if (msg.kind === 'image' && msg.data_url) {
           await whatsapp.sendImage({ to: msg.to_phone, dataUrl: msg.data_url, caption: msg.caption || '' });
         } else {
           await whatsapp.sendText({ to: msg.to_phone, body: msg.body || '' });

@@ -287,6 +287,52 @@ declare global {
       onStateChanged(cb: (state: { state: string; qr?: string | null; error?: string | null }) => void): () => void;
     };
 
+    whatsappCloud: {
+      saveConfig(payload: { tenantId: string; token?: string; phoneId?: string; verifyToken?: string }): Promise<IpcResult<{ token?: string; phoneId?: string; verifyToken?: string; enabled: boolean }>>;
+      loadConfig(payload: { tenantId: string }): Promise<IpcResult<{ token: string | null; phoneId: string | null; verifyToken: string | null; enabled: boolean } | null>>;
+      sendText(payload: { tenantId: string; to: string; text: string }): Promise<IpcResult<any>>;
+      sendImage(payload: { tenantId: string; to: string; link: string; caption?: string }): Promise<IpcResult<any>>;
+      sendDocument(payload: { tenantId: string; to: string; link: string; filename: string; caption?: string }): Promise<IpcResult<any>>;
+    };
+
+    marketplace: {
+      listProviders(): Promise<IpcResult<Array<{ id: string; name: string; region: string; description: string }>>>;
+      syncCatalog(payload: { provider: string; tenantId: string }): Promise<IpcResult<{ ok: boolean; pushed?: number; failed?: number; error?: string }>>;
+      updateStatus(payload: { provider: string; tenantId: string; externalOrderId: string; status: string; callbackUrl?: string }): Promise<IpcResult<any>>;
+      receiveWebhook(payload: { provider: string; tenantId: string; payload: any; topic?: string; signature?: string; rawBody?: string }): Promise<IpcResult<any>>;
+    };
+
+    branchSync: {
+      configure(payload: { branchId: string; relayUrl: string; relayToken?: string; enabled?: number }): Promise<IpcResult<any>>;
+      state(payload: { branchId: string }): Promise<IpcResult<any>>;
+      pull(payload: { tenantId: string; branchId: string }): Promise<IpcResult<{ ok: boolean; applied?: number; skipped?: boolean }>>;
+      push(payload: { tenantId: string; branchId: string }): Promise<IpcResult<{ ok: boolean; sent?: number; skipped?: boolean }>>;
+      recentLog(payload?: { limit?: number }): Promise<IpcResult<any[]>>;
+    };
+
+    pharmacy: {
+      checkBasket(payload: { tenantId: string; productIds: string[] }): Promise<IpcResult<any[]>>;
+      logControlled(payload: any): Promise<IpcResult<{ ok: boolean }>>;
+    };
+
+    restaurant: {
+      logWaste(payload: any): Promise<IpcResult<{ ok: boolean; cost: number }>>;
+      analytics(payload: { tenantId: string; days?: number }): Promise<IpcResult<{ wasteByItem: any[]; dishMargin: any[] }>>;
+    };
+
+    salon: {
+      setSchedule(payload: { tenantId: string; employeeId: string; weekly: any[] }): Promise<IpcResult<{ ok: boolean }>>;
+      availableSlots(payload: { tenantId: string; employeeId: string; date: string; serviceDurationMinutes?: number }): Promise<IpcResult<string[]>>;
+      redeemPackage(payload: any): Promise<IpcResult<any>>;
+    };
+
+    auto: {
+      decodeVin(vin: string): Promise<IpcResult<{ ok: boolean; make?: string; model?: string; year?: string; body?: string; engine?: string; country?: string; error?: string }>>;
+      openJob(payload: any): Promise<IpcResult<{ ok: boolean; id: string; job_number: number }>>;
+      closeJob(payload: any): Promise<IpcResult<{ ok: boolean }>>;
+      findParts(payload: { tenantId: string; oemPart: string }): Promise<IpcResult<any[]>>;
+    };
+
     auth: {
       boundUser(): Promise<IpcResult<BoundUserResult>>;
       login(payload: { email: string; password: string }): Promise<IpcResult<LoginResult>>;

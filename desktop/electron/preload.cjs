@@ -247,6 +247,32 @@ contextBridge.exposeInMainWorld('electronAPI', {
     findParts: (payload) => invoke('auto:find-parts', payload),
   },
 
+  // WhatsApp Business Cloud API (official, no Puppeteer)
+  whatsappCloud: {
+    saveConfig: (payload) => invoke('wa-cloud:save-config', payload),
+    loadConfig: (payload) => invoke('wa-cloud:load-config', payload),
+    sendText: (payload) => invoke('wa-cloud:send-text', payload),
+    sendImage: (payload) => invoke('wa-cloud:send-image', payload),
+    sendDocument: (payload) => invoke('wa-cloud:send-document', payload),
+  },
+
+  // Marketplace connectors (Salla, Shopify, Talabat)
+  marketplace: {
+    listProviders: () => invoke('mkt:list-providers'),
+    syncCatalog: (payload) => invoke('mkt:sync-catalog', payload),
+    updateStatus: (payload) => invoke('mkt:update-status', payload),
+    receiveWebhook: (payload) => invoke('mkt:receive-webhook', payload),
+  },
+
+  // Branch sync (multi-location LWW replication)
+  branchSync: {
+    configure: (payload) => invoke('sync:configure', payload),
+    state: (payload) => invoke('sync:state', payload),
+    pull: (payload) => invoke('sync:pull', payload),
+    push: (payload) => invoke('sync:push', payload),
+    recentLog: (payload) => invoke('sync:recent-log', payload),
+  },
+
   // Security / tamper-evident audit chain
   security: {
     verifyAuditChain: () => invoke('sec:verify-audit-chain'),

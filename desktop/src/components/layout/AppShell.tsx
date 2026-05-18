@@ -93,6 +93,8 @@ const TITLES: Record<string, string> = {
   "/vehicles": "سيارات العملاء",
   "/job-cards": "أوامر الشغل",
   "/parts-catalog": "مرجع قطع الغيار",
+  "/whatsapp-cloud": "WhatsApp Cloud API",
+  "/branch-sync": "مزامنة الفروع",
 };
 
 export function AppShell() {

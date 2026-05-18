@@ -161,7 +161,8 @@ const SECTIONS: NavSection[] = [
   {
     title: "التواصل",
     items: [
-      { to: "/whatsapp-settings", label: "واتساب", icon: <Send className="h-4 w-4" />, minRole: "admin" },
+      { to: "/whatsapp-settings", label: "واتساب (QR)", icon: <Send className="h-4 w-4" />, minRole: "admin" },
+      { to: "/whatsapp-cloud", label: "واتساب (Cloud API)", icon: <Cloud className="h-4 w-4" />, minRole: "admin" },
       { to: "/internal-chat", label: "المحادثات", icon: <MessageSquare className="h-4 w-4" />, minRole: "manager" },
       { to: "/ai-assistant", label: "المساعد الذكي", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
       { to: "/ai-insights", label: "رؤى ذكية (Forecast)", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
@@ -192,6 +193,7 @@ const SECTIONS: NavSection[] = [
       { to: "/marketplace", label: "Marketplace", icon: <Globe className="h-4 w-4" />, minRole: "admin" },
       { to: "/plugins", label: "Plugins", icon: <Plug className="h-4 w-4" />, minRole: "admin" },
       { to: "/connections", label: "ربط الحسابات (GitHub/Vercel/...)", icon: <Globe className="h-4 w-4" />, minRole: "admin" },
+      { to: "/branch-sync", label: "مزامنة الفروع", icon: <Repeat className="h-4 w-4" />, minRole: "admin" },
       { to: "/hardware", label: "الأجهزة (درج/POS/ميزان/Zebra)", icon: <Printer className="h-4 w-4" />, minRole: "admin" },
       { to: "/zatca-phase2", label: "ZATCA المرحلة 2", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/eta-egypt", label: "ETA Egypt", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },

@@ -9,6 +9,8 @@ const dbMod = require('./db.cjs');
 const repo = require('./repo.cjs');
 const store = require('./store.cjs');
 const qrMenu = require('./qr-menu.cjs');
+const whatsappCloud = require('./whatsapp-cloud.cjs');
+const marketplace = require('./marketplace.cjs');
 
 const PORT = Number(process.env.SYSTEMALAA_API_PORT || 27817);
 let server = null;
@@ -99,6 +101,59 @@ async function handle(req, res) {
       const feed = qrMenu.buildMenuFeed({ slug });
       if (!feed) return send(res, 404, { error: 'menu not found' });
       return send(res, 200, feed);
+    }
+
+    // WhatsApp Cloud webhook — Meta subscription verification (GET) +
+    // incoming message handler (POST). The tenantId is bound via the
+    // query string so the merchant can use one HTTPS endpoint per tenant.
+    if (path.startsWith('/v1/wa/webhook')) {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const tenantId = url.searchParams.get('tenant');
+      if (!tenantId) return send(res, 400, { error: 'tenant required' });
+      if (req.method === 'GET') {
+        const challenge = whatsappCloud.verifyWebhook({
+          tenantId,
+          mode: url.searchParams.get('hub.mode'),
+          token: url.searchParams.get('hub.verify_token'),
+          challenge: url.searchParams.get('hub.challenge'),
+        });
+        if (challenge == null) return send(res, 403, { error: 'verify failed' });
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end(String(challenge));
+        return;
+      }
+      if (req.method === 'POST') {
+        const body = await readJsonBody(req);
+        return send(res, 200, whatsappCloud.handleWebhook({ tenantId, body }));
+      }
+    }
+
+    // Marketplace webhooks — POST /v1/marketplace/:provider?tenant=...
+    if (req.method === 'POST' && path.startsWith('/v1/marketplace/')) {
+      const provider = path.split('/')[3];
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const tenantId = url.searchParams.get('tenant');
+      if (!tenantId) return send(res, 400, { error: 'tenant required' });
+      const rawBody = await new Promise((r) => {
+        const bufs = [];
+        req.on('data', (c) => bufs.push(c));
+        req.on('end', () => r(Buffer.concat(bufs).toString('utf8')));
+      });
+      let payload = {};
+      try { payload = JSON.parse(rawBody); } catch (_) {}
+      try {
+        const result = marketplace.receiveWebhook({
+          provider,
+          tenantId,
+          payload,
+          rawBody,
+          topic: req.headers['x-shopify-topic'],
+          signature: req.headers['x-talabat-signature'] || req.headers['x-hub-signature-256'],
+        });
+        return send(res, 200, result);
+      } catch (err) {
+        return send(res, 400, { error: String(err.message || err) });
+      }
     }
 
     // Public order placement (matches the storefront API surface)

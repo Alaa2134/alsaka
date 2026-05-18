@@ -631,6 +631,11 @@ function bootstrap() {
   maybeAdd('store_orders', 'tax', 'REAL NOT NULL DEFAULT 0');
   maybeAdd('store_orders', 'notes', 'TEXT');
   maybeAdd('store_orders', 'updated_at', 'TEXT');
+  // Marketplace integration (Wave 4)
+  maybeAdd('store_orders', 'source', "TEXT NOT NULL DEFAULT 'storefront'"); // storefront | salla | shopify | talabat
+  maybeAdd('store_orders', 'external_order_id', 'TEXT');
+  maybeAdd('store_orders', 'raw_json', 'TEXT');
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_store_orders_external ON store_orders(tenant_id, source, external_order_id) WHERE external_order_id IS NOT NULL;`);
 
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_store_settings_slug ON store_settings(slug);
@@ -1058,6 +1063,17 @@ function bootstrap() {
       last_error TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       sent_at TEXT
+    );
+
+    -- WhatsApp Cloud API inbound webhook log
+    CREATE TABLE IF NOT EXISTS whatsapp_inbox (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      from_number TEXT NOT NULL,
+      type TEXT NOT NULL,
+      body TEXT,
+      message_id TEXT UNIQUE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     -- Add product extensions: variant tracking flag, multi-pricing,

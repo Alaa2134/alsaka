@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ShoppingBag, Plus, Trash2, Check, ExternalLink } from "lucide-react";
+import { ShoppingBag, Plus, Trash2, Check, ExternalLink, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, unwrap } from "@/lib/ipc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,6 +80,21 @@ export function MarketplaceIntegrationsScreen() {
     refresh();
   };
 
+  const LIVE_PROVIDERS = new Set(["salla", "shopify", "talabat"]);
+
+  const syncNow = async (provider: string) => {
+    if (!user) return;
+    try {
+      const res = await unwrap(
+        api().marketplace.syncCatalog({ provider, tenantId: user.tenant_id })
+      );
+      if (res?.ok) toast.success(`تم رفع ${res.pushed || 0} منتج إلى ${provider}`);
+      else toast.error(res?.error || "فشل التزامن");
+    } catch (err) {
+      toast.error(String((err as Error).message || err));
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card className="bg-gradient-to-br from-primary to-accent text-primary-foreground">
@@ -107,9 +122,16 @@ export function MarketplaceIntegrationsScreen() {
                 </div>
                 <div className="mt-4 flex gap-1">
                   {inst ? (
-                    <Button size="sm" variant="destructive" className="flex-1" onClick={() => disconnect(inst.id)}>
-                      <Trash2 className="h-3.5 w-3.5" /> فك الربط
-                    </Button>
+                    <>
+                      {LIVE_PROVIDERS.has(p.id) && (
+                        <Button size="sm" variant="outline" onClick={() => syncNow(p.id)} title="رفع منتجات النظام للمنصة">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <Button size="sm" variant="destructive" className="flex-1" onClick={() => disconnect(inst.id)}>
+                        <Trash2 className="h-3.5 w-3.5" /> فك الربط
+                      </Button>
+                    </>
                   ) : (
                     <Button size="sm" className="flex-1" onClick={() => { setActive(p); setCreds("{}"); }}>
                       <Plus className="h-3.5 w-3.5" /> ربط

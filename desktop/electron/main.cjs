@@ -45,6 +45,9 @@ const etaEgypt = require('./eta-egypt.cjs');
 const hardware = require('./hardware.cjs');
 const gdpr = require('./gdpr.cjs');
 const { pharmacy, restaurant, salon, auto } = require('./verticals.cjs');
+const whatsappCloud = require('./whatsapp-cloud.cjs');
+const marketplace = require('./marketplace.cjs');
+const branchSync = require('./branch-sync.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -632,6 +635,30 @@ ipcMain.handle('auto:decode-vin', safe((_e, { vin }) => auto.decodeVin(vin)));
 ipcMain.handle('auto:open-job', safe((_e, payload) => auto.openJob(payload)));
 ipcMain.handle('auto:close-job', safe((_e, payload) => auto.closeJob(payload)));
 ipcMain.handle('auto:find-parts', safe((_e, payload) => auto.findParts(payload)));
+
+// --- WhatsApp Cloud API (official Meta) ---
+ipcMain.handle('wa-cloud:save-config', safe((_e, payload) => whatsappCloud.saveConfig(payload)));
+ipcMain.handle('wa-cloud:load-config', safe((_e, { tenantId }) => {
+  const cfg = whatsappCloud.loadConfig(tenantId);
+  // Mask token before returning to renderer
+  return cfg ? { ...cfg, token: cfg.token ? `${cfg.token.slice(0, 6)}…${cfg.token.slice(-4)}` : null } : null;
+}));
+ipcMain.handle('wa-cloud:send-text', safe((_e, payload) => whatsappCloud.sendText(payload)));
+ipcMain.handle('wa-cloud:send-image', safe((_e, payload) => whatsappCloud.sendImage(payload)));
+ipcMain.handle('wa-cloud:send-document', safe((_e, payload) => whatsappCloud.sendDocument(payload)));
+
+// --- Marketplace dispatcher (Salla / Shopify / Talabat) ---
+ipcMain.handle('mkt:list-providers', safe(() => marketplace.listProviders()));
+ipcMain.handle('mkt:sync-catalog', safe((_e, payload) => marketplace.syncCatalog(payload)));
+ipcMain.handle('mkt:update-status', safe((_e, payload) => marketplace.updateOrderStatus(payload)));
+ipcMain.handle('mkt:receive-webhook', safe((_e, payload) => marketplace.receiveWebhook(payload)));
+
+// --- Branch sync ---
+ipcMain.handle('sync:configure', safe((_e, payload) => branchSync.configure(payload)));
+ipcMain.handle('sync:state', safe((_e, payload) => branchSync.getState(payload)));
+ipcMain.handle('sync:pull', safe((_e, payload) => branchSync.pull(payload)));
+ipcMain.handle('sync:push', safe((_e, payload) => branchSync.push(payload)));
+ipcMain.handle('sync:recent-log', safe((_e, payload = {}) => branchSync.recentLog(payload)));
 
 // --- Security IPC ---
 ipcMain.handle('sec:verify-audit-chain', safe(() => security.verifyAuditChain()));

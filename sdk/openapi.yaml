@@ -1,0 +1,170 @@
+openapi: 3.0.3
+info:
+  title: Horus System REST API
+  description: |
+    Public API surface exposed by every Horus desktop install. Authenticated
+    endpoints use a tenant-scoped API key (Bearer). Used by mobile cashier,
+    storefront, owner dashboard, marketplace webhooks, and the public SDK.
+  version: 1.0.0
+  contact:
+    name: Horus System
+servers:
+  - url: http://localhost:6420
+    description: Default local desktop server
+security:
+  - BearerAuth: []
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Product:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        sku: { type: string, nullable: true }
+        price: { type: number }
+        stock: { type: number }
+        is_active: { type: integer }
+    Invoice:
+      type: object
+      properties:
+        id: { type: string }
+        number: { type: string, nullable: true }
+        total: { type: number }
+        paid: { type: number }
+        remaining: { type: number }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+    InvoiceItem:
+      type: object
+      properties:
+        product_id: { type: string, nullable: true }
+        product_name: { type: string }
+        quantity: { type: number }
+        price: { type: number }
+        total: { type: number }
+paths:
+  /health:
+    get:
+      summary: Health probe
+      security: []
+      responses:
+        '200':
+          description: OK
+  /v1/store/{slug}:
+    get:
+      summary: Public storefront feed
+      security: []
+      parameters:
+        - in: path
+          name: slug
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: Storefront catalog }
+        '404': { description: Not found }
+  /v1/orders:
+    post:
+      summary: Place a public storefront order
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slug: { type: string }
+                client_name: { type: string }
+                client_phone: { type: string }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      product_id: { type: string }
+                      quantity: { type: number }
+      responses:
+        '201': { description: Created }
+  /v1/products:
+    get:
+      summary: List products for the authenticated tenant
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Product' }
+  /v1/clients:
+    get: { summary: List clients, responses: { '200': { description: OK } } }
+  /v1/invoices:
+    get:
+      summary: List invoices
+      responses: { '200': { description: OK } }
+    post:
+      summary: Create an invoice with line items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invoice: { $ref: '#/components/schemas/Invoice' }
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/InvoiceItem' }
+      responses:
+        '201': { description: Created }
+  /v1/dashboard:
+    get: { summary: Aggregated dashboard stats, responses: { '200': { description: OK } } }
+  /v1/analytics/sales:
+    get: { summary: Daily sales series, responses: { '200': { description: OK } } }
+  /v1/analytics/top-products:
+    get: { summary: Top-selling products, responses: { '200': { description: OK } } }
+  /v1/analytics/ar-aging:
+    get: { summary: AR aging report, responses: { '200': { description: OK } } }
+  /v1/wa/webhook:
+    get:
+      summary: WhatsApp Cloud webhook verification (Meta)
+      security: []
+      parameters:
+        - in: query
+          name: tenant
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: Challenge echoed }
+    post:
+      summary: WhatsApp Cloud inbound webhook
+      security: []
+      parameters:
+        - in: query
+          name: tenant
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: OK }
+  /v1/marketplace/{provider}:
+    post:
+      summary: Marketplace order webhook (Salla / Shopify / Talabat)
+      security: []
+      parameters:
+        - in: path
+          name: provider
+          schema: { type: string, enum: [salla, shopify, talabat] }
+          required: true
+        - in: query
+          name: tenant
+          schema: { type: string }
+          required: true
+      responses:
+        '200': { description: OK }
