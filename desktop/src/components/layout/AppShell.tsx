@@ -83,6 +83,16 @@ const TITLES: Record<string, string> = {
   "/hardware": "الأجهزة",
   "/zatca-phase2": "ZATCA المرحلة 2",
   "/eta-egypt": "ETA Egypt",
+  "/drug-interactions": "تعارضات الأدوية",
+  "/prescriptions": "الروشتات الطبية",
+  "/controlled-substances": "سجل المواد المخدرة",
+  "/recipes": "وصفات الأطباق",
+  "/waste-log": "سجل الهالك",
+  "/service-packages": "باقات الخدمات",
+  "/staff-schedules": "مواعيد الموظفين",
+  "/vehicles": "سيارات العملاء",
+  "/job-cards": "أوامر الشغل",
+  "/parts-catalog": "مرجع قطع الغيار",
 };
 
 export function AppShell() {

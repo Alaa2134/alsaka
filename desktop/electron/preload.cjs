@@ -226,6 +226,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
     listExports: () => invoke('gdpr:list-exports'),
   },
 
+  // Industry-specific (verticals)
+  pharmacy: {
+    checkBasket: (payload) => invoke('pharm:check-basket', payload),
+    logControlled: (payload) => invoke('pharm:log-controlled', payload),
+  },
+  restaurant: {
+    logWaste: (payload) => invoke('rest:log-waste', payload),
+    analytics: (payload) => invoke('rest:analytics', payload),
+  },
+  salon: {
+    setSchedule: (payload) => invoke('salon:set-schedule', payload),
+    availableSlots: (payload) => invoke('salon:available-slots', payload),
+    redeemPackage: (payload) => invoke('salon:redeem-package', payload),
+  },
+  auto: {
+    decodeVin: (vin) => invoke('auto:decode-vin', { vin }),
+    openJob: (payload) => invoke('auto:open-job', payload),
+    closeJob: (payload) => invoke('auto:close-job', payload),
+    findParts: (payload) => invoke('auto:find-parts', payload),
+  },
+
   // Security / tamper-evident audit chain
   security: {
     verifyAuditChain: () => invoke('sec:verify-audit-chain'),

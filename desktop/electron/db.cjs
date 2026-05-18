@@ -1257,6 +1257,169 @@ function bootstrap() {
     CREATE INDEX IF NOT EXISTS idx_eta_invoice ON eta_submissions(invoice_id);
     CREATE INDEX IF NOT EXISTS idx_hw_tenant ON hardware_devices(tenant_id);
 
+    -- ====================================================================
+    -- Wave 3: Industry-specific deep logic
+    -- ====================================================================
+    CREATE TABLE IF NOT EXISTS drug_interactions (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      drug_a_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      drug_b_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      severity TEXT NOT NULL DEFAULT 'medium',
+      note TEXT,
+      source TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, drug_a_id, drug_b_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS prescriptions (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      prescription_number INTEGER,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      patient_name TEXT NOT NULL,
+      doctor_name TEXT,
+      doctor_license TEXT,
+      diagnosis TEXT,
+      issue_date TEXT NOT NULL DEFAULT (date('now')),
+      items_json TEXT NOT NULL DEFAULT '[]',
+      dispense_status TEXT NOT NULL DEFAULT 'pending',
+      dispensed_at TEXT,
+      dispensed_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      invoice_id TEXT REFERENCES invoices(id) ON DELETE SET NULL,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS controlled_substance_log (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      action TEXT NOT NULL,
+      quantity REAL NOT NULL,
+      prescription_id TEXT REFERENCES prescriptions(id) ON DELETE SET NULL,
+      patient_id_number TEXT,
+      signed_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      witness_signature TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS recipes (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      serves INTEGER NOT NULL DEFAULT 1,
+      total_cost REAL NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, product_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS recipe_ingredients (
+      id TEXT PRIMARY KEY,
+      recipe_id TEXT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+      ingredient_product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      quantity REAL NOT NULL,
+      unit TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS waste_log (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      quantity REAL NOT NULL,
+      reason TEXT,
+      cost REAL NOT NULL DEFAULT 0,
+      recorded_by TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS staff_schedules (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+      day_of_week INTEGER NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS service_packages (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      sessions_count INTEGER NOT NULL,
+      price REAL NOT NULL,
+      valid_days INTEGER NOT NULL DEFAULT 365,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS customer_packages (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+      package_id TEXT NOT NULL REFERENCES service_packages(id) ON DELETE CASCADE,
+      sessions_left INTEGER NOT NULL,
+      expires_at TEXT,
+      purchased_at TEXT NOT NULL DEFAULT (datetime('now')),
+      invoice_id TEXT REFERENCES invoices(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS vehicles (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      client_id TEXT REFERENCES clients(id) ON DELETE SET NULL,
+      vin TEXT,
+      plate TEXT,
+      make TEXT,
+      model TEXT,
+      year INTEGER,
+      color TEXT,
+      odometer_km INTEGER,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS job_cards (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      job_number INTEGER,
+      vehicle_id TEXT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+      status TEXT NOT NULL DEFAULT 'open',
+      mechanic_id TEXT REFERENCES employees(id) ON DELETE SET NULL,
+      complaint TEXT,
+      diagnosis TEXT,
+      labor_hours REAL NOT NULL DEFAULT 0,
+      labor_total REAL NOT NULL DEFAULT 0,
+      parts_total REAL NOT NULL DEFAULT 0,
+      photos_json TEXT NOT NULL DEFAULT '[]',
+      opened_at TEXT NOT NULL DEFAULT (datetime('now')),
+      closed_at TEXT,
+      invoice_id TEXT REFERENCES invoices(id) ON DELETE SET NULL,
+      warranty_until TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS parts_cross_ref (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      oem_part TEXT NOT NULL,
+      alt_part TEXT NOT NULL,
+      manufacturer TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(tenant_id, oem_part, alt_part)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_drug_int_tenant ON drug_interactions(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_prescriptions_tenant ON prescriptions(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_recipes_tenant ON recipes(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_schedules_emp ON staff_schedules(employee_id);
+    CREATE INDEX IF NOT EXISTS idx_vehicles_client ON vehicles(client_id);
+    CREATE INDEX IF NOT EXISTS idx_jobcards_vehicle ON job_cards(vehicle_id);
+    CREATE INDEX IF NOT EXISTS idx_parts_oem ON parts_cross_ref(tenant_id, oem_part);
+
     -- Connections: per-tenant OAuth tokens / access tokens for external
     -- services (GitHub, Vercel, Netlify, Cloudflare, Meta, etc.). The
     -- tokens are AES-encrypted at rest via the standard column-

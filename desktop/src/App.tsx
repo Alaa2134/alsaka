@@ -77,6 +77,16 @@ import { HardwareScreen } from "@/screens/HardwareScreen";
 import { ZatcaPhase2Screen } from "@/screens/ZatcaPhase2Screen";
 import { EtaEgyptScreen } from "@/screens/EtaEgyptScreen";
 import { AccountSettingsScreen } from "@/screens/AccountSettingsScreen";
+import { DrugInteractionsScreen } from "@/screens/DrugInteractionsScreen";
+import { PrescriptionsScreen } from "@/screens/PrescriptionsScreen";
+import { ControlledSubstancesScreen } from "@/screens/ControlledSubstancesScreen";
+import { RecipesScreen } from "@/screens/RecipesScreen";
+import { WasteLogScreen } from "@/screens/WasteLogScreen";
+import { ServicePackagesScreen } from "@/screens/ServicePackagesScreen";
+import { StaffSchedulesScreen } from "@/screens/StaffSchedulesScreen";
+import { VehiclesScreen } from "@/screens/VehiclesScreen";
+import { JobCardsScreen } from "@/screens/JobCardsScreen";
+import { PartsCatalogScreen } from "@/screens/PartsCatalogScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -335,6 +345,20 @@ export default function App() {
                     <Route path="zatca-phase2" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ZatcaPhase2Screen /></SP></ProtectedRoute>} />
                     <Route path="eta-egypt" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><EtaEgyptScreen /></SP></ProtectedRoute>} />
                     <Route path="account-settings" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><AccountSettingsScreen /></SP></ProtectedRoute>} />
+                    {/* Pharmacy */}
+                    <Route path="drug-interactions" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><DrugInteractionsScreen /></SP></ProtectedRoute>} />
+                    <Route path="prescriptions" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><PrescriptionsScreen /></SP></ProtectedRoute>} />
+                    <Route path="controlled-substances" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><ControlledSubstancesScreen /></SP></ProtectedRoute>} />
+                    {/* Restaurant */}
+                    <Route path="recipes" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><RecipesScreen /></SP></ProtectedRoute>} />
+                    <Route path="waste-log" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><WasteLogScreen /></SP></ProtectedRoute>} />
+                    {/* Salon */}
+                    <Route path="service-packages" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><ServicePackagesScreen /></SP></ProtectedRoute>} />
+                    <Route path="staff-schedules" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><StaffSchedulesScreen /></SP></ProtectedRoute>} />
+                    {/* Auto workshop */}
+                    <Route path="vehicles" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><VehiclesScreen /></SP></ProtectedRoute>} />
+                    <Route path="job-cards" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><JobCardsScreen /></SP></ProtectedRoute>} />
+                    <Route path="parts-catalog" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><PartsCatalogScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="store-theme-builder"
                       element={

@@ -44,6 +44,7 @@ const zatcaPhase2 = require('./zatca-phase2.cjs');
 const etaEgypt = require('./eta-egypt.cjs');
 const hardware = require('./hardware.cjs');
 const gdpr = require('./gdpr.cjs');
+const { pharmacy, restaurant, salon, auto } = require('./verticals.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -618,6 +619,19 @@ ipcMain.handle('gdpr:export-tenant', safe((_e, payload) => gdpr.exportTenant(pay
 ipcMain.handle('gdpr:export-client', safe((_e, payload) => gdpr.exportClient(payload)));
 ipcMain.handle('gdpr:erase-client', safe((_e, payload) => gdpr.eraseClient(payload)));
 ipcMain.handle('gdpr:list-exports', safe(() => gdpr.listExports()));
+
+// --- Verticals IPC ---
+ipcMain.handle('pharm:check-basket', safe((_e, payload) => pharmacy.checkBasket(payload)));
+ipcMain.handle('pharm:log-controlled', safe((_e, payload) => pharmacy.recordControlledSubstance(payload)));
+ipcMain.handle('rest:log-waste', safe((_e, payload) => restaurant.logWaste(payload)));
+ipcMain.handle('rest:analytics', safe((_e, payload) => restaurant.analytics(payload)));
+ipcMain.handle('salon:set-schedule', safe((_e, payload) => salon.setSchedule(payload)));
+ipcMain.handle('salon:available-slots', safe((_e, payload) => salon.availableSlots(payload)));
+ipcMain.handle('salon:redeem-package', safe((_e, payload) => salon.redeemPackage(payload)));
+ipcMain.handle('auto:decode-vin', safe((_e, { vin }) => auto.decodeVin(vin)));
+ipcMain.handle('auto:open-job', safe((_e, payload) => auto.openJob(payload)));
+ipcMain.handle('auto:close-job', safe((_e, payload) => auto.closeJob(payload)));
+ipcMain.handle('auto:find-parts', safe((_e, payload) => auto.findParts(payload)));
 
 // --- Security IPC ---
 ipcMain.handle('sec:verify-audit-chain', safe(() => security.verifyAuditChain()));

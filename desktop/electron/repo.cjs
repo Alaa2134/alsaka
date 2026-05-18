@@ -3,6 +3,7 @@
 // never sees ciphertext.
 const { v4: uuid } = require('uuid');
 const dbMod = require('./db.cjs');
+const { restaurant } = require('./verticals.cjs');
 const accounting = require('./accounting.cjs');
 
 const allowedTables = new Set([
@@ -148,6 +149,19 @@ function saveInvoice({ invoice, items }) {
       });
       if (!existing && it.product_id && invoice.type !== 'return') {
         decStock.run({ qty: Number(it.quantity) || 0, pid: it.product_id });
+        // Restaurant: if the product has a recipe, decrement each
+        // ingredient's stock by (recipe_qty × order_qty). Silent no-op
+        // for non-restaurant products.
+        try {
+          restaurant.depleteForOrderItem({
+            tenantId: invoice.tenant_id,
+            productId: it.product_id,
+            quantity: Number(it.quantity) || 0,
+            db: dbMod.get(),
+          });
+        } catch (err) {
+          console.warn('[Horus] recipe depletion failed:', err.message);
+        }
       }
     }
 

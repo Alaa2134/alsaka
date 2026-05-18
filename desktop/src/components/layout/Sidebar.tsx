@@ -54,6 +54,16 @@ import {
   Store,
   Upload,
   QrCode,
+  Pill,
+  Scroll,
+  AlertOctagon,
+  BookOpenCheck,
+  Trash2,
+  PackageCheck,
+  CalendarClock,
+  Car,
+  Wrench,
+  Cog,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -156,6 +166,21 @@ const SECTIONS: NavSection[] = [
       { to: "/ai-assistant", label: "المساعد الذكي", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
       { to: "/ai-insights", label: "رؤى ذكية (Forecast)", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
       { to: "/visual-catalog", label: "كتالوج بالصور (AI)", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
+    ],
+  },
+  {
+    title: "أنشطة متخصصة",
+    items: [
+      { to: "/drug-interactions", label: "تعارض الأدوية", icon: <AlertOctagon className="h-4 w-4" />, minRole: "manager" },
+      { to: "/prescriptions", label: "الروشتات الطبية", icon: <Scroll className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/controlled-substances", label: "المواد المخدرة", icon: <Pill className="h-4 w-4" />, minRole: "admin" },
+      { to: "/recipes", label: "وصفات الأطباق", icon: <BookOpenCheck className="h-4 w-4" />, minRole: "manager" },
+      { to: "/waste-log", label: "سجل الهالك", icon: <Trash2 className="h-4 w-4" />, minRole: "manager" },
+      { to: "/service-packages", label: "باقات الخدمات", icon: <PackageCheck className="h-4 w-4" />, minRole: "manager" },
+      { to: "/staff-schedules", label: "مواعيد الموظفين", icon: <CalendarClock className="h-4 w-4" />, minRole: "manager" },
+      { to: "/vehicles", label: "سيارات العملاء", icon: <Car className="h-4 w-4" />, minRole: "manager" },
+      { to: "/job-cards", label: "أوامر الشغل", icon: <Wrench className="h-4 w-4" />, minRole: "cashier" },
+      { to: "/parts-catalog", label: "مرجع قطع الغيار", icon: <Cog className="h-4 w-4" />, minRole: "manager" },
     ],
   },
   {
