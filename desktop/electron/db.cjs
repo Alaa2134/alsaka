@@ -1199,6 +1199,64 @@ function bootstrap() {
     );
     CREATE INDEX IF NOT EXISTS idx_quotations_tenant ON quotations(tenant_id);
 
+    -- ====================================================================
+    -- Wave 2: Compliance + Hardware
+    -- ====================================================================
+
+    -- ZATCA Phase 2 submissions (Saudi e-invoice clearance/reporting)
+    CREATE TABLE IF NOT EXISTS zatca_submissions (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      invoice_id TEXT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL DEFAULT 'standard',  -- standard | simplified
+      flow TEXT NOT NULL DEFAULT 'clearance', -- clearance | reporting
+      xml TEXT,
+      xml_hash TEXT,
+      signed_xml TEXT,
+      qr_payload TEXT,
+      cleared_uuid TEXT,
+      clearance_status TEXT NOT NULL DEFAULT 'pending', -- pending | cleared | warning | rejected
+      response_json TEXT,
+      submitted_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- ETA Egypt submissions
+    CREATE TABLE IF NOT EXISTS eta_submissions (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      invoice_id TEXT NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+      eta_uuid TEXT,
+      internal_id TEXT,
+      hash_key TEXT,
+      payload_json TEXT,
+      submission_status TEXT NOT NULL DEFAULT 'pending',
+      response_json TEXT,
+      submitted_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Generic hardware device registry — cash drawer, card terminal,
+    -- scale, label printer all map to rows here. Per-device config in
+    -- config_json so adding a new device class needs zero schema work.
+    CREATE TABLE IF NOT EXISTS hardware_devices (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,  -- cash_drawer | card_terminal | scale | label_printer | barcode_scanner
+      name TEXT NOT NULL,
+      provider TEXT NOT NULL,  -- escpos | ingenico | verifone | mettler | bizerba | zebra | custom
+      interface TEXT NOT NULL, -- tcp://192.168... | serial:/dev/ttyUSB0 | usb:auto
+      config_json TEXT,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      last_seen_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_zatca_invoice ON zatca_submissions(invoice_id);
+    CREATE INDEX IF NOT EXISTS idx_eta_invoice ON eta_submissions(invoice_id);
+    CREATE INDEX IF NOT EXISTS idx_hw_tenant ON hardware_devices(tenant_id);
+
     -- Connections: per-tenant OAuth tokens / access tokens for external
     -- services (GitHub, Vercel, Netlify, Cloudflare, Meta, etc.). The
     -- tokens are AES-encrypted at rest via the standard column-
@@ -1272,6 +1330,7 @@ const SENSITIVE = {
   whatsapp_outbox: new Set(['to_phone']),
   marketplace_integrations: new Set(['api_credentials_json']),
   connections: new Set(['access_token', 'refresh_token']),
+  hardware_devices: new Set(['config_json']),
 };
 
 function encryptRow(table, row) {

@@ -40,6 +40,10 @@ const aiInsights = require('./ai-insights.cjs');
 const qrMenu = require('./qr-menu.cjs');
 const connectors = require('./connectors.cjs');
 const updater = require('./updater.cjs');
+const zatcaPhase2 = require('./zatca-phase2.cjs');
+const etaEgypt = require('./eta-egypt.cjs');
+const hardware = require('./hardware.cjs');
+const gdpr = require('./gdpr.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -588,6 +592,32 @@ ipcMain.handle('lic:issue', safe((_e, payload) => ({ key: licensing.issue(payloa
 ipcMain.handle('upd:status', safe(() => updater.status()));
 ipcMain.handle('upd:check', safe(() => updater.checkOnce(mainWindow)));
 ipcMain.handle('upd:install-restart', safe(() => updater.installAndRestart()));
+
+// --- ZATCA Phase 2 IPC ---
+ipcMain.handle('zatca2:clear', safe((_e, payload) => zatcaPhase2.clearInvoice(payload)));
+ipcMain.handle('zatca2:list', safe((_e, payload) => zatcaPhase2.listSubmissions(payload)));
+ipcMain.handle('zatca2:set', safe((_e, { tenantId, key, value }) => { zatcaPhase2.setSetting(tenantId, key, value); return { ok: true }; }));
+ipcMain.handle('zatca2:get', safe((_e, { tenantId, key }) => ({ value: zatcaPhase2.getSetting(tenantId, key) })));
+
+// --- ETA Egypt IPC ---
+ipcMain.handle('eta:submit', safe((_e, payload) => etaEgypt.submit(payload)));
+ipcMain.handle('eta:list', safe((_e, payload) => etaEgypt.listSubmissions(payload)));
+
+// --- Hardware IPC ---
+ipcMain.handle('hw:list', safe((_e, payload) => hardware.list(payload)));
+ipcMain.handle('hw:save', safe((_e, payload) => hardware.save(payload)));
+ipcMain.handle('hw:remove', safe((_e, payload) => hardware.remove(payload)));
+ipcMain.handle('hw:open-drawer', safe((_e, payload) => hardware.openCashDrawer(payload)));
+ipcMain.handle('hw:charge-card', safe((_e, payload) => hardware.chargeCard(payload)));
+ipcMain.handle('hw:read-weight', safe((_e, payload) => hardware.readWeight(payload)));
+ipcMain.handle('hw:print-label', safe((_e, payload) => hardware.printLabel(payload)));
+ipcMain.handle('hw:build-zpl', safe((_e, payload) => ({ zpl: hardware.buildProductLabelZpl(payload) })));
+
+// --- GDPR / PDPL IPC ---
+ipcMain.handle('gdpr:export-tenant', safe((_e, payload) => gdpr.exportTenant(payload)));
+ipcMain.handle('gdpr:export-client', safe((_e, payload) => gdpr.exportClient(payload)));
+ipcMain.handle('gdpr:erase-client', safe((_e, payload) => gdpr.eraseClient(payload)));
+ipcMain.handle('gdpr:list-exports', safe(() => gdpr.listExports()));
 
 // --- Security IPC ---
 ipcMain.handle('sec:verify-audit-chain', safe(() => security.verifyAuditChain()));

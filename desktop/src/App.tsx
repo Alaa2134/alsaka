@@ -73,6 +73,10 @@ import { ReturnsScreen } from "@/screens/ReturnsScreen";
 import { NotificationsScreen } from "@/screens/NotificationsScreen";
 import { UsersScreen } from "@/screens/UsersScreen";
 import { ConnectionsScreen } from "@/screens/ConnectionsScreen";
+import { HardwareScreen } from "@/screens/HardwareScreen";
+import { ZatcaPhase2Screen } from "@/screens/ZatcaPhase2Screen";
+import { EtaEgyptScreen } from "@/screens/EtaEgyptScreen";
+import { AccountSettingsScreen } from "@/screens/AccountSettingsScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -110,7 +114,6 @@ const STUBS: Array<{
   { path: "/system", title: "لوحة النظام", allow: ["system_manager"] },
   { path: "/security-events", title: "أحداث الأمان", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/company-settings", title: "إعدادات الشركة", allow: ["system_manager", "company_admin", "admin"] },
-  { path: "/account-settings", title: "حسابي", allow: ["system_manager", "company_admin", "admin", "manager", "cashier"] },
   { path: "/subscription", title: "الاشتراك", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/invoice-page-settings", title: "إعدادات صفحة الفاتورة", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/links", title: "إدارة الروابط", allow: ["system_manager", "company_admin", "admin", "manager"] },
@@ -328,6 +331,10 @@ export default function App() {
                     <Route path="notifications" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><NotificationsScreen /></SP></ProtectedRoute>} />
                     <Route path="users" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><UsersScreen /></SP></ProtectedRoute>} />
                     <Route path="connections" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ConnectionsScreen /></SP></ProtectedRoute>} />
+                    <Route path="hardware" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><HardwareScreen /></SP></ProtectedRoute>} />
+                    <Route path="zatca-phase2" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><ZatcaPhase2Screen /></SP></ProtectedRoute>} />
+                    <Route path="eta-egypt" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><EtaEgyptScreen /></SP></ProtectedRoute>} />
+                    <Route path="account-settings" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><AccountSettingsScreen /></SP></ProtectedRoute>} />
                     <Route
                       path="store-theme-builder"
                       element={

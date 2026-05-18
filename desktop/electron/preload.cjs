@@ -196,6 +196,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onDownloaded: (cb) => on('updater:downloaded', cb),
   },
 
+  zatcaPhase2: {
+    clear: (payload) => invoke('zatca2:clear', payload),
+    list: (payload) => invoke('zatca2:list', payload),
+    setSetting: (payload) => invoke('zatca2:set', payload),
+    getSetting: (payload) => invoke('zatca2:get', payload),
+  },
+
+  eta: {
+    submit: (payload) => invoke('eta:submit', payload),
+    list: (payload) => invoke('eta:list', payload),
+  },
+
+  hardware: {
+    list: (payload) => invoke('hw:list', payload),
+    save: (payload) => invoke('hw:save', payload),
+    remove: (payload) => invoke('hw:remove', payload),
+    openDrawer: (payload) => invoke('hw:open-drawer', payload),
+    chargeCard: (payload) => invoke('hw:charge-card', payload),
+    readWeight: (payload) => invoke('hw:read-weight', payload),
+    printLabel: (payload) => invoke('hw:print-label', payload),
+    buildZpl: (payload) => invoke('hw:build-zpl', payload),
+  },
+
+  gdpr: {
+    exportTenant: (payload) => invoke('gdpr:export-tenant', payload),
+    exportClient: (payload) => invoke('gdpr:export-client', payload),
+    eraseClient: (payload) => invoke('gdpr:erase-client', payload),
+    listExports: () => invoke('gdpr:list-exports'),
+  },
+
   // Security / tamper-evident audit chain
   security: {
     verifyAuditChain: () => invoke('sec:verify-audit-chain'),

@@ -80,6 +80,9 @@ const TITLES: Record<string, string> = {
   "/visual-catalog": "كتالوج بالصور (AI Vision)",
   "/qr-menu": "مينيو QR للطاولات",
   "/connections": "ربط الحسابات والخدمات",
+  "/hardware": "الأجهزة",
+  "/zatca-phase2": "ZATCA المرحلة 2",
+  "/eta-egypt": "ETA Egypt",
 };
 
 export function AppShell() {
