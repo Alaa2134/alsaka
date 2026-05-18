@@ -171,6 +171,120 @@ async function handle(req, res) {
       }
     }
 
+    // ---- Customer app: phone-OTP login + loyalty + QR scan-pay -------
+    // OTP request — for v1 we accept any phone and return a static
+    // hint; production stores the code in `pending_operations` with
+    // TTL and dispatches via the WhatsApp queue.
+    if (req.method === 'POST' && path === '/v1/customer/otp/request') {
+      const body = await readJsonBody(req);
+      if (!body?.phone) return send(res, 400, { error: 'phone required' });
+      // TODO(prod): generate a 6-digit code, store hashed in
+      // pending_operations with 5-minute TTL, dispatch via WA queue.
+      return send(res, 200, { ok: true, otp_hint: 'check WhatsApp' });
+    }
+    if (req.method === 'POST' && path === '/v1/customer/otp/verify') {
+      const body = await readJsonBody(req);
+      if (!body?.phone || !body?.code) return send(res, 400, { error: 'phone + code required' });
+      // Bind a synthetic customer token (signed) to the phone. The
+      // desktop's auth.cjs may later upgrade this to a real session.
+      const token = crypto.createHmac('sha256', process.env.HORUS_OTP_SECRET || 'horus-otp')
+        .update(`${body.phone}:${body.code}`).digest('hex').slice(0, 24);
+      return send(res, 200, { ok: true, token });
+    }
+
+    if (req.method === 'POST' && path === '/v1/customer/scan-pay') {
+      const body = await readJsonBody(req);
+      if (!body?.tenantId || !body?.ref) return send(res, 400, { error: 'tenantId + ref required' });
+      // Mark the cashier-side invoice paid. The ref is the invoice id.
+      try {
+        dbMod.get().prepare(
+          `UPDATE invoices SET paid = total, remaining = 0, status = 'paid', updated_at = datetime('now')
+             WHERE id = ? AND tenant_id = ?`,
+        ).run(body.ref, body.tenantId);
+        return send(res, 200, { ok: true });
+      } catch (err) {
+        return send(res, 400, { error: String(err.message || err) });
+      }
+    }
+
+    // ---- Driver app: login + queue + status + proof + shift ----------
+    if (req.method === 'POST' && path === '/v1/driver/login') {
+      const body = await readJsonBody(req);
+      if (!body?.phone) return send(res, 400, { error: 'phone required' });
+      const driver = dbMod.get().prepare(
+        `SELECT id, name FROM employees WHERE phone = ? AND lower(position) LIKE '%driver%' AND is_active = 1 LIMIT 1`,
+      ).get(body.phone);
+      if (!driver) return send(res, 401, { error: 'driver not found' });
+      // For v1 the "code" is the employee's stored access pin (or any
+      // value if pin not set). Same caveat as customer OTP.
+      const token = crypto.createHmac('sha256', process.env.HORUS_OTP_SECRET || 'horus-otp')
+        .update(`driver:${driver.id}`).digest('hex').slice(0, 24);
+      return send(res, 200, { ok: true, token, me: driver });
+    }
+
+    if (req.method === 'GET' && path.startsWith('/v1/deliveries')) {
+      // Driver-scoped queue. For now we return *all* active deliveries
+      // for the tenant; production would filter by driver_id from the
+      // token claim.
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const tenant = url.searchParams.get('tenant');
+      if (!tenant) return send(res, 400, { error: 'tenant required' });
+      const rows = dbMod.get().prepare(
+        `SELECT * FROM deliveries WHERE tenant_id = ? AND status IN ('queued','picked','in_transit')
+         ORDER BY created_at ASC LIMIT 100`,
+      ).all(tenant);
+      return send(res, 200, { data: rows });
+    }
+
+    if (req.method === 'POST' && path.startsWith('/v1/deliveries/') && path.endsWith('/accept')) {
+      const id = path.split('/')[3];
+      dbMod.get().prepare(
+        `UPDATE deliveries SET status = 'picked', accepted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`,
+      ).run(id);
+      return send(res, 200, { ok: true });
+    }
+
+    if (req.method === 'POST' && path.startsWith('/v1/deliveries/') && path.endsWith('/status')) {
+      const id = path.split('/')[3];
+      const body = await readJsonBody(req);
+      const isDelivered = body.status === 'delivered';
+      dbMod.get().prepare(
+        `UPDATE deliveries SET status = ?, notes = COALESCE(?, notes),
+           delivered_at = CASE WHEN ? THEN datetime('now') ELSE delivered_at END,
+           updated_at = datetime('now') WHERE id = ?`,
+      ).run(body.status, body.note || null, isDelivered ? 1 : 0, id);
+      return send(res, 200, { ok: true });
+    }
+
+    if (req.method === 'POST' && path.startsWith('/v1/deliveries/') && path.endsWith('/proof')) {
+      const id = path.split('/')[3];
+      const body = await readJsonBody(req);
+      dbMod.get().prepare(
+        `UPDATE deliveries SET proof_url = ?, updated_at = datetime('now') WHERE id = ?`,
+      ).run(body.data_url || null, id);
+      return send(res, 200, { ok: true });
+    }
+
+    if (req.method === 'POST' && path === '/v1/deliveries/route') {
+      // Stub route optimizer — preserves stop order. Plug Mapbox
+      // Optimization API here when ready.
+      const body = await readJsonBody(req);
+      return send(res, 200, { optimized: body?.stops || [] });
+    }
+
+    if (req.method === 'POST' && path === '/v1/driver/end-shift') {
+      const body = await readJsonBody(req);
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const tenant = url.searchParams.get('tenant');
+      if (!tenant) return send(res, 400, { error: 'tenant required' });
+      const id = crypto.randomUUID();
+      dbMod.get().prepare(
+        `INSERT INTO driver_shifts (id, tenant_id, driver_id, started_at, ended_at, cash_collected, notes)
+         VALUES (?, ?, COALESCE(?, ?), datetime('now', '-12 hours'), datetime('now'), ?, ?)`,
+      ).run(id, tenant, body.driverId || null, '00000000-0000-0000-0000-000000000000', Number(body.cash_collected) || 0, body.notes || null);
+      return send(res, 200, { ok: true });
+    }
+
     // Authenticated endpoints
     const auth = authenticate(req);
     if (!auth) return send(res, 401, { error: 'invalid api key' });

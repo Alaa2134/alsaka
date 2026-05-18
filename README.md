@@ -1,16 +1,19 @@
 # 𓁹 Horus System
 
 منصة تجارة ومحاسبة ونقاط بيع عربية متكاملة — تخدم كل أنواع المحلات
-والمطاعم والشركات. **monorepo فيه ست تطبيقات** مترابطة.
+والمطاعم والشركات. **monorepo فيه تمن تطبيقات + SDK** مترابطة.
 
 | المجلد | الوصف | Port للتطوير |
 |---|---|---|
-| **`desktop/`** | تطبيق الكاشير الرئيسي (Electron + SQLite). 60+ شاشة: فواتير، محاسبة كاملة، مخزون، موظفون، تقارير، مينيو QR، AI | `dev:electron` |
+| **`desktop/`** | تطبيق الكاشير الرئيسي (Electron + SQLite). 70+ شاشة: فواتير، محاسبة كاملة، مخزون، موظفون، تقارير، مينيو QR، AI، صيدلية/مطعم/صالون/ميكانيكي | `dev:electron` |
 | **`store/`** | المتجر الإلكتروني العام (Vite SPA) — موقع لكل عميل + صفحة مينيو QR | `5174` |
 | **`mobile/`** | كاشير محمول كـ PWA — يعمل من أي موبايل ويستخدم REST API | `5176` |
 | **`customer-display/`** | شاشة العميل (شاشة ثانية تواجه الزبون عند الكاشير) | `5175` |
 | **`owner-dashboard/`** | لوحة متابعة لصاحب المكان — مبيعات + فواتير + مرتبات من أي مكان | `5177` |
 | **`vendor/`** ⭐ | لوحة تحكم **البائع** (انت) — يصدر تراخيص + Heartbeats + يرفع تحديثات .exe — Cloudflare Workers + D1 | `5178` + Worker `8787` |
+| **`customer-app/`** | تطبيق العملاء — نقاط ولاء + طلب توصيل + دفع QR | `5180` |
+| **`driver-app/`** | تطبيق سائق التوصيل — قائمة طلبات + إثبات تسليم بالكاميرا + تسليم كاش | `5181` |
+| **`sdk/`** | حزمة `@horus/sdk` — TypeScript client للـ REST API + ملف OpenAPI | — |
 
 ## بنية النظام
 
@@ -50,6 +53,12 @@ cd customer-display && npm install && npm run dev   # http://localhost:5175
 
 # 5) موقع متابعة صاحب المكان
 cd owner-dashboard && npm install && npm run dev    # http://localhost:5177
+
+# 6) تطبيق العميل (PWA)
+cd customer-app && npm install && npm run dev       # http://<your-ip>:5180
+
+# 7) تطبيق السائق (PWA)
+cd driver-app && npm install && npm run dev         # http://<your-ip>:5181
 ```
 
 **تسجيل الدخول الأول للكاشير:** `admin@systemalaa.app` / `admin`

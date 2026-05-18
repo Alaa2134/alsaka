@@ -1076,6 +1076,41 @@ function bootstrap() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Driver / delivery queue (Wave 4 ecosystem)
+    CREATE TABLE IF NOT EXISTS deliveries (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      order_id TEXT REFERENCES store_orders(id) ON DELETE SET NULL,
+      driver_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,
+      customer_name TEXT NOT NULL,
+      customer_phone TEXT NOT NULL,
+      address TEXT NOT NULL,
+      total REAL NOT NULL DEFAULT 0,
+      cash_to_collect REAL NOT NULL DEFAULT 0,
+      cash_collected REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'queued', -- queued | picked | in_transit | delivered | failed
+      proof_url TEXT,
+      notes TEXT,
+      accepted_at TEXT,
+      delivered_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_deliveries_driver ON deliveries(driver_id);
+    CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries(tenant_id, status);
+
+    -- Driver-day shift summary (cash reconciliation)
+    CREATE TABLE IF NOT EXISTS driver_shifts (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      driver_id TEXT NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+      started_at TEXT NOT NULL DEFAULT (datetime('now')),
+      ended_at TEXT,
+      cash_collected REAL NOT NULL DEFAULT 0,
+      deliveries_count INTEGER NOT NULL DEFAULT 0,
+      notes TEXT
+    );
+
     -- Add product extensions: variant tracking flag, multi-pricing,
     -- expiry, ingredients (for restaurant), is_service flag.
   `);
