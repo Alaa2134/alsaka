@@ -176,6 +176,11 @@ function touchTrial() {
 function status() {
   ensureTable();
 
+  // 0. Vendor SaaS verdict — overrides everything else. If the server
+  //    said "revoked" or grace period expired, the app locks.
+  const remote = checkVendorVerdict();
+  if (remote) return remote;
+
   // 1. Anchor file integrity — if removed, refuse to claim ANY licence
   //    is valid. The trial path also requires the anchor to stop a
   //    "copy DB to fresh machine" replay.
@@ -331,4 +336,143 @@ function bootCheck() {
   }
 }
 
-module.exports = { issue, parse, activate, status, deactivate, bootCheck, attachApp };
+// ---------------------------------------------------------------------------
+// Online heartbeat — sends key + fingerprint to the vendor SaaS every
+// 6 hours. The server's verdict (ok / revoked / expired / unknown) is
+// cached in `vendor_state` with a 14-day grace period; after that the
+// app refuses to validate even if completely offline.
+// ---------------------------------------------------------------------------
+const https = require('node:https');
+const http = require('node:http');
+const { URL } = require('node:url');
+const { app } = require('electron');
+
+const HEARTBEAT_INTERVAL = 6 * 60 * 60 * 1000;
+const GRACE_DAYS = 14;
+let hbTimer = null;
+
+function ensureVendorTable() {
+  const db = dbMod.get();
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS vendor_state (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      last_heartbeat_at TEXT,
+      last_verdict TEXT,
+      last_verdict_at TEXT,
+      grace_until TEXT,
+      last_error TEXT
+    );
+    INSERT OR IGNORE INTO vendor_state (id) VALUES (1);
+  `);
+}
+
+function postJson(url, body) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const lib = u.protocol === 'https:' ? https : http;
+    const data = JSON.stringify(body);
+    const req = lib.request({
+      method: 'POST',
+      hostname: u.hostname,
+      port: u.port || (u.protocol === 'https:' ? 443 : 80),
+      path: u.pathname + u.search,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data),
+        'User-Agent': `Horus/${app?.getVersion?.() || 'dev'}`,
+      },
+    }, (res) => {
+      let chunks = '';
+      res.on('data', (c) => { chunks += c; });
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, body: JSON.parse(chunks) }); }
+        catch { resolve({ status: res.statusCode, body: chunks }); }
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+async function heartbeatOnce() {
+  ensureTable();
+  ensureVendorTable();
+  const url = process.env.HORUS_VENDOR_URL;
+  if (!url) return { skipped: true, reason: 'no-vendor-url' };
+  const db = dbMod.get();
+  const lic = db.prepare(`SELECT * FROM license LIMIT 1`).get();
+  if (!lic) return { skipped: true, reason: 'no-license' };
+
+  const fp = deviceFingerprint(userDataDir);
+  try {
+    const resp = await postJson(`${url}/api/hb`, {
+      key: lic.key,
+      fingerprint_short: fp.slice(0, 16),
+      version: app?.getVersion?.() || null,
+      install_count: 1,
+    });
+    const verdict = resp.body?.verdict || 'unknown';
+    const grace = new Date(Date.now() + GRACE_DAYS * 86400000).toISOString();
+    db.prepare(
+      `UPDATE vendor_state SET last_heartbeat_at = datetime('now'),
+                               last_verdict = ?, last_verdict_at = datetime('now'),
+                               grace_until = ?, last_error = NULL WHERE id = 1`,
+    ).run(verdict, grace);
+    console.log('[Horus] heartbeat verdict:', verdict);
+    return { ok: true, verdict };
+  } catch (err) {
+    db.prepare(`UPDATE vendor_state SET last_error = ?, last_heartbeat_at = datetime('now') WHERE id = 1`)
+      .run(String(err.message || err));
+    console.warn('[Horus] heartbeat failed:', err.message);
+    return { ok: false, error: String(err.message || err) };
+  }
+}
+
+function startHeartbeat() {
+  if (hbTimer) clearInterval(hbTimer);
+  if (!process.env.HORUS_VENDOR_URL) return;
+  hbTimer = setInterval(() => heartbeatOnce().catch(() => undefined), HEARTBEAT_INTERVAL);
+  // First heartbeat 30 seconds after start
+  setTimeout(() => heartbeatOnce().catch(() => undefined), 30_000);
+}
+
+function stopHeartbeat() {
+  if (hbTimer) clearInterval(hbTimer);
+  hbTimer = null;
+}
+
+// Called by status() to fold the online verdict into the lock decision.
+// Returns one of:
+//   - null              → no online check ever happened (allow normal flow)
+//   - { active: false, reason: 'revoked' | 'remote-expired' } → server says no
+//   - { active: false, reason: 'grace-expired' } → offline for >GRACE_DAYS
+//   - null              → server says ok or within grace
+function checkVendorVerdict() {
+  ensureVendorTable();
+  const row = dbMod.get().prepare(`SELECT * FROM vendor_state WHERE id = 1`).get();
+  if (!row || !row.last_verdict) return null;
+
+  if (row.last_verdict === 'revoked') {
+    return {
+      active: false, reason: 'revoked',
+      message: 'تم إلغاء هذا الترخيص من قبل البائع.',
+    };
+  }
+  if (row.last_verdict === 'remote-expired' || row.last_verdict === 'expired') {
+    return { active: false, reason: 'expired' };
+  }
+
+  if (row.grace_until && new Date(row.grace_until) < new Date()) {
+    return {
+      active: false, reason: 'grace-expired',
+      message: 'لم يصل سيرفر البائع من فترة طويلة — تحقق من الاتصال بالإنترنت.',
+    };
+  }
+  return null;
+}
+
+module.exports = {
+  issue, parse, activate, status, deactivate, bootCheck, attachApp,
+  heartbeatOnce, startHeartbeat, stopHeartbeat, checkVendorVerdict,
+};

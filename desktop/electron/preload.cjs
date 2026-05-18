@@ -186,6 +186,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     activate: (key) => invoke('lic:activate', { key }),
     deactivate: () => invoke('lic:deactivate'),
     issue: (payload) => invoke('lic:issue', payload),
+    heartbeatNow: () => invoke('lic:heartbeat-now'),
+  },
+
+  updater: {
+    status: () => invoke('upd:status'),
+    check: () => invoke('upd:check'),
+    installRestart: () => invoke('upd:install-restart'),
+    onDownloaded: (cb) => on('updater:downloaded', cb),
   },
 
   // Security / tamper-evident audit chain

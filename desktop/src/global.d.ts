@@ -243,6 +243,27 @@ declare global {
       }>>;
       deactivate(): Promise<IpcResult<{ ok: boolean }>>;
       issue(payload?: { tier?: string; expiry?: string; nonce?: string }): Promise<IpcResult<{ key: string }>>;
+      heartbeatNow(): Promise<IpcResult<{ ok?: boolean; verdict?: string; skipped?: boolean; reason?: string; error?: string }>>;
+    };
+
+    updater: {
+      status(): Promise<IpcResult<{
+        vendor_url: string;
+        channel: string;
+        current_version: string;
+        downloading: boolean;
+        pending_install: boolean;
+      }>>;
+      check(): Promise<IpcResult<{
+        available?: boolean;
+        downloaded?: boolean;
+        skipped?: boolean;
+        reason?: string;
+        version?: string;
+        error?: string;
+      }>>;
+      installRestart(): Promise<IpcResult<{ ok: boolean; error?: string }>>;
+      onDownloaded(cb: (payload: { version: string; notes: string | null }) => void): () => void;
     };
 
     security: {

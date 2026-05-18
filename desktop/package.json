@@ -62,7 +62,8 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^10.0.0",
     "whatsapp-web.js": "^1.26.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",

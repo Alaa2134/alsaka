@@ -39,6 +39,7 @@ const aiVision = require('./ai-vision.cjs');
 const aiInsights = require('./ai-insights.cjs');
 const qrMenu = require('./qr-menu.cjs');
 const connectors = require('./connectors.cjs');
+const updater = require('./updater.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -578,9 +579,15 @@ gdrive.onUpdate((s) => send('gdrive:state-changed', s));
 ipcMain.handle('lic:status', safe(() => licensing.status()));
 ipcMain.handle('lic:activate', safe((_e, { key }) => licensing.activate(key)));
 ipcMain.handle('lic:deactivate', safe(() => licensing.deactivate()));
+ipcMain.handle('lic:heartbeat-now', safe(() => licensing.heartbeatOnce()));
 // Vendor-only convenience: issue a key locally for testing. In production
 // the issuer runs on a server with the real secret — never ship this UI.
 ipcMain.handle('lic:issue', safe((_e, payload) => ({ key: licensing.issue(payload || {}) })));
+
+// --- Auto-updater IPC ---
+ipcMain.handle('upd:status', safe(() => updater.status()));
+ipcMain.handle('upd:check', safe(() => updater.checkOnce(mainWindow)));
+ipcMain.handle('upd:install-restart', safe(() => updater.installAndRestart()));
 
 // --- Security IPC ---
 ipcMain.handle('sec:verify-audit-chain', safe(() => security.verifyAuditChain()));
@@ -648,10 +655,15 @@ if (!gotLock) {
     waQueue.startDrainer();
     schedulers.start();
     apiServer.start().catch((err) => console.warn('[SystemAlaa] API server failed to start:', err.message));
+    // Online vendor heartbeat + auto-updater
+    licensing.startHeartbeat();
     createWindow();
     createTray();
     registerGlobalShortcuts();
     scheduleDailyBackup();
+    // Auto-update poller — runs after the window is created so it can
+    // forward "downloaded" events to the renderer.
+    setTimeout(() => updater.start(mainWindow), 5_000);
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -667,6 +679,8 @@ if (!gotLock) {
     try { waQueue.stopDrainer(); } catch (_) { /* ignore */ }
     try { schedulers.stop(); } catch (_) { /* ignore */ }
     try { apiServer.stop(); } catch (_) { /* ignore */ }
+    try { licensing.stopHeartbeat(); } catch (_) { /* ignore */ }
+    try { updater.stop(); } catch (_) { /* ignore */ }
   });
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin' && isQuitting) app.quit();
