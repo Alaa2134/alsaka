@@ -628,7 +628,20 @@ if (!gotLock) {
   app.whenReady().then(() => {
     ensureDirs();
     dbMod.open(getDbPath());
+    // Attach Electron app to modules that need access to userData
+    // BEFORE any of them touch the DB — they all need the device
+    // fingerprint anchor to be set up first.
+    licensing.attachApp(app);
+    auth.attachApp(app);
     auth.ensureSeedTenantAndAdmin();
+    // Boot-check the license: writes a startup audit log entry and
+    // returns the status. The renderer will re-check on mount and
+    // gate the app accordingly — we don't block startup here so the
+    // owner can still see the activation screen.
+    const licStatus = licensing.bootCheck();
+    if (!licStatus.active) {
+      console.warn('[Horus] starting in restricted mode:', licStatus.reason);
+    }
     whatsapp.attachApp(app);
     gdrive.attachApp(app);
     gdrive.start();

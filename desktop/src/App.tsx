@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OfflineProvider } from "@/contexts/OfflineContext";
 import { InactivityLock } from "@/components/auth/InactivityLock";
+import { LicenseGate } from "@/components/auth/LicenseGate";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
 import { DesktopBridge } from "@/components/layout/DesktopBridge";
@@ -123,6 +124,7 @@ export default function App() {
           <Router>
             <AuthProvider>
               <InactivityLock>
+                <LicenseGate>
                 <DesktopBridge />
                 <Toaster richColors position="top-center" dir="rtl" />
                 <Routes>
@@ -366,6 +368,7 @@ export default function App() {
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
                 </Routes>
+                </LicenseGate>
               </InactivityLock>
             </AuthProvider>
           </Router>

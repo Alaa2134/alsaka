@@ -4,10 +4,21 @@ const bcrypt = require('bcryptjs');
 const { v4: uuid } = require('uuid');
 const { authenticator } = require('otplib');
 const dbMod = require('./db.cjs');
-const { deviceFingerprint } = require('./crypto.cjs');
+const { deviceFingerprint, fingerprintMatches } = require('./crypto.cjs');
 const accounting = require('./accounting.cjs');
 const security = require('./security.cjs');
 const store = require('./store.cjs');
+
+let userDataDir = null;
+function attachApp(electronApp) {
+  if (electronApp) userDataDir = electronApp.getPath('userData');
+}
+function fp() {
+  return deviceFingerprint(userDataDir);
+}
+function matches(stored) {
+  return fingerprintMatches(stored, userDataDir);
+}
 
 const BCRYPT_COST = 12;
 
@@ -81,13 +92,18 @@ function sanitizeUser(user) {
 // the login screen to switch between the two flows.
 function boundUser() {
   const db = dbMod.get();
-  const fp = deviceFingerprint();
-  const row = db
-    .prepare(
-      `SELECT * FROM app_users WHERE device_fingerprint = ? AND is_active = 1 LIMIT 1`,
-    )
-    .get(fp);
+  const current = fp();
+  // Match by either the new strong fingerprint or the legacy weak one
+  // for users who claimed their device before the fingerprint upgrade.
+  const all = db
+    .prepare(`SELECT * FROM app_users WHERE device_fingerprint IS NOT NULL AND is_active = 1`)
+    .all();
+  const row = all.find((r) => matches(r.device_fingerprint));
   if (!row) return { bound: false };
+  // Opportunistically upgrade the stored fingerprint to the strong one.
+  if (row.device_fingerprint !== current) {
+    db.prepare(`UPDATE app_users SET device_fingerprint = ? WHERE id = ?`).run(current, row.id);
+  }
   const u = sanitizeUser(row);
   return { bound: true, user: u };
 }
@@ -113,8 +129,8 @@ function claimDevice({ email, currentPassword, newPassword }) {
   // If the user already claimed a different machine, refuse outright. The
   // vendor would have to manually unbind it server-side / from the admin
   // tooling before this can succeed elsewhere.
-  const fp = deviceFingerprint();
-  if (user.device_fingerprint && user.device_fingerprint !== fp) {
+  const current = fp();
+  if (user.device_fingerprint && !matches(user.device_fingerprint)) {
     security.appendAudit({
       tenantId: user.tenant_id,
       userId: user.id,
@@ -143,7 +159,7 @@ function claimDevice({ email, currentPassword, newPassword }) {
   const passwordHash = security.hashPassword(String(newPassword));
   db.prepare(
     `UPDATE app_users SET password_hash = ?, device_fingerprint = ?, last_login = datetime('now') WHERE id = ?`,
-  ).run(passwordHash, fp, user.id);
+  ).run(passwordHash, current, user.id);
   security.resetFailures(lockKey);
   security.appendAudit({
     tenantId: user.tenant_id,
@@ -158,7 +174,7 @@ function claimDevice({ email, currentPassword, newPassword }) {
 
   return {
     ok: true,
-    user: sanitizeUser({ ...user, password_hash: passwordHash, device_fingerprint: fp }),
+    user: sanitizeUser({ ...user, password_hash: passwordHash, device_fingerprint: current }),
   };
 }
 
@@ -168,13 +184,16 @@ function claimDevice({ email, currentPassword, newPassword }) {
 // their password.
 function loginBound({ password }) {
   const db = dbMod.get();
-  const fp = deviceFingerprint();
-  const user = db
-    .prepare(
-      `SELECT * FROM app_users WHERE device_fingerprint = ? AND is_active = 1 LIMIT 1`,
-    )
-    .get(fp);
+  const all = db
+    .prepare(`SELECT * FROM app_users WHERE device_fingerprint IS NOT NULL AND is_active = 1`)
+    .all();
+  const user = all.find((r) => matches(r.device_fingerprint));
   if (!user) return { ok: false, error: 'not-bound' };
+  // Migrate legacy → strong fingerprint silently on successful match
+  const current = fp();
+  if (user.device_fingerprint !== current) {
+    db.prepare(`UPDATE app_users SET device_fingerprint = ? WHERE id = ?`).run(current, user.id);
+  }
 
   const lockKey = `bound:${user.id}`;
   if (security.isLocked(lockKey)) {
@@ -283,8 +302,7 @@ function login({ email, password }) {
 
   // Hard device binding: once an account has claimed a machine, the same
   // credentials are useless anywhere else even via the email+password path.
-  const fp = deviceFingerprint();
-  if (user.device_fingerprint && user.device_fingerprint !== fp) {
+  if (user.device_fingerprint && !matches(user.device_fingerprint)) {
     security.appendAudit({
       tenantId: user.tenant_id,
       userId: user.id,
@@ -324,8 +342,8 @@ function verifyAccessCode({ userId, code }) {
   if (!user || !user.access_code_hash) return { ok: false, error: 'no-code' };
 
   // Hardware-lock: if device_fingerprint exists, it must match this machine.
-  const currentFp = deviceFingerprint();
-  if (user.device_fingerprint && user.device_fingerprint !== currentFp) {
+  const currentFp = fp();
+  if (user.device_fingerprint && !matches(user.device_fingerprint)) {
     recordEvent({
       tenantId: user.tenant_id,
       userId: user.id,
@@ -475,6 +493,7 @@ function createUser({ tenantId, email, name, password, role = 'cashier' }) {
 }
 
 module.exports = {
+  attachApp,
   ensureSeedTenantAndAdmin,
   login,
   loginBound,
