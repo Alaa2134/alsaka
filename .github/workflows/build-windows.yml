@@ -25,14 +25,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: desktop/package-lock.json
 
       # Windows runners already include MSBuild + VC++ toolset, so
       # better-sqlite3 will compile fine without any extra setup.
       - name: Install dependencies
         working-directory: desktop
-        run: npm install
+        run: npm install --no-audit --no-fund
         env:
           npm_config_build_from_source: 'false'
 
