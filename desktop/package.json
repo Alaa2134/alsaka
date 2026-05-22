@@ -112,7 +112,8 @@
           "target": "nsis",
           "arch": ["x64"]
         }
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -122,6 +123,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Horus System",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "installerLanguages": ["en-US"]
     },
     "mac": {
@@ -130,6 +133,7 @@
     },
     "linux": {
       "target": "AppImage",
+      "icon": "build/icon.png",
       "category": "Office"
     }
   }
