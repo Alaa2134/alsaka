@@ -112,8 +112,7 @@
           "target": "nsis",
           "arch": ["x64"]
         }
-      ],
-      "icon": "build/icon.ico"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -127,7 +126,6 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "build/icon.icns",
       "category": "public.app-category.business"
     },
     "linux": {

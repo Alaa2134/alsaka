@@ -41,6 +41,8 @@ jobs:
           # Skip code-signing for now (no certificate). The .exe will
           # still install but Windows SmartScreen may warn the user.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # Verbose electron-builder logs in case it fails again
+          DEBUG: 'electron-builder'
 
       - name: List output
         working-directory: desktop/release
