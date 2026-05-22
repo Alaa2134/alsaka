@@ -168,6 +168,11 @@ export function LoginScreen() {
                 استخدم البريد الإلكتروني والباسورد المؤقت اللي حصلت عليهم من البائع، وحدد باسورد جديد ستستخدمه بعد كده.
                 هذه الخطوة تتم مرة واحدة فقط — بعدها الحساب يعمل على هذا الجهاز فقط.
               </p>
+              <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground/80">
+                <div className="font-medium mb-1">⚙️ بيانات الدخول الافتراضية (أول تشغيل):</div>
+                <div>البريد: <code className="font-mono">admin@horus.app</code> أو <code className="font-mono">admin@systemalaa.app</code></div>
+                <div>الباسورد المؤقت: <code className="font-mono">admin</code></div>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="email">البريد الإلكتروني</Label>
                 <Input

@@ -25,14 +25,19 @@ const BCRYPT_COST = 12;
 function ensureSeedTenantAndAdmin() {
   const db = dbMod.get();
   const tenantCount = db.prepare(`SELECT COUNT(*) AS n FROM tenants`).get().n;
+
+  // ── Auto-heal path ────────────────────────────────────────────────
+  // Even if a tenant already exists (e.g. upgrade from an old install),
+  // make sure a working admin user is present. If the only admin row is
+  // unreachable (forgotten password, deleted, etc.) we re-seed one so
+  // the merchant can always sign in.
   if (tenantCount > 0) {
-    // Tenant exists but may have been seeded before the accounting tables
-    // were added — make sure the chart of accounts is in place.
     const tenants = db.prepare(`SELECT id, name FROM tenants`).all();
     for (const t of tenants) {
       accounting.ensureChartOfAccounts(t.id);
       store.ensureStoreSettings(t.id, t.name);
     }
+    ensureDefaultAdmins(tenants[0].id);
     return;
   }
 
@@ -41,19 +46,7 @@ function ensureSeedTenantAndAdmin() {
     `INSERT INTO tenants (id, name, slug, is_active) VALUES (?, ?, ?, 1)`,
   ).run(tenantId, 'Horus', 'horus');
 
-  const adminId = uuid();
-  const passwordHash = security.hashPassword('admin');
-  const accessHash = security.hashPassword('000000');
-  db.prepare(
-    `INSERT INTO app_users (id, tenant_id, email, name, password_hash, access_code_hash, role, is_active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-  ).run(adminId, tenantId, 'admin@systemalaa.app', 'System Manager', passwordHash, accessHash, 'system_manager');
-
-  db.prepare(`INSERT INTO user_roles (id, user_id, role) VALUES (?, ?, ?)`).run(
-    uuid(),
-    adminId,
-    'system_manager',
-  );
+  ensureDefaultAdmins(tenantId);
 
   // Seed the standard Arabic chart of accounts + system-account mapping.
   accounting.ensureChartOfAccounts(tenantId);
@@ -61,6 +54,30 @@ function ensureSeedTenantAndAdmin() {
   // Bootstrap the storefront so the new tenant has a published shop with
   // a unique slug as soon as the desktop app boots.
   store.ensureStoreSettings(tenantId, 'Horus');
+}
+
+// Idempotently inserts every default admin email with password "admin".
+// Used at first boot and as a self-heal on every subsequent boot.
+function ensureDefaultAdmins(tenantId) {
+  const db = dbMod.get();
+  const passwordHash = security.hashPassword('admin');
+  const accessHash   = security.hashPassword('000000');
+  const emails = [
+    'admin@horus.app',         // primary (matches the new brand)
+    'admin@systemalaa.app',    // backward compat with older docs
+  ];
+  for (const email of emails) {
+    const existing = db
+      .prepare(`SELECT id FROM app_users WHERE LOWER(email) = LOWER(?)`)
+      .get(email);
+    if (existing) continue;
+    const id = uuid();
+    db.prepare(
+      `INSERT INTO app_users (id, tenant_id, email, name, password_hash, access_code_hash, role, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+    ).run(id, tenantId, email, 'System Manager', passwordHash, accessHash, 'system_manager');
+    db.prepare(`INSERT INTO user_roles (id, user_id, role) VALUES (?, ?, ?)`).run(uuid(), id, 'system_manager');
+  }
 }
 
 function recordEvent({ tenantId, userId, eventType, metadata }) {
