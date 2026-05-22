@@ -1,0 +1,73 @@
+name: Build Windows Installer
+
+on:
+  push:
+    branches:
+      - claude/systemalaa-desktop-app-YK5q1
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      # Windows runners already include MSBuild + VC++ toolset, so
+      # better-sqlite3 will compile fine without any extra setup.
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+        env:
+          npm_config_build_from_source: 'false'
+
+      - name: Build Windows installer (NSIS .exe)
+        working-directory: desktop
+        run: npm run dist:win
+        env:
+          # Skip code-signing for now (no certificate). The .exe will
+          # still install but Windows SmartScreen may warn the user.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: List output
+        working-directory: desktop/release
+        run: dir
+        shell: cmd
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HorusSystem-Windows-Installer
+          path: |
+            desktop/release/*.exe
+            desktop/release/*.exe.blockmap
+            desktop/release/latest.yml
+          if-no-files-found: error
+          retention-days: 30
+
+      # If a tag was pushed, also publish as a GitHub Release so the
+      # end user gets a stable download URL.
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/release/*.exe
+            desktop/release/*.exe.blockmap
+            desktop/release/latest.yml
+          generate_release_notes: true
