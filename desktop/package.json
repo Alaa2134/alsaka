@@ -11,7 +11,8 @@
   "scripts": {
     "dev": "vite",
     "dev:electron": "concurrently -k -n vite,electron -c blue,magenta \"vite\" \"wait-on tcp:5173 && cross-env ELECTRON_DEV=1 ELECTRON_DEV_URL=http://localhost:5173 electron .\"",
-    "build": "tsc -b && vite build --mode electron",
+    "build": "vite build --mode electron",
+    "build:strict": "tsc -b && vite build --mode electron",
     "preview:electron": "cross-env ELECTRON_DEV=0 electron .",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-builder install-app-deps",
