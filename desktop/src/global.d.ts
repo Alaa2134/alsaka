@@ -163,6 +163,24 @@ declare global {
       drainNow(): Promise<IpcResult<void>>;
     };
 
+    waBulk: {
+      create(payload: {
+        tenantId: string; name?: string; body: string;
+        recipients: Array<{ phone: string; name?: string | null }>;
+        dataUrl?: string | null; caption?: string | null;
+        minDelaySec?: number; maxDelaySec?: number; batchSize?: number; batchPauseMin?: number;
+      }): Promise<IpcResult<{ ok: boolean; campaignId: string; total: number; etaMinutes: number }>>;
+      list(payload: { tenantId: string; limit?: number }): Promise<IpcResult<Array<{
+        id: string; name: string | null; body: string; total: number; sent: number; failed: number;
+        status: string; created_at: string; finished_at: string | null;
+      }>>>;
+      progress(payload: { campaignId: string }): Promise<IpcResult<{
+        id: string; name: string | null; total: number; sent: number; failed: number; pending: number;
+        status: string; next_at: string | null;
+      } | null>>;
+      cancel(payload: { campaignId: string }): Promise<IpcResult<{ ok: boolean }>>;
+    };
+
     qrMenu: {
       config(tenantId: string): Promise<IpcResult<any>>;
       setConfig(payload: { tenantId: string; patch: Record<string, unknown> }): Promise<IpcResult<any>>;

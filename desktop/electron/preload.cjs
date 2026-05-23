@@ -108,6 +108,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     drainNow: () => invoke('wa-queue:drain-now'),
   },
 
+  // WhatsApp bulk campaigns with anti-ban throttling
+  waBulk: {
+    create: (payload) => invoke('wa-bulk:create', payload),
+    list: (payload) => invoke('wa-bulk:list', payload),
+    progress: (payload) => invoke('wa-bulk:progress', payload),
+    cancel: (payload) => invoke('wa-bulk:cancel', payload),
+  },
+
   // Per-tenant connectors (GitHub, Vercel, Netlify, Cloudflare...)
   connectors: {
     providers: () => invoke('conn:providers'),

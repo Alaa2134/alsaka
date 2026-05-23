@@ -1138,6 +1138,31 @@ function bootstrap() {
   maybeAdd('invoices', 'gift_card_redeemed', 'REAL NOT NULL DEFAULT 0');
   maybeAdd('invoices', 'payment_method', "TEXT NOT NULL DEFAULT 'cash'"); // cash | card | wallet | credit
 
+  // WhatsApp bulk campaigns + anti-ban scheduling on the outbox.
+  maybeAdd('whatsapp_outbox', 'scheduled_at', 'TEXT');        // don't send before this time (throttle)
+  maybeAdd('whatsapp_outbox', 'campaign_id', 'TEXT');
+  maybeAdd('whatsapp_outbox', 'recipient_name', 'TEXT');
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_campaigns (
+      id TEXT PRIMARY KEY,
+      tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      name TEXT,
+      body TEXT NOT NULL,
+      total INTEGER NOT NULL DEFAULT 0,
+      sent INTEGER NOT NULL DEFAULT 0,
+      failed INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'running', -- running | done | paused
+      min_delay_sec INTEGER NOT NULL DEFAULT 8,
+      max_delay_sec INTEGER NOT NULL DEFAULT 25,
+      batch_size INTEGER NOT NULL DEFAULT 40,
+      batch_pause_min INTEGER NOT NULL DEFAULT 4,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      finished_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_outbox_scheduled ON whatsapp_outbox(status, scheduled_at);
+    CREATE INDEX IF NOT EXISTS idx_outbox_campaign ON whatsapp_outbox(campaign_id);
+  `);
+
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_shifts_user ON cashier_shifts(user_id);
     CREATE INDEX IF NOT EXISTS idx_held_tenant ON held_invoices(tenant_id);

@@ -96,6 +96,7 @@ const whatsappCloud = safeRequire('./whatsapp-cloud.cjs');
 const marketplace = safeRequire('./marketplace.cjs');
 const branchSync = safeRequire('./branch-sync.cjs');
 const smartImport = safeRequire('./smart-import.cjs');
+const whatsappBulk = safeRequire('./whatsapp-bulk.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -565,6 +566,12 @@ ipcMain.handle('wa-queue:enqueue', safe((_e, payload) => waQueue.enqueue(payload
 ipcMain.handle('wa-queue:pending', safe((_e, payload) => waQueue.listPending(payload)));
 ipcMain.handle('wa-queue:recent', safe((_e, payload) => waQueue.listRecent(payload)));
 ipcMain.handle('wa-queue:drain-now', safe(() => waQueue.drainOnce()));
+
+// --- WhatsApp bulk campaigns (anti-ban throttled) ---
+ipcMain.handle('wa-bulk:create', safe((_e, payload) => whatsappBulk.createCampaign(payload)));
+ipcMain.handle('wa-bulk:list', safe((_e, payload) => whatsappBulk.listCampaigns(payload)));
+ipcMain.handle('wa-bulk:progress', safe((_e, payload) => whatsappBulk.campaignProgress(payload)));
+ipcMain.handle('wa-bulk:cancel', safe((_e, payload) => whatsappBulk.cancelCampaign(payload)));
 
 // --- AI assistant IPC ---
 ipcMain.handle('ai:chat', safe((_e, payload) => aiAssistant.chat(payload)));

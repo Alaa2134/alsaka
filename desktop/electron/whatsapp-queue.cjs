@@ -47,9 +47,19 @@ async function drainOnce() {
   try {
     const db = dbMod.get();
     const waState = whatsapp.getState();
+    // Only pick rows whose throttle time has arrived. Campaign rows
+    // carry a future scheduled_at (anti-ban spacing); ad-hoc rows have
+    // NULL and go immediately. Cap at 5 per tick so a backlog can't
+    // burst out and trip a ban.
     const queue = dbMod.decryptRows(
       'whatsapp_outbox',
-      db.prepare(`SELECT * FROM whatsapp_outbox WHERE status = 'queued' ORDER BY created_at ASC LIMIT 50`).all(),
+      db.prepare(
+        `SELECT * FROM whatsapp_outbox
+          WHERE status = 'queued'
+            AND (scheduled_at IS NULL OR scheduled_at <= datetime('now'))
+          ORDER BY scheduled_at IS NOT NULL, scheduled_at ASC, created_at ASC
+          LIMIT 5`,
+      ).all(),
     );
     for (const msg of queue) {
       // Prefer Cloud API per tenant if configured; otherwise fall back
@@ -82,7 +92,12 @@ async function drainOnce() {
           `UPDATE whatsapp_outbox SET attempt_count = attempt_count + 1, last_error = ?, status = CASE WHEN attempt_count >= 4 THEN 'failed' ELSE 'queued' END WHERE id = ?`,
         ).run(String(err.message || err), msg.id);
       }
+      // Tiny jitter between the few rows in this tick so even ad-hoc
+      // bursts don't fire on the same millisecond.
+      if (queue.length > 1) await new Promise((r) => setTimeout(r, 1500 + Math.random() * 2500));
     }
+    // Keep campaign progress counters fresh.
+    try { require('./whatsapp-bulk.cjs').syncCampaignCounters(); } catch (_) { /* ignore */ }
   } finally {
     draining = false;
   }
@@ -90,7 +105,9 @@ async function drainOnce() {
 
 function startDrainer() {
   if (drainTimer) return;
-  drainTimer = setInterval(drainOnce, 60_000);
+  // Tick every 15s: campaign rows are spaced 8–25s apart, so each tick
+  // sends roughly 0–1 of them — a natural human-like trickle.
+  drainTimer = setInterval(drainOnce, 15_000);
   setTimeout(drainOnce, 5_000);
 }
 

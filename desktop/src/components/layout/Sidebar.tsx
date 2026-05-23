@@ -162,6 +162,7 @@ const SECTIONS: NavSection[] = [
     title: "التواصل",
     items: [
       { to: "/whatsapp-settings", label: "واتساب (QR)", icon: <Send className="h-4 w-4" />, minRole: "admin" },
+      { to: "/whatsapp-bulk", label: "إرسال واتساب جماعي", icon: <Send className="h-4 w-4" />, minRole: "manager" },
       { to: "/whatsapp-cloud", label: "واتساب (Cloud API)", icon: <Cloud className="h-4 w-4" />, minRole: "admin" },
       { to: "/internal-chat", label: "المحادثات", icon: <MessageSquare className="h-4 w-4" />, minRole: "manager" },
       { to: "/ai-assistant", label: "المساعد الذكي", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },

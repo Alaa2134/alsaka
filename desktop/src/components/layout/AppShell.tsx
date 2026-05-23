@@ -94,6 +94,7 @@ const TITLES: Record<string, string> = {
   "/job-cards": "أوامر الشغل",
   "/parts-catalog": "مرجع قطع الغيار",
   "/smart-import": "استيراد ذكي للمنتجات (AI)",
+  "/whatsapp-bulk": "إرسال واتساب جماعي",
   "/whatsapp-cloud": "WhatsApp Cloud API",
   "/branch-sync": "مزامنة الفروع",
 };
