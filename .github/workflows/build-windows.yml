@@ -59,10 +59,35 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      # If a tag was pushed, also publish as a GitHub Release so the
-      # end user gets a stable download URL.
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/')
+      # Publish (or update) a "latest" prerelease so end users get a
+      # stable, public download URL that always points to the most
+      # recent successful build. This is what gets shared with merchants.
+      - name: Publish to "latest" release
+        if: github.ref == 'refs/heads/claude/systemalaa-desktop-app-YK5q1'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Horus System — Latest Build"
+          body: |
+            Auto-built from commit ${{ github.sha }}.
+
+            Download `Horus.System.Setup.1.0.0.exe` below, double-click,
+            and follow the install wizard. The app launches automatically
+            after install. No prerequisites required.
+
+            First-run login:
+            - Email: `admin@horus.app` or `admin@systemalaa.app`
+            - Password: `admin`
+          prerelease: true
+          make_latest: false
+          files: |
+            desktop/release/*.exe
+            desktop/release/*.exe.blockmap
+            desktop/release/latest.yml
+
+      # Tag-driven release (for stable versioned releases later)
+      - name: Create tagged Release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
