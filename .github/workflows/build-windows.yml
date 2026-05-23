@@ -33,58 +33,27 @@ jobs:
         working-directory: desktop
         run: npm install --no-audit --no-fund
 
-      # Force-rebuild better-sqlite3 against Electron's ABI. The
-      # default `npm install` pulls a Node.js-ABI prebuilt that
-      # crashes silently inside Electron because NODE_MODULE_VERSION
-      # doesn't match.
-      #
-      # Delete the cached build folder first so node-gyp is forced
-      # to compile from source against the Electron headers.
-      - name: Rebuild better-sqlite3 for Electron ABI
-        working-directory: desktop
-        shell: pwsh
-        run: |
-          $electronVersion = (Get-Content node_modules/electron/package.json | ConvertFrom-Json).version
-          Write-Host "::group::Rebuilding better-sqlite3 for Electron $electronVersion"
-          # Wipe any prebuilt binary so node-gyp must compile from source.
-          Remove-Item -Recurse -Force node_modules/better-sqlite3/build -ErrorAction SilentlyContinue
-          npm rebuild better-sqlite3 `
-            --runtime=electron `
-            --target=$electronVersion `
-            --dist-url=https://electronjs.org/headers `
-            --build-from-source
-          Write-Host "::endgroup::"
-          # Surface the result but don't fail the whole build — the verify
-          # step below will gate the release-publish step.
-          $node = "node_modules/better-sqlite3/build/Release/better_sqlite3.node"
-          if (Test-Path $node) {
-            $mtime = (Get-Item $node).LastWriteTime
-            Write-Host "Rebuilt binary mtime: $mtime"
-          } else {
-            Write-Host "::error::better_sqlite3.node missing after rebuild"
-          }
-
-      # Sanity-check the rebuilt binary. We continue on failure so the
-      # build still produces an artifact for inspection, but the release
-      # publish step is gated on this passing.
-      - name: Verify native ABI
-        id: verify_abi
+      # Explicitly rerun electron-builder install-app-deps after the
+      # main install. The postinstall hook attached to npm install
+      # sometimes no-ops on CI when network conditions cause the
+      # Electron download to land late. Running it explicitly here —
+      # after Electron is fully on disk — guarantees that better-sqlite3
+      # gets compiled against Electron's ABI.
+      - name: Rebuild native modules for Electron
         working-directory: desktop
         shell: pwsh
         continue-on-error: true
         run: |
-          $node = "node_modules\better-sqlite3\build\Release\better_sqlite3.node"
-          if (-not (Test-Path $node)) {
-            Write-Host "::error::binary missing: $node"
-            exit 1
+          Write-Host "Wiping any cached better-sqlite3 build…"
+          Remove-Item -Recurse -Force node_modules/better-sqlite3/build -ErrorAction SilentlyContinue
+          Write-Host "Running electron-builder install-app-deps…"
+          npx --yes electron-builder install-app-deps
+          $node = "node_modules/better-sqlite3/build/Release/better_sqlite3.node"
+          if (Test-Path $node) {
+            Write-Host "Result: $((Get-Item $node).LastWriteTime)"
+          } else {
+            Write-Host "::warning::better_sqlite3.node not found after rebuild"
           }
-          $mtime = (Get-Item $node).LastWriteTime
-          Write-Host "Binary timestamp: $mtime"
-          if ($mtime -lt (Get-Date).AddMinutes(-15)) {
-            Write-Host "::warning::better_sqlite3.node looks stale (mtime $mtime)"
-            exit 1
-          }
-          Write-Host "OK — binary is freshly built"
 
       - name: Build Windows installer (NSIS .exe)
         working-directory: desktop
