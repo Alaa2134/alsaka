@@ -1136,6 +1136,7 @@ function bootstrap() {
   maybeAdd('invoices', 'loyalty_earned', 'INTEGER NOT NULL DEFAULT 0');
   maybeAdd('invoices', 'loyalty_redeemed', 'INTEGER NOT NULL DEFAULT 0');
   maybeAdd('invoices', 'gift_card_redeemed', 'REAL NOT NULL DEFAULT 0');
+  maybeAdd('invoices', 'payment_method', "TEXT NOT NULL DEFAULT 'cash'"); // cash | card | wallet | credit
 
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_shifts_user ON cashier_shifts(user_id);

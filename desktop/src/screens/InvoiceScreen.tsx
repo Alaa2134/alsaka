@@ -18,6 +18,7 @@ import {
   type PosLayoutProps,
   type PosProduct,
   type PosRow,
+  type PaymentMethod,
 } from "@/components/pos/types";
 import { buildInvoiceImage } from "@/components/invoice/InvoiceImageBuilder";
 
@@ -44,6 +45,7 @@ export function InvoiceScreen() {
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [discount, setDiscount] = useState(0);
   const [paid, setPaid] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [busy, setBusy] = useState(false);
   const lastSavedRef = useRef<any>(null);
 
@@ -81,8 +83,11 @@ export function InvoiceScreen() {
 
   const totals = useMemo(() => {
     const subtotal = rows.reduce((s, r) => s + r.quantity * r.price, 0);
-    const remaining = subtotal - discount - paid;
-    return { subtotal, discount, paid, remaining };
+    const due = subtotal - discount;
+    const remaining = Math.max(0, due - paid);
+    // فكة: only meaningful for cash overpayment
+    const change = paid > due ? paid - due : 0;
+    return { subtotal, discount, paid, remaining, change };
   }, [rows, discount, paid]);
 
   // Multi-pricing: pick wholesale/vip when the client has that tier
@@ -123,6 +128,7 @@ export function InvoiceScreen() {
             type: "sales",
             discount,
             paid,
+            payment_method: paymentMethod,
             status: "open",
             notes: null,
           },
@@ -134,6 +140,7 @@ export function InvoiceScreen() {
       setRows([]);
       setDiscount(0);
       setPaid(0);
+      setPaymentMethod("cash");
 
       // Auto-send to WhatsApp if client has a phone
       if (client?.phone) {
@@ -253,6 +260,8 @@ export function InvoiceScreen() {
         setDiscount={setDiscount}
         paid={paid}
         setPaid={setPaid}
+        paymentMethod={paymentMethod}
+        setPaymentMethod={setPaymentMethod}
         onSave={onSave}
         onPrint={onPrint}
         onHold={onHold}

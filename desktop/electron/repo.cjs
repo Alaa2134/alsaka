@@ -114,6 +114,7 @@ function saveInvoice({ invoice, items }) {
       remaining,
       status: invoice.status || (remaining <= 0 ? 'paid' : 'open'),
       notes: invoice.notes || null,
+      payment_method: invoice.payment_method || 'cash',
       updated_at: new Date().toISOString(),
     };
 

@@ -41,7 +41,10 @@ export interface PosTotals {
   discount: number;
   paid: number;
   remaining: number;
+  change: number;       // فكة: how much to hand back when paid > due
 }
+
+export type PaymentMethod = 'cash' | 'card' | 'credit' | 'wallet';
 
 export interface PosLayoutProps {
   rows: PosRow[];
@@ -56,6 +59,8 @@ export interface PosLayoutProps {
   setDiscount: (v: number) => void;
   paid: number;
   setPaid: (v: number) => void;
+  paymentMethod: PaymentMethod;
+  setPaymentMethod: (m: PaymentMethod) => void;
   onSave: () => void;
   onPrint: () => void;
   onHold: () => void;
