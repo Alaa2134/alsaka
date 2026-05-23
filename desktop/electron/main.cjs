@@ -656,6 +656,10 @@ ipcMain.handle('lic:heartbeat-now', safe(() => licensing.heartbeatOnce()));
 // Vendor-only convenience: issue a key locally for testing. In production
 // the issuer runs on a server with the real secret — never ship this UI.
 ipcMain.handle('lic:issue', safe((_e, payload) => ({ key: licensing.issue(payload || {}) })));
+ipcMain.handle('lic:issue-record', safe((_e, payload) => licensing.issueAndRecord(payload || {})));
+ipcMain.handle('lic:list-issued', safe((_e, payload) => licensing.listIssued(payload || {})));
+ipcMain.handle('lic:revoke-issued', safe((_e, payload) => licensing.revokeIssued(payload || {})));
+ipcMain.handle('lic:issuer-stats', safe(() => licensing.issuerStats()));
 
 // --- Auto-updater IPC ---
 ipcMain.handle('upd:status', safe(() => updater.status()));

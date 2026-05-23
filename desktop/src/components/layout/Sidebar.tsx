@@ -210,6 +210,7 @@ const SECTIONS: NavSection[] = [
       { to: "/security-events", label: "أحداث الأمان", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/gdrive-backup", label: "نسخ Google Drive", icon: <Cloud className="h-4 w-4" />, minRole: "admin" },
       { to: "/activation", label: "الترخيص والتفعيل", icon: <KeyRound className="h-4 w-4" />, minRole: "admin" },
+      { to: "/license-manager", label: "إدارة وبيع التراخيص", icon: <KeyRound className="h-4 w-4" />, minRole: "admin" },
       { to: "/notifications", label: "الإشعارات", icon: <Bell className="h-4 w-4" />, minRole: "cashier" },
       { to: "/company-settings", label: "إعدادات الشركة", icon: <Settings className="h-4 w-4" />, minRole: "admin" },
       { to: "/account-settings", label: "حسابي", icon: <Settings className="h-4 w-4" />, minRole: "cashier" },

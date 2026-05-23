@@ -95,6 +95,7 @@ import { SecurityEventsScreen } from "@/screens/SecurityEventsScreen";
 import { ReportsScreen } from "@/screens/ReportsScreen";
 import { WhatsAppBulkScreen } from "@/screens/WhatsAppBulkScreen";
 import { BarcodeLabelsScreen } from "@/screens/BarcodeLabelsScreen";
+import { LicenseManagerScreen } from "@/screens/LicenseManagerScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -367,6 +368,7 @@ export default function App() {
                     {/* Wave 4 ecosystem */}
                     <Route path="smart-import" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><SmartImportScreen /></SP></ProtectedRoute>} />
                     <Route path="barcode-labels" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><BarcodeLabelsScreen /></SP></ProtectedRoute>} />
+                    <Route path="license-manager" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><LicenseManagerScreen /></SP></ProtectedRoute>} />
                     <Route path="reports" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><ReportsScreen /></SP></ProtectedRoute>} />
                     <Route path="whatsapp-bulk" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><WhatsAppBulkScreen /></SP></ProtectedRoute>} />
                     <Route path="company-settings" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><CompanySettingsScreen /></SP></ProtectedRoute>} />

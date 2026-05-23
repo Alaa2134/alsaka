@@ -284,6 +284,10 @@ declare global {
       deactivate(): Promise<IpcResult<{ ok: boolean }>>;
       issue(payload?: { tier?: string; expiry?: string; nonce?: string }): Promise<IpcResult<{ key: string }>>;
       heartbeatNow(): Promise<IpcResult<{ ok?: boolean; verdict?: string; skipped?: boolean; reason?: string; error?: string }>>;
+      issueRecord(payload: { tier?: string; months?: number; customerName?: string; customerPhone?: string; price?: number; note?: string }): Promise<IpcResult<{ ok: boolean; key: string; tier: string; expiry: string }>>;
+      listIssued(payload?: { limit?: number }): Promise<IpcResult<Array<{ id: string; license_key: string; tier: string; expiry: string; customer_name: string | null; customer_phone: string | null; price: number; note: string | null; status: string; issued_at: string }>>>;
+      revokeIssued(payload: { licenseKey: string }): Promise<IpcResult<{ ok: boolean }>>;
+      issuerStats(): Promise<IpcResult<{ total: number; active: number; revoked: number; revenue: number }>>;
     };
 
     updater: {

@@ -206,6 +206,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deactivate: () => invoke('lic:deactivate'),
     issue: (payload) => invoke('lic:issue', payload),
     heartbeatNow: () => invoke('lic:heartbeat-now'),
+    issueRecord: (payload) => invoke('lic:issue-record', payload),
+    listIssued: (payload) => invoke('lic:list-issued', payload),
+    revokeIssued: (payload) => invoke('lic:revoke-issued', payload),
+    issuerStats: () => invoke('lic:issuer-stats'),
   },
 
   updater: {

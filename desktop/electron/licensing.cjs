@@ -14,6 +14,7 @@
 //
 // Key layout: SA-<TIER>-<EXPIRY_YYYYMMDD>-<NONCE>-<HMAC10>
 const crypto = require('node:crypto');
+const { v4: uuid } = require('uuid');
 const dbMod = require('./db.cjs');
 const { deviceFingerprint, fingerprintMatches, verifyAnchor, ensureAnchor } = require('./crypto.cjs');
 
@@ -472,7 +473,49 @@ function checkVendorVerdict() {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Vendor ledger — seller-side record of every key issued to a customer.
+// ---------------------------------------------------------------------------
+function issueAndRecord({ tier = 'PRO', months = 12, customerName, customerPhone, price, note } = {}) {
+  const d = new Date();
+  d.setMonth(d.getMonth() + (Number(months) || 12));
+  const expiry = d.toISOString().slice(0, 10).replace(/-/g, '');
+  const key = issue({ tier, expiry });
+  const db = dbMod.get();
+  db.prepare(
+    `INSERT INTO issued_licenses (id, license_key, tier, expiry, customer_name, customer_phone, price, note)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(uuid(), key, tier, expiry, customerName || null, customerPhone || null, Number(price) || 0, note || null);
+  return { ok: true, key, tier, expiry };
+}
+
+function listIssued({ limit = 500 } = {}) {
+  return dbMod.get()
+    .prepare(`SELECT * FROM issued_licenses ORDER BY issued_at DESC LIMIT ?`)
+    .all(limit);
+}
+
+function revokeIssued({ licenseKey }) {
+  dbMod.get()
+    .prepare(`UPDATE issued_licenses SET status = 'revoked', revoked_at = datetime('now') WHERE license_key = ?`)
+    .run(String(licenseKey || '').trim().toUpperCase());
+  return { ok: true };
+}
+
+function issuerStats() {
+  const db = dbMod.get();
+  const row = db.prepare(
+    `SELECT COUNT(*) AS total,
+            SUM(status = 'active') AS active,
+            SUM(status = 'revoked') AS revoked,
+            COALESCE(SUM(CASE WHEN status='active' THEN price ELSE 0 END), 0) AS revenue
+       FROM issued_licenses`,
+  ).get() || {};
+  return { total: row.total || 0, active: row.active || 0, revoked: row.revoked || 0, revenue: row.revenue || 0 };
+}
+
 module.exports = {
   issue, parse, activate, status, deactivate, bootCheck, attachApp,
   heartbeatOnce, startHeartbeat, stopHeartbeat, checkVendorVerdict,
+  issueAndRecord, listIssued, revokeIssued, issuerStats,
 };

@@ -95,6 +95,7 @@ const TITLES: Record<string, string> = {
   "/parts-catalog": "مرجع قطع الغيار",
   "/smart-import": "استيراد ذكي للمنتجات (AI)",
   "/barcode-labels": "طباعة ملصقات الباركود",
+  "/license-manager": "إدارة وبيع التراخيص",
   "/whatsapp-bulk": "إرسال واتساب جماعي",
   "/whatsapp-cloud": "WhatsApp Cloud API",
   "/branch-sync": "مزامنة الفروع",

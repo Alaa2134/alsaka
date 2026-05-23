@@ -1161,6 +1161,22 @@ function bootstrap() {
     );
     CREATE INDEX IF NOT EXISTS idx_outbox_scheduled ON whatsapp_outbox(status, scheduled_at);
     CREATE INDEX IF NOT EXISTS idx_outbox_campaign ON whatsapp_outbox(campaign_id);
+
+    -- Vendor-side ledger of licenses the seller issued to customers.
+    -- Lives on the seller's own install (system_manager role).
+    CREATE TABLE IF NOT EXISTS issued_licenses (
+      id TEXT PRIMARY KEY,
+      license_key TEXT NOT NULL UNIQUE,
+      tier TEXT NOT NULL,
+      expiry TEXT NOT NULL,
+      customer_name TEXT,
+      customer_phone TEXT,
+      price REAL NOT NULL DEFAULT 0,
+      note TEXT,
+      status TEXT NOT NULL DEFAULT 'active', -- active | revoked
+      issued_at TEXT NOT NULL DEFAULT (datetime('now')),
+      revoked_at TEXT
+    );
   `);
 
   db.exec(`
