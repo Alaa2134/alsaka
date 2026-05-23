@@ -92,6 +92,7 @@ import { BranchSyncScreen } from "@/screens/BranchSyncScreen";
 import { SmartImportScreen } from "@/screens/SmartImportScreen";
 import { CompanySettingsScreen } from "@/screens/CompanySettingsScreen";
 import { SecurityEventsScreen } from "@/screens/SecurityEventsScreen";
+import { ReportsScreen } from "@/screens/ReportsScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -123,7 +124,6 @@ const STUBS: Array<{
   title: string;
   allow: Role[];
 }> = [
-  { path: "/reports", title: "التقارير التشغيلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/internal-chat", title: "المحادثات الداخلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/tenants", title: "الشركات", allow: ["system_manager"] },
   { path: "/system", title: "لوحة النظام", allow: ["system_manager"] },
@@ -364,6 +364,7 @@ export default function App() {
                     <Route path="parts-catalog" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><PartsCatalogScreen /></SP></ProtectedRoute>} />
                     {/* Wave 4 ecosystem */}
                     <Route path="smart-import" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><SmartImportScreen /></SP></ProtectedRoute>} />
+                    <Route path="reports" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><ReportsScreen /></SP></ProtectedRoute>} />
                     <Route path="company-settings" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><CompanySettingsScreen /></SP></ProtectedRoute>} />
                     <Route path="security-events" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><SecurityEventsScreen /></SP></ProtectedRoute>} />
                     <Route path="whatsapp-cloud" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><WhatsAppCloudScreen /></SP></ProtectedRoute>} />

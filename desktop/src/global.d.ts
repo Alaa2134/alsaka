@@ -93,6 +93,14 @@ declare global {
         limit?: number;
       }): Promise<IpcResult<any[]>>;
       dashboard(opts: { tenantId: string }): Promise<IpcResult<any>>;
+      salesReport(opts: { tenantId: string; days?: number }): Promise<IpcResult<{
+        days: number;
+        headline: { sales: number; collected: number; outstanding: number; invoices: number; estProfit: number };
+        daily: Array<{ day: string; invoices: number; sales: number }>;
+        topProducts: Array<{ name: string; qty: number; revenue: number }>;
+        byPayment: Array<{ method: string; invoices: number; sales: number }>;
+        lowStock: Array<{ id: string; name: string; stock: number; min_stock: number }>;
+      }>>;
     };
 
     accounting: {

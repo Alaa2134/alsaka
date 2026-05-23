@@ -251,6 +251,96 @@ function dashboardStats({ tenantId }) {
   };
 }
 
+// Operational sales report — everything the /reports screen needs in
+// one round-trip: a daily sales series, top products by revenue,
+// sales split by payment method, low/out-of-stock items, and headline
+// totals with estimated profit.
+function salesReport({ tenantId, days = 30 }) {
+  const db = dbMod.get();
+  const since = new Date(Date.now() - Number(days) * 86400000).toISOString();
+
+  const daily = db
+    .prepare(
+      `SELECT substr(created_at, 1, 10) AS day,
+              COUNT(*) AS invoices,
+              COALESCE(SUM(total), 0) AS sales
+         FROM invoices
+        WHERE tenant_id = @tid AND created_at >= @since
+        GROUP BY day ORDER BY day ASC`,
+    )
+    .all({ tid: tenantId, since });
+
+  const topProducts = db
+    .prepare(
+      `SELECT ii.product_name AS name,
+              SUM(ii.quantity) AS qty,
+              SUM(ii.total) AS revenue
+         FROM invoice_items ii
+         JOIN invoices i ON i.id = ii.invoice_id
+        WHERE i.tenant_id = @tid AND i.created_at >= @since
+        GROUP BY ii.product_name
+        ORDER BY revenue DESC LIMIT 15`,
+    )
+    .all({ tid: tenantId, since });
+
+  const byPayment = db
+    .prepare(
+      `SELECT COALESCE(payment_method, 'cash') AS method,
+              COUNT(*) AS invoices,
+              COALESCE(SUM(total), 0) AS sales
+         FROM invoices
+        WHERE tenant_id = @tid AND created_at >= @since
+        GROUP BY method ORDER BY sales DESC`,
+    )
+    .all({ tid: tenantId, since });
+
+  const lowStock = db
+    .prepare(
+      `SELECT id, name, stock, min_stock FROM products
+        WHERE tenant_id = @tid AND is_active = 1 AND stock <= min_stock
+        ORDER BY stock ASC LIMIT 50`,
+    )
+    .all({ tid: tenantId });
+
+  const headline = db
+    .prepare(
+      `SELECT COALESCE(SUM(total), 0) AS sales,
+              COALESCE(SUM(paid), 0) AS collected,
+              COALESCE(SUM(remaining), 0) AS outstanding,
+              COUNT(*) AS invoices
+         FROM invoices WHERE tenant_id = @tid AND created_at >= @since`,
+    )
+    .get({ tid: tenantId, since }) || {};
+
+  // Estimated profit = revenue − COGS, where COGS pulls product.cost.
+  const profitRow = db
+    .prepare(
+      `SELECT COALESCE(SUM(ii.total), 0) AS revenue,
+              COALESCE(SUM(ii.quantity * COALESCE(p.cost, 0)), 0) AS cogs
+         FROM invoice_items ii
+         JOIN invoices i ON i.id = ii.invoice_id
+         LEFT JOIN products p ON p.id = ii.product_id
+        WHERE i.tenant_id = @tid AND i.created_at >= @since`,
+    )
+    .get({ tid: tenantId, since }) || {};
+  const estProfit = (profitRow.revenue || 0) - (profitRow.cogs || 0);
+
+  return {
+    days: Number(days),
+    headline: {
+      sales: headline.sales || 0,
+      collected: headline.collected || 0,
+      outstanding: headline.outstanding || 0,
+      invoices: headline.invoices || 0,
+      estProfit,
+    },
+    daily,
+    topProducts,
+    byPayment,
+    lowStock,
+  };
+}
+
 module.exports = {
   list,
   getById,
@@ -260,4 +350,5 @@ module.exports = {
   saveInvoice,
   searchProducts,
   dashboardStats,
+  salesReport,
 };

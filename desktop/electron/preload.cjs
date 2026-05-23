@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveInvoice: (payload) => invoke('db:save-invoice', payload),
     searchProducts: (opts) => invoke('db:search-products', opts),
     dashboard: (opts) => invoke('db:dashboard', opts),
+    salesReport: (opts) => invoke('db:sales-report', opts),
   },
 
   // Accounting

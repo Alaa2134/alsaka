@@ -486,6 +486,7 @@ ipcMain.handle('db:remove', safe((_e, table, id) => repo.remove(table, id)));
 ipcMain.handle('db:save-invoice', safe((_e, payload) => repo.saveInvoice(payload)));
 ipcMain.handle('db:search-products', safe((_e, opts) => repo.searchProducts(opts)));
 ipcMain.handle('db:dashboard', safe((_e, opts) => repo.dashboardStats(opts)));
+ipcMain.handle('db:sales-report', safe((_e, opts) => repo.salesReport(opts)));
 
 // --- Accounting IPC ---
 ipcMain.handle('acc:trial-balance', safe((_e, opts) => accounting.trialBalance(opts)));
