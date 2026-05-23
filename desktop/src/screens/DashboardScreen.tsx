@@ -109,8 +109,35 @@ export function DashboardScreen() {
     },
   ];
 
+  // First-run guidance: show setup steps until the shop has products.
+  const needsOnboarding = stats.productsCount === 0;
+
   return (
     <div className="space-y-6">
+      {needsOnboarding && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">🚀 خطوات البداية</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { n: 1, title: "بيانات محلك", desc: "الاسم واللوجو للفاتورة", to: "/company-settings" },
+                { n: 2, title: "اختر ثيم نشاطك", desc: "ألوان + تصنيفات جاهزة", to: "/industry-templates" },
+                { n: 3, title: "أضف منتجاتك", desc: "يدويًا أو استيراد ذكي بالـ AI", to: "/smart-import" },
+                { n: 4, title: "أول فاتورة بيع", desc: "ابدأ تبيع فورًا", to: "/invoice" },
+              ].map((step) => (
+                <Link key={step.n} to={step.to} className="rounded-xl border border-border bg-card p-4 hover:shadow-elevated hover:border-primary transition-all">
+                  <div className="h-8 w-8 rounded-full gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm mb-2">{step.n}</div>
+                  <div className="font-semibold text-sm">{step.title}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{step.desc}</div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <WhatsAppInlineCard />
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         {tiles.map((t, idx) => (
