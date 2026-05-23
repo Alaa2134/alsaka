@@ -90,6 +90,8 @@ import { PartsCatalogScreen } from "@/screens/PartsCatalogScreen";
 import { WhatsAppCloudScreen } from "@/screens/WhatsAppCloudScreen";
 import { BranchSyncScreen } from "@/screens/BranchSyncScreen";
 import { SmartImportScreen } from "@/screens/SmartImportScreen";
+import { CompanySettingsScreen } from "@/screens/CompanySettingsScreen";
+import { SecurityEventsScreen } from "@/screens/SecurityEventsScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -125,8 +127,6 @@ const STUBS: Array<{
   { path: "/internal-chat", title: "المحادثات الداخلية", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/tenants", title: "الشركات", allow: ["system_manager"] },
   { path: "/system", title: "لوحة النظام", allow: ["system_manager"] },
-  { path: "/security-events", title: "أحداث الأمان", allow: ["system_manager", "company_admin", "admin"] },
-  { path: "/company-settings", title: "إعدادات الشركة", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/subscription", title: "الاشتراك", allow: ["system_manager", "company_admin", "admin"] },
   { path: "/invoice-page-settings", title: "إعدادات صفحة الفاتورة", allow: ["system_manager", "company_admin", "admin", "manager"] },
   { path: "/links", title: "إدارة الروابط", allow: ["system_manager", "company_admin", "admin", "manager"] },
@@ -364,6 +364,8 @@ export default function App() {
                     <Route path="parts-catalog" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><PartsCatalogScreen /></SP></ProtectedRoute>} />
                     {/* Wave 4 ecosystem */}
                     <Route path="smart-import" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><SmartImportScreen /></SP></ProtectedRoute>} />
+                    <Route path="company-settings" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><CompanySettingsScreen /></SP></ProtectedRoute>} />
+                    <Route path="security-events" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><SecurityEventsScreen /></SP></ProtectedRoute>} />
                     <Route path="whatsapp-cloud" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><WhatsAppCloudScreen /></SP></ProtectedRoute>} />
                     <Route path="branch-sync" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BranchSyncScreen /></SP></ProtectedRoute>} />
                     <Route
