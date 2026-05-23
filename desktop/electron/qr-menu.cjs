@@ -22,7 +22,12 @@ function getMenuConfig(tenantId) {
     )
     .all(tenantId);
   const cfg = {
-    base_url: 'http://localhost:5174',
+    // Default to the embedded API server (always running in the packaged
+    // app) so preview links and QR codes resolve to a live HTML page.
+    // The merchant can override this with a public domain once their
+    // store is published (Vercel/custom domain) so phones off the LAN
+    // can reach it too.
+    base_url: `http://127.0.0.1:${Number(process.env.SYSTEMALAA_API_PORT || 27817)}`,
     show_prices: true,
     show_descriptions: true,
     show_calories: false,

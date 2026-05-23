@@ -193,7 +193,11 @@ export function QRMenuBuilderScreen() {
 
               <div className="flex gap-2">
                 <Button onClick={save} disabled={busy}><Save className="h-4 w-4" /> حفظ الإعدادات</Button>
-                <Button variant="outline" onClick={() => window.open(`${cfg.base_url}/menu/${user?.tenant_id ? "your-slug" : ""}`, "_blank")}>
+                <Button
+                  variant="outline"
+                  disabled={!generalQr}
+                  onClick={() => generalQr && (window.electronAPI?.openExternal(generalQr.url) ?? window.open(generalQr.url, "_blank"))}
+                >
                   <Eye className="h-4 w-4" /> معاينة المينيو
                 </Button>
               </div>

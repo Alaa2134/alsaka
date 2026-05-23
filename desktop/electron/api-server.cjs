@@ -61,6 +61,103 @@ function send(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
+function sendHtml(res, status, html) {
+  res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Renders the QR-menu page customers see on their phone. Self-contained:
+// inline CSS, no external assets, RTL Arabic, accent-coloured.
+function renderMenuHtml(feed) {
+  const s = feed.store || {};
+  const accent = s.accent_color ? `hsl(${s.accent_color})` : '#3b82f6';
+  const cur = s.currency_symbol || 'ج.م';
+  const sections = (feed.sections || []).map((sec) => `
+    <section class="sec">
+      <h2>${esc(sec.name)}</h2>
+      <div class="items">
+        ${sec.items.map((it) => `
+          <div class="item ${it.available ? '' : 'out'}">
+            ${it.image_url ? `<img src="${esc(it.image_url)}" alt="" loading="lazy">` : '<div class="noimg">🍽️</div>'}
+            <div class="meta">
+              <div class="nm">${esc(it.name)}</div>
+              ${s.show_descriptions && it.description ? `<div class="ds">${esc(it.description)}</div>` : ''}
+            </div>
+            ${s.show_prices ? `<div class="pr">${Number(it.price).toLocaleString()} ${esc(cur)}</div>` : ''}
+          </div>`).join('')}
+      </div>
+    </section>`).join('');
+
+  return `<!doctype html><html lang="ar" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(s.name || 'القائمة')}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,'Segoe UI',Tahoma,sans-serif;background:#f6f7f9;color:#111;padding-bottom:40px}
+  .hero{background:${accent};color:#fff;padding:28px 18px;text-align:center}
+  .hero img{height:64px;width:64px;border-radius:14px;object-fit:cover;margin-bottom:10px;background:#fff3}
+  .hero h1{font-size:26px}
+  .hero p{opacity:.9;margin-top:6px;font-size:14px}
+  .sec{margin:18px 14px}
+  .sec h2{font-size:18px;margin-bottom:10px;padding-right:8px;border-right:4px solid ${accent}}
+  .items{display:grid;gap:10px}
+  .item{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:10px;box-shadow:0 1px 3px #0001}
+  .item.out{opacity:.45}
+  .item img,.noimg{height:60px;width:60px;border-radius:10px;object-fit:cover;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:26px;background:#f0f1f3}
+  .meta{flex:1;min-width:0}
+  .nm{font-weight:600}
+  .ds{font-size:12px;color:#666;margin-top:2px}
+  .pr{font-weight:700;color:${accent};white-space:nowrap}
+  footer{text-align:center;color:#999;font-size:12px;margin-top:24px}
+</style></head><body>
+  <div class="hero">
+    ${s.logo_url ? `<img src="${esc(s.logo_url)}" alt="">` : ''}
+    <h1>${esc(s.name || '')}</h1>
+    <p>${esc(s.welcome_message || s.tagline || '')}</p>
+  </div>
+  ${sections || '<p style="text-align:center;color:#999;margin-top:40px">لا توجد أصناف بعد</p>'}
+  <footer>Powered by Horus System 𓁹</footer>
+</body></html>`;
+}
+
+// Lightweight storefront preview — product grid with prices.
+function renderShopHtml(feed) {
+  const s = feed.store || feed.settings || feed || {};
+  const accent = s.primary_color ? `hsl(${s.primary_color})` : '#3b82f6';
+  const cur = s.currency_symbol || 'ج.م';
+  const products = feed.products || [];
+  const cards = products.map((p) => `
+    <div class="card">
+      ${p.image_url ? `<img src="${esc(p.image_url)}" alt="" loading="lazy">` : '<div class="noimg">📦</div>'}
+      <div class="nm">${esc(p.name)}</div>
+      <div class="pr">${Number(p.store_price ?? p.price).toLocaleString()} ${esc(cur)}</div>
+    </div>`).join('');
+  return `<!doctype html><html lang="ar" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(s.name || 'المتجر')}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,'Segoe UI',Tahoma,sans-serif;background:#f6f7f9;color:#111}
+  .hero{background:${accent};color:#fff;padding:30px 18px;text-align:center}
+  .hero h1{font-size:28px}.hero p{opacity:.9;margin-top:6px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:16px}
+  .card{background:#fff;border-radius:14px;padding:10px;box-shadow:0 1px 3px #0001;text-align:center}
+  .card img,.noimg{height:120px;width:100%;border-radius:10px;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:40px;background:#f0f1f3}
+  .nm{font-weight:600;margin-top:8px;font-size:14px}
+  .pr{font-weight:700;color:${accent};margin-top:4px}
+  footer{text-align:center;color:#999;font-size:12px;padding:24px}
+</style></head><body>
+  <div class="hero"><h1>${esc(s.name || '')}</h1><p>${esc(s.tagline || '')}</p></div>
+  <div class="grid">${cards || '<p style="color:#999">لا توجد منتجات</p>'}</div>
+  <footer>Powered by Horus System 𓁹</footer>
+</body></html>`;
+}
+
 function authenticate(req) {
   const auth = req.headers['authorization'] || '';
   const m = /^Bearer\s+(\S+)$/i.exec(auth);
@@ -95,12 +192,27 @@ async function handle(req, res) {
       return send(res, 200, feed);
     }
 
-    // Public menu feed (QR menu pages on customer phones)
+    // Public menu — JSON feed when ?format=json, otherwise a full
+    // self-contained HTML page the customer's phone (or the merchant's
+    // preview) can open directly. This is what makes the localhost
+    // preview links actually render instead of dumping raw JSON.
     if (req.method === 'GET' && path.startsWith('/menu/')) {
       const slug = decodeURIComponent(path.split('/')[2] || '');
       const feed = qrMenu.buildMenuFeed({ slug });
-      if (!feed) return send(res, 404, { error: 'menu not found' });
-      return send(res, 200, feed);
+      if (!feed) {
+        if (url.searchParams.get('format') === 'json') return send(res, 404, { error: 'menu not found' });
+        return sendHtml(res, 404, '<h1 style="font-family:sans-serif;text-align:center;margin-top:80px">القائمة غير موجودة</h1>');
+      }
+      if (url.searchParams.get('format') === 'json') return send(res, 200, feed);
+      return sendHtml(res, 200, renderMenuHtml(feed));
+    }
+
+    // Public storefront — same dual JSON/HTML behaviour.
+    if (req.method === 'GET' && path.startsWith('/shop/')) {
+      const slug = decodeURIComponent(path.split('/')[2] || '');
+      const feed = store.buildStorefrontFeed(slug);
+      if (!feed) return sendHtml(res, 404, '<h1 style="font-family:sans-serif;text-align:center;margin-top:80px">المتجر غير موجود</h1>');
+      return sendHtml(res, 200, renderShopHtml(feed));
     }
 
     // WhatsApp Cloud webhook — Meta subscription verification (GET) +
