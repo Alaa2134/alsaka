@@ -15,39 +15,86 @@ const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
 
-const dbMod = require('./db.cjs');
-const repo = require('./repo.cjs');
-const auth = require('./auth.cjs');
-const accounting = require('./accounting.cjs');
-const whatsapp = require('./whatsapp.cjs');
-const security = require('./security.cjs');
-const licensing = require('./licensing.cjs');
-const store = require('./store.cjs');
-const shipping = require('./shipping.cjs');
-const payments = require('./payments.cjs');
-const gdrive = require('./google-drive.cjs');
-const shifts = require('./shifts.cjs');
-const uiPrefs = require('./ui-prefs.cjs');
-const zatca = require('./zatca.cjs');
-const waQueue = require('./whatsapp-queue.cjs');
-const aiAssistant = require('./ai-assistant.cjs');
-const apiServer = require('./api-server.cjs');
-const thermalPrinter = require('./thermal-printer.cjs');
-const schedulers = require('./schedulers.cjs');
-const bulkImport = require('./bulk-import.cjs');
-const aiVision = require('./ai-vision.cjs');
-const aiInsights = require('./ai-insights.cjs');
-const qrMenu = require('./qr-menu.cjs');
-const connectors = require('./connectors.cjs');
-const updater = require('./updater.cjs');
-const zatcaPhase2 = require('./zatca-phase2.cjs');
-const etaEgypt = require('./eta-egypt.cjs');
-const hardware = require('./hardware.cjs');
-const gdpr = require('./gdpr.cjs');
-const { pharmacy, restaurant, salon, auto } = require('./verticals.cjs');
-const whatsappCloud = require('./whatsapp-cloud.cjs');
-const marketplace = require('./marketplace.cjs');
-const branchSync = require('./branch-sync.cjs');
+// ── Crash diagnostics ──────────────────────────────────────────────
+// If anything throws during startup (a bad require, a native module
+// ABI mismatch, a DB init failure), capture it to a log file on the
+// Desktop AND show a dialog, instead of the window silently never
+// appearing. This makes "the app won't open" debuggable for end users.
+function writeCrashLog(stage, err) {
+  try {
+    const home = app?.getPath ? app.getPath('home') : os.homedir();
+    const desktop = path.join(home, 'Desktop');
+    const dir = fs.existsSync(desktop) ? desktop : home;
+    const file = path.join(dir, 'horus-crash.log');
+    const msg = `[${new Date().toISOString()}] stage=${stage}\n${err && err.stack ? err.stack : err}\n\n`;
+    fs.appendFileSync(file, msg);
+    return file;
+  } catch (_) {
+    return null;
+  }
+}
+
+function fatal(stage, err) {
+  const file = writeCrashLog(stage, err);
+  try {
+    const { dialog: d } = require('electron');
+    d.showErrorBox(
+      'Horus System — خطأ عند بدء التشغيل',
+      `حصل خطأ في الخطوة: ${stage}\n\n${err && err.message ? err.message : err}\n\n` +
+        (file ? `التفاصيل اتكتبت في:\n${file}` : ''),
+    );
+  } catch (_) {
+    /* dialog unavailable this early — log file is enough */
+  }
+}
+
+process.on('uncaughtException', (err) => fatal('uncaughtException', err));
+process.on('unhandledRejection', (err) => fatal('unhandledRejection', err));
+
+// Wrap every module require so a single bad dependency names itself in
+// the crash log instead of dying anonymously.
+function safeRequire(name) {
+  try {
+    return require(name);
+  } catch (err) {
+    fatal(`require(${name})`, err);
+    throw err;
+  }
+}
+
+const dbMod = safeRequire('./db.cjs');
+const repo = safeRequire('./repo.cjs');
+const auth = safeRequire('./auth.cjs');
+const accounting = safeRequire('./accounting.cjs');
+const whatsapp = safeRequire('./whatsapp.cjs');
+const security = safeRequire('./security.cjs');
+const licensing = safeRequire('./licensing.cjs');
+const store = safeRequire('./store.cjs');
+const shipping = safeRequire('./shipping.cjs');
+const payments = safeRequire('./payments.cjs');
+const gdrive = safeRequire('./google-drive.cjs');
+const shifts = safeRequire('./shifts.cjs');
+const uiPrefs = safeRequire('./ui-prefs.cjs');
+const zatca = safeRequire('./zatca.cjs');
+const waQueue = safeRequire('./whatsapp-queue.cjs');
+const aiAssistant = safeRequire('./ai-assistant.cjs');
+const apiServer = safeRequire('./api-server.cjs');
+const thermalPrinter = safeRequire('./thermal-printer.cjs');
+const schedulers = safeRequire('./schedulers.cjs');
+const bulkImport = safeRequire('./bulk-import.cjs');
+const aiVision = safeRequire('./ai-vision.cjs');
+const aiInsights = safeRequire('./ai-insights.cjs');
+const qrMenu = safeRequire('./qr-menu.cjs');
+const connectors = safeRequire('./connectors.cjs');
+const updater = safeRequire('./updater.cjs');
+const zatcaPhase2 = safeRequire('./zatca-phase2.cjs');
+const etaEgypt = safeRequire('./eta-egypt.cjs');
+const hardware = safeRequire('./hardware.cjs');
+const gdpr = safeRequire('./gdpr.cjs');
+const { pharmacy, restaurant, salon, auto } = safeRequire('./verticals.cjs');
+const whatsappCloud = safeRequire('./whatsapp-cloud.cjs');
+const marketplace = safeRequire('./marketplace.cjs');
+const branchSync = safeRequire('./branch-sync.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -704,8 +751,15 @@ if (!gotLock) {
   });
 
   app.whenReady().then(() => {
-    ensureDirs();
-    dbMod.open(getDbPath());
+    try {
+      ensureDirs();
+      dbMod.open(getDbPath());
+    } catch (err) {
+      // Most likely the native better-sqlite3 binding failed to load
+      // (ABI mismatch) or the DB file is locked/corrupt. Name it.
+      fatal('database init (better-sqlite3)', err);
+      return;
+    }
     // Attach Electron app to modules that need access to userData
     // BEFORE any of them touch the DB — they all need the device
     // fingerprint anchor to be set up first.
