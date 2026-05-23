@@ -536,11 +536,11 @@ ipcMain.handle('store:list-providers', safe(() => ({
   shipping: Object.keys(shipping.providers),
   payments: Object.keys(payments.providers),
 })));
-ipcMain.handle('store:create-checkout', safe((_e, { tenantId, gatewayId, order }) => {
+ipcMain.handle('store:create-checkout', safe(async (_e, { tenantId, gatewayId, order }) => {
   const db = require('./db.cjs').get();
   const gw = db.prepare(`SELECT * FROM payment_gateways WHERE id = ? AND tenant_id = ?`).get(gatewayId, tenantId);
   if (!gw) throw new Error('gateway not found');
-  return payments.createCheckoutFor(gw, order);
+  return await payments.createCheckoutFor(gw, order);
 }));
 ipcMain.handle('store:export-feed', safe(async (_e, { slug, outputPath }) => {
   const feed = store.buildStorefrontFeed(slug);
