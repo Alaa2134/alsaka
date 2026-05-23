@@ -8,6 +8,8 @@ import {
   Users,
   AlertTriangle,
   ArrowRight,
+  LineChart,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, unwrap } from "@/lib/ipc";
@@ -35,9 +37,16 @@ interface Stats {
   }>;
 }
 
+interface MiniReport {
+  daily: Array<{ day: string; sales: number; invoices: number }>;
+  topProducts: Array<{ name: string; qty: number; revenue: number }>;
+  headline: { estProfit: number };
+}
+
 export function DashboardScreen() {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [report, setReport] = useState<MiniReport | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,8 +54,14 @@ export function DashboardScreen() {
     (async () => {
       if (!user) return;
       try {
-        const data = await unwrap(api().db.dashboard({ tenantId: user.tenant_id }));
-        if (!cancelled) setStats(data as Stats);
+        const [data, rep] = await Promise.all([
+          unwrap(api().db.dashboard({ tenantId: user.tenant_id })),
+          unwrap(api().db.salesReport({ tenantId: user.tenant_id, days: 14 })).catch(() => null),
+        ]);
+        if (!cancelled) {
+          setStats(data as Stats);
+          if (rep) setReport(rep as MiniReport);
+        }
       } catch {
         /* ignore */
       } finally {
@@ -121,6 +136,59 @@ export function DashboardScreen() {
           </motion.div>
         ))}
       </div>
+
+      {/* Sales trend + top products */}
+      {report && (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2"><LineChart className="h-4 w-4" /> مبيعات آخر ١٤ يوم</CardTitle>
+              <Link to="/reports" className="text-sm text-primary inline-flex items-center gap-1">
+                التقارير <ArrowRight className="h-3.5 w-3.5 rotate-180" />
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {report.daily.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">لا توجد مبيعات بعد</p>
+              ) : (
+                <div className="flex items-end gap-1.5 h-36 pb-5 relative">
+                  {(() => {
+                    const max = Math.max(1, ...report.daily.map((d) => d.sales));
+                    return report.daily.map((d) => (
+                      <div key={d.day} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                        <div
+                          className="w-full rounded-t bg-primary/75 hover:bg-primary transition-all"
+                          style={{ height: `${(d.sales / max) * 100}%` }}
+                          title={`${d.day}: ${money(d.sales)}`}
+                        />
+                        <span className="absolute -bottom-5 text-[9px] text-muted-foreground tabular-nums">{d.day.slice(5)}</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> الأكثر مبيعًا</CardTitle></CardHeader>
+            <CardContent>
+              {report.topProducts.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">لا توجد بيانات</p>
+              ) : (
+                <ul className="space-y-2">
+                  {report.topProducts.slice(0, 5).map((p, i) => (
+                    <li key={i} className="flex items-center justify-between text-sm">
+                      <span className="truncate">{i + 1}. {p.name}</span>
+                      <span className="tabular-nums font-semibold shrink-0 mr-2 text-primary">{money(p.revenue)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
