@@ -264,6 +264,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     receiveWebhook: (payload) => invoke('mkt:receive-webhook', payload),
   },
 
+  // Smart product import (PDF / image / spreadsheet → AI → products)
+  smartImport: {
+    analyze: (payload) => invoke('smart-import:analyze', payload),
+    commit: (payload) => invoke('smart-import:commit', payload),
+  },
+
   // Branch sync (multi-location LWW replication)
   branchSync: {
     configure: (payload) => invoke('sync:configure', payload),

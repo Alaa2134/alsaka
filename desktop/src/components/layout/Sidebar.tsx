@@ -198,6 +198,7 @@ const SECTIONS: NavSection[] = [
       { to: "/zatca-phase2", label: "ZATCA المرحلة 2", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/eta-egypt", label: "ETA Egypt", icon: <ShieldCheck className="h-4 w-4" />, minRole: "admin" },
       { to: "/bulk-import", label: "استيراد جماعي (CSV)", icon: <Upload className="h-4 w-4" />, minRole: "admin" },
+      { to: "/smart-import", label: "استيراد ذكي (PDF/صورة بالـ AI)", icon: <Sparkles className="h-4 w-4" />, minRole: "manager" },
       { to: "/tenants", label: "الشركات", icon: <Database className="h-4 w-4" />, minRole: "system_manager" },
       { to: "/webhooks", label: "Webhooks", icon: <Webhook className="h-4 w-4" />, minRole: "admin" },
       { to: "/api-keys", label: "مفاتيح API", icon: <Key className="h-4 w-4" />, minRole: "admin" },

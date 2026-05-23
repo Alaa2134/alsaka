@@ -89,6 +89,7 @@ import { JobCardsScreen } from "@/screens/JobCardsScreen";
 import { PartsCatalogScreen } from "@/screens/PartsCatalogScreen";
 import { WhatsAppCloudScreen } from "@/screens/WhatsAppCloudScreen";
 import { BranchSyncScreen } from "@/screens/BranchSyncScreen";
+import { SmartImportScreen } from "@/screens/SmartImportScreen";
 import { Placeholder } from "@/screens/Placeholder";
 
 const queryClient = new QueryClient({
@@ -362,6 +363,7 @@ export default function App() {
                     <Route path="job-cards" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager", "cashier"]}><SP><JobCardsScreen /></SP></ProtectedRoute>} />
                     <Route path="parts-catalog" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><PartsCatalogScreen /></SP></ProtectedRoute>} />
                     {/* Wave 4 ecosystem */}
+                    <Route path="smart-import" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin", "manager"]}><SP><SmartImportScreen /></SP></ProtectedRoute>} />
                     <Route path="whatsapp-cloud" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><WhatsAppCloudScreen /></SP></ProtectedRoute>} />
                     <Route path="branch-sync" element={<ProtectedRoute allow={["system_manager", "company_admin", "admin"]}><SP><BranchSyncScreen /></SP></ProtectedRoute>} />
                     <Route

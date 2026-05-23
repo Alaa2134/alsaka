@@ -302,6 +302,11 @@ declare global {
       receiveWebhook(payload: { provider: string; tenantId: string; payload: any; topic?: string; signature?: string; rawBody?: string }): Promise<IpcResult<any>>;
     };
 
+    smartImport: {
+      analyze(payload: { tenantId: string; dataUrl?: string; text?: string; kind: "pdf" | "image" | "text" }): Promise<IpcResult<{ ok: boolean; products?: Array<{ name: string; price: number; cost: number; barcode: string | null; unit: string | null; category: string | null; stock: number }>; count?: number; error?: string; raw?: string }>>;
+      commit(payload: { tenantId: string; products: Array<Record<string, unknown>> }): Promise<IpcResult<{ ok: boolean; created?: number; skipped?: number; error?: string }>>;
+    };
+
     branchSync: {
       configure(payload: { branchId: string; relayUrl: string; relayToken?: string; enabled?: number }): Promise<IpcResult<any>>;
       state(payload: { branchId: string }): Promise<IpcResult<any>>;

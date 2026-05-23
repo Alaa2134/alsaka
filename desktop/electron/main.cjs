@@ -95,6 +95,7 @@ const { pharmacy, restaurant, salon, auto } = safeRequire('./verticals.cjs');
 const whatsappCloud = safeRequire('./whatsapp-cloud.cjs');
 const marketplace = safeRequire('./marketplace.cjs');
 const branchSync = safeRequire('./branch-sync.cjs');
+const smartImport = safeRequire('./smart-import.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -699,6 +700,10 @@ ipcMain.handle('mkt:list-providers', safe(() => marketplace.listProviders()));
 ipcMain.handle('mkt:sync-catalog', safe((_e, payload) => marketplace.syncCatalog(payload)));
 ipcMain.handle('mkt:update-status', safe((_e, payload) => marketplace.updateOrderStatus(payload)));
 ipcMain.handle('mkt:receive-webhook', safe((_e, payload) => marketplace.receiveWebhook(payload)));
+
+// --- Smart product import (PDF / image / spreadsheet → AI → products) ---
+ipcMain.handle('smart-import:analyze', safe((_e, payload) => smartImport.analyze(payload)));
+ipcMain.handle('smart-import:commit', safe((_e, payload) => smartImport.commit(payload)));
 
 // --- Branch sync ---
 ipcMain.handle('sync:configure', safe((_e, payload) => branchSync.configure(payload)));
