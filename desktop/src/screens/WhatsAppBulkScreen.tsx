@@ -25,6 +25,28 @@ interface Recipient { phone: string; name?: string | null; }
 
 type Source = "clients" | "manual";
 
+// Render WhatsApp markup (*bold* _italic_ ~strike~) as HTML for preview.
+// Escapes HTML first so user text can't inject markup.
+function formatWhatsApp(text: string): string {
+  const esc = text
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc
+    .replace(/\*(.+?)\*/g, "<b>$1</b>")
+    .replace(/_(.+?)_/g, "<i>$1</i>")
+    .replace(/~(.+?)~/g, "<s>$1</s>");
+}
+
+// Ready-made message templates. WhatsApp formatting: *bold* _italic_
+// ~strike~ — kept inline so merchants see exactly what gets sent.
+const TEMPLATES: Array<{ label: string; emoji: string; text: string }> = [
+  { label: "ترحيب", emoji: "👋", text: "مرحبًا {الاسم} 👋\nيسعدنا انضمامك لعملائنا. تابعنا لكل جديد وعروضنا الحصرية! 🌟" },
+  { label: "عرض / خصم", emoji: "🏷️", text: "*عرض خاص ليك يا {الاسم}!* 🎉\nخصم لفترة محدودة على كل المنتجات.\nاطلب دلوقتي قبل ما يخلص! 🛍️" },
+  { label: "تذكير دفع", emoji: "💳", text: "عميلنا العزيز {الاسم}،\nنذكّرك بوجود مبلغ مستحق على حسابك. برجاء السداد في أقرب وقت. شكرًا لتعاونك 🙏" },
+  { label: "تهنئة عيد", emoji: "🌙", text: "كل سنة وأنت طيب يا {الاسم} 🌙✨\nبمناسبة العيد، عندنا تخفيضات خاصة. زورنا واستمتع! 🎁" },
+  { label: "وصول منتجات", emoji: "📦", text: "أخبار حلوة يا {الاسم}! 📦\nوصلتنا منتجات جديدة في المحل. تعالى شوفها قبل ما تخلص 😍" },
+  { label: "استعلام رضا", emoji: "⭐", text: "{الاسم}، رأيك يهمنا! ⭐\nياريت تقيّم تجربتك معانا، وأي ملاحظة تحت أمرك. شكرًا لثقتك 💚" },
+];
+
 export function WhatsAppBulkScreen() {
   const { user } = useAuth();
   const [source, setSource] = useState<Source>("clients");
@@ -223,6 +245,21 @@ export function WhatsAppBulkScreen() {
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="عرض رمضان" className="h-9" />
             </div>
             <div>
+              <Label>قوالب جاهزة</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {TEMPLATES.map((t) => (
+                  <button
+                    key={t.label}
+                    onClick={() => setBody(t.text)}
+                    className="text-xs px-2.5 py-1 rounded-full bg-secondary hover:bg-secondary/70 transition-colors"
+                    title="اضغط لاستخدام القالب"
+                  >
+                    {t.emoji} {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
               <Label>نص الرسالة</Label>
               <textarea
                 rows={5}
@@ -231,8 +268,20 @@ export function WhatsAppBulkScreen() {
                 className="w-full rounded-md border border-input bg-[hsl(var(--input-field-bg))] p-3 text-sm"
                 placeholder="مرحبًا {الاسم}، عندنا عروض جديدة..."
               />
-              <p className="text-[11px] text-muted-foreground mt-1">المتغيرات: <code>{"{الاسم}"}</code> · <code>{"{الرقم}"}</code></p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                المتغيرات: <code>{"{الاسم}"}</code> · <code>{"{الرقم}"}</code> — التنسيق:{" "}
+                <code>*عريض*</code> <code>_مائل_</code> <code>~مشطوب~</code>
+              </p>
             </div>
+
+            {/* Live preview of the formatted message */}
+            {body.trim() && (
+              <div className="rounded-lg bg-[#e5ddd5] dark:bg-[#0b141a] p-3">
+                <div className="bg-[#dcf8c6] dark:bg-[#005c4b] rounded-lg rounded-tr-none p-2.5 text-sm text-black dark:text-white max-w-[85%] mr-auto shadow whitespace-pre-wrap leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: formatWhatsApp(body.replace(/\{الاسم\}/g, "أحمد").replace(/\{name\}/gi, "أحمد")) }}
+                />
+              </div>
+            )}
 
             <div className="rounded-lg border border-border p-3 space-y-2">
               <div className="flex items-center gap-1.5 text-sm font-medium"><ShieldCheck className="h-4 w-4 text-[hsl(var(--success))]" /> حماية من الحظر</div>
