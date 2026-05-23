@@ -26,18 +26,12 @@ jobs:
         with:
           node-version: '20'
 
-      # Windows runners already include MSBuild + VC++ toolset, so
-      # better-sqlite3 will compile fine without any extra setup.
+      # electron-builder's postinstall (install-app-deps) already
+      # rebuilds native modules against the Electron ABI shipped in
+      # this project. No extra rebuild step needed.
       - name: Install dependencies
         working-directory: desktop
         run: npm install --no-audit --no-fund
-
-      # Force-rebuild native modules (better-sqlite3) against the exact
-      # Electron ABI shipped in this build. Without this, the packaged
-      # app loads a node-ABI binary and crashes on first require().
-      - name: Rebuild native modules for Electron
-        working-directory: desktop
-        run: npx --yes @electron/rebuild -f -w better-sqlite3
 
       - name: Build Windows installer (NSIS .exe)
         working-directory: desktop
