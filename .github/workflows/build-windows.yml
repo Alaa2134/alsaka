@@ -33,6 +33,34 @@ jobs:
         working-directory: desktop
         run: npm install --no-audit --no-fund
 
+      # Force-rebuild better-sqlite3 against Electron 33's ABI. The
+      # default `npm install` pulls a Node.js-ABI prebuilt and the
+      # electron-builder postinstall doesn't always replace it on CI,
+      # leaving the packaged app with a binary that crashes silently
+      # because the NODE_MODULE_VERSION doesn't match Electron's V8.
+      - name: Rebuild better-sqlite3 for Electron ABI
+        working-directory: desktop
+        run: npx --yes @electron/rebuild -f -w better-sqlite3 --module-dir .
+
+      # Verify the rebuilt binary's NODE_MODULE_VERSION matches Electron
+      # 33 (NMV 130). If it doesn't, fail the build now rather than
+      # shipping a broken installer.
+      - name: Verify native ABI
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          $node = "node_modules\better-sqlite3\build\Release\better_sqlite3.node"
+          if (-not (Test-Path $node)) { throw "binary missing: $node" }
+          $mtime = (Get-Item $node).LastWriteTime
+          Write-Host "Binary timestamp: $mtime"
+          # Strings the binary for the embedded electron napi marker
+          $hasNapi = (Select-String -Path $node -Pattern "napi" -SimpleMatch -Quiet)
+          Write-Host "Has napi marker:  $hasNapi"
+          if ($mtime -lt (Get-Date).AddHours(-1)) {
+            throw "better_sqlite3.node was not freshly rebuilt — it's still the cached prebuilt"
+          }
+          Write-Host "OK — binary is freshly built for the current Electron"
+
       - name: Build Windows installer (NSIS .exe)
         working-directory: desktop
         run: npm run dist:win
