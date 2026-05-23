@@ -118,14 +118,17 @@
     "nsis": {
       "oneClick": false,
       "perMachine": false,
+      "allowElevation": true,
       "allowToChangeInstallationDirectory": true,
       "deleteAppDataOnUninstall": false,
-      "createDesktopShortcut": true,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "Horus System",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "installerLanguages": ["en-US"]
+      "installerLanguages": ["en-US"],
+      "runAfterFinish": true,
+      "menuCategory": false
     },
     "mac": {
       "target": "dmg",
