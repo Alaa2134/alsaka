@@ -1,0 +1,12 @@
+node_modules
+dist
+release
+*.local
+.env
+.env.local
+.DS_Store
+*.log
+*.tsbuildinfo
+!build/icon.ico
+!build/icon.png
+!build/.gitkeep

@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    direction: rtl;
+    text-align: right;
+    @apply font-cairo bg-slate-50 text-slate-900 antialiased;
+  }
+  input[type="number"], input[inputmode="numeric"], .tabular-nums {
+    direction: ltr;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .input-field {
+    @apply flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary;
+  }
+  .btn-primary {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow hover:opacity-90 disabled:opacity-50;
+  }
+  .btn-outline {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-sm font-semibold hover:bg-slate-50;
+  }
+}

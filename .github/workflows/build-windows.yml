@@ -1,0 +1,121 @@
+name: Build Windows Installer
+
+on:
+  push:
+    branches:
+      - claude/systemalaa-desktop-app-YK5q1
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Install with --ignore-scripts so prebuild-install doesn't grab
+      # the Node.js-flavored .node binary on its own (which is what
+      # was crashing Electron at runtime).
+      - name: Install dependencies (scripts skipped)
+        working-directory: desktop
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      # Now pull the Electron-flavored prebuilt for better-sqlite3
+      # directly. better-sqlite3 publishes prebuilts for every Electron
+      # major on its GitHub releases, so this is a download — no
+      # compilation, no node-gyp, no Visual Studio. Bulletproof.
+      - name: Fetch Electron prebuilt for better-sqlite3
+        working-directory: desktop/node_modules/better-sqlite3
+        shell: pwsh
+        run: |
+          $electronVersion = (Get-Content "../electron/package.json" | ConvertFrom-Json).version
+          Write-Host "Targeting Electron $electronVersion"
+          Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+          npx --yes prebuild-install --runtime electron --target $electronVersion --verbose
+          if (-not (Test-Path build/Release/better_sqlite3.node)) {
+            throw "prebuild-install did not produce a binary"
+          }
+          $mtime = (Get-Item build/Release/better_sqlite3.node).LastWriteTime
+          Write-Host "Electron-ABI binary mtime: $mtime"
+
+      # Run the postinstall scripts now that the native dep is sorted —
+      # electron-builder install-app-deps is the postinstall hook here.
+      - name: Run remaining lifecycle scripts
+        working-directory: desktop
+        run: npm rebuild --ignore-scripts
+
+      - name: Build Windows installer (NSIS .exe)
+        working-directory: desktop
+        run: npm run dist:win
+        env:
+          # Skip code-signing for now (no certificate). The .exe will
+          # still install but Windows SmartScreen may warn the user.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # Verbose electron-builder logs in case it fails again
+          DEBUG: 'electron-builder'
+
+      - name: List output
+        working-directory: desktop/release
+        run: dir
+        shell: cmd
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HorusSystem-Windows-Installer
+          path: |
+            desktop/release/*.exe
+            desktop/release/*.exe.blockmap
+            desktop/release/latest.yml
+          if-no-files-found: error
+          retention-days: 30
+
+      # Publish (or update) a "latest" prerelease so end users get a
+      # stable, public download URL that always points to the most
+      # recent successful build. This is what gets shared with merchants.
+      - name: Publish to "latest" release
+        if: github.ref == 'refs/heads/claude/systemalaa-desktop-app-YK5q1'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Horus System — Latest Build"
+          body: |
+            Auto-built from commit ${{ github.sha }}.
+
+            Download `Horus.System.Setup.1.0.0.exe` below, double-click,
+            and follow the install wizard. The app launches automatically
+            after install. No prerequisites required.
+
+            First-run login:
+            - Email: `admin@horus.app` or `admin@systemalaa.app`
+            - Password: `admin`
+          prerelease: true
+          make_latest: false
+          files: |
+            desktop/release/*.exe
+            desktop/release/*.exe.blockmap
+            desktop/release/latest.yml
+
+      # Tag-driven release (for stable versioned releases later)
+      - name: Create tagged Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/release/*.exe
+            desktop/release/*.exe.blockmap
+            desktop/release/latest.yml
+          generate_release_notes: true

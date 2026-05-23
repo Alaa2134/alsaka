@@ -1,0 +1,17 @@
+{
+  "name": "horus-vendor-server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute horus-vendor --file=schema.sql",
+    "db:init-remote": "wrangler d1 execute horus-vendor --remote --file=schema.sql",
+    "seed-admin": "node seed-admin.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241106.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^3.86.0"
+  }
+}

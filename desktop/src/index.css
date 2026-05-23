@@ -1,0 +1,261 @@
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+ * SystemAlaa design tokens.
+ * Colors taken verbatim from the spec (HSL values).
+ * ------------------------------------------------------------------------- */
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    --radius: 0.75rem;
+
+    /* Invoice-specific surface tokens */
+    --header-bg: 221 83% 53%;
+    --header-foreground: 210 40% 98%;
+    --table-header-bg: 221 70% 25%;
+    --table-header-foreground: 210 40% 98%;
+    --table-row-even: 0 0% 100%;
+    --table-row-odd: 210 40% 98%;
+    --input-field-bg: 0 0% 100%;
+    --time-display: 38 92% 50%;
+    --button-nav: 221 83% 53%;
+    --button-nav-hover: 221 83% 45%;
+
+    /* Signature shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(221 83% 53% / 0.08),
+      0 4px 16px -4px hsl(221 83% 53% / 0.12);
+    --shadow-glow: 0 0 20px hsl(221 83% 53% / 0.15),
+      0 0 40px hsl(262 83% 58% / 0.1);
+    --shadow-elevated: 0 8px 30px -8px hsl(221 83% 53% / 0.2);
+
+    /* Signature gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(262 83% 58%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 28%));
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(28 92% 45%));
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 223 47% 15%;
+    --card-foreground: 210 40% 98%;
+    --popover: 223 47% 15%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 223 47% 20%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 223 47% 20%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+    --border: 223 47% 25%;
+    --input: 223 47% 25%;
+    --ring: 221 83% 53%;
+
+    --header-bg: 221 83% 53%;
+    --table-header-bg: 221 70% 20%;
+    --table-row-even: 223 47% 15%;
+    --table-row-odd: 223 47% 12%;
+    --input-field-bg: 223 47% 18%;
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-cairo antialiased;
+    direction: rtl;
+    text-align: right;
+  }
+
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Numeric inputs read better LTR even in RTL layouts */
+  input[type="number"],
+  input[inputmode="numeric"],
+  .tabular-nums {
+    direction: ltr;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .dark .glass {
+    background: rgba(23, 30, 50, 0.7);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+  .gradient-warning {
+    background: var(--gradient-warning);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  /* Invoice fixed table: columns ordered right-to-left visually */
+  .invoice-table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .invoice-table th,
+  .invoice-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid hsl(var(--border));
+    vertical-align: middle;
+  }
+  .invoice-table thead th {
+    background: hsl(var(--table-header-bg));
+    color: hsl(var(--table-header-foreground));
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  .invoice-table tbody tr:nth-child(even) td {
+    background: hsl(var(--table-row-even));
+  }
+  .invoice-table tbody tr:nth-child(odd) td {
+    background: hsl(var(--table-row-odd));
+  }
+  .invoice-table input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: inherit;
+    text-align: right;
+    direction: rtl;
+  }
+  .invoice-table input[inputmode="numeric"] {
+    direction: ltr;
+  }
+
+  .ghost-text {
+    position: relative;
+  }
+  .ghost-text .ghost {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    color: hsl(var(--muted-foreground));
+    opacity: 0.55;
+    padding: inherit;
+    display: flex;
+    align-items: center;
+    direction: rtl;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print, .no-print * {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  /* Thermal receipt roll: 80mm wide, continuous length. */
+  @page { size: 80mm auto; margin: 0; }
+}
+.print-only { display: none; }
+
+/* ── 80mm thermal receipt ─────────────────────────────────────── */
+.receipt {
+  width: 80mm;
+  padding: 4mm 3mm;
+  color: #000;
+  background: #fff;
+  font-family: "Cairo", system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.receipt .r-center { text-align: center; }
+.receipt .r-logo { max-height: 48px; margin: 0 auto 4px; display: block; }
+.receipt .r-shop { font-size: 16px; font-weight: 800; }
+.receipt .r-sub { font-size: 11px; }
+.receipt .r-rule { border-top: 1px dashed #000; margin: 6px 0; }
+.receipt .r-meta div,
+.receipt .r-totals div {
+  display: flex; justify-content: space-between; gap: 8px;
+}
+.receipt .r-meta span,
+.receipt .r-totals span { color: #333; }
+.receipt .r-items { width: 100%; border-collapse: collapse; }
+.receipt .r-items th {
+  text-align: right; font-size: 11px; border-bottom: 1px solid #000; padding: 2px 0;
+}
+.receipt .r-items th:not(:first-child),
+.receipt .r-items .r-num { text-align: left; }
+.receipt .r-items td { padding: 2px 0; vertical-align: top; font-variant-numeric: tabular-nums; }
+.receipt .r-name { width: 50%; }
+.receipt .r-grand { font-size: 14px; font-weight: 800; border-top: 1px solid #000; padding-top: 3px; margin-top: 2px; }
+.receipt .r-thanks { margin-top: 6px; font-size: 12px; }
+.receipt .r-powered { font-size: 10px; color: #555; margin-top: 4px; }
+
+@keyframes cat-chase {
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(-120px); }
+  100% { transform: translateX(0); }
+}

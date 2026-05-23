@@ -1,73 +1,107 @@
-# Welcome to your Lovable project
+# 𓁹 Horus System
 
-## Project info
+منصة تجارة ومحاسبة ونقاط بيع عربية متكاملة — تخدم كل أنواع المحلات
+والمطاعم والشركات. **monorepo فيه تمن تطبيقات + SDK** مترابطة.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+| المجلد | الوصف | Port للتطوير |
+|---|---|---|
+| **`desktop/`** | تطبيق الكاشير الرئيسي (Electron + SQLite). 70+ شاشة: فواتير، محاسبة كاملة، مخزون، موظفون، تقارير، مينيو QR، AI، صيدلية/مطعم/صالون/ميكانيكي | `dev:electron` |
+| **`store/`** | المتجر الإلكتروني العام (Vite SPA) — موقع لكل عميل + صفحة مينيو QR | `5174` |
+| **`mobile/`** | كاشير محمول كـ PWA — يعمل من أي موبايل ويستخدم REST API | `5176` |
+| **`customer-display/`** | شاشة العميل (شاشة ثانية تواجه الزبون عند الكاشير) | `5175` |
+| **`owner-dashboard/`** | لوحة متابعة لصاحب المكان — مبيعات + فواتير + مرتبات من أي مكان | `5177` |
+| **`vendor/`** ⭐ | لوحة تحكم **البائع** (انت) — يصدر تراخيص + Heartbeats + يرفع تحديثات .exe — Cloudflare Workers + D1 | `5178` + Worker `8787` |
+| **`customer-app/`** | تطبيق العملاء — نقاط ولاء + طلب توصيل + دفع QR | `5180` |
+| **`driver-app/`** | تطبيق سائق التوصيل — قائمة طلبات + إثبات تسليم بالكاميرا + تسليم كاش | `5181` |
+| **`sdk/`** | حزمة `@horus/sdk` — TypeScript client للـ REST API + ملف OpenAPI | — |
 
-## How can I edit this code?
+## بنية النظام
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+┌────────────────────────────┐
+│   desktop/  (Electron)     │
+│   • SQLite (مشفّر AES-256) │
+│   • whatsapp-web.js        │
+│   • Google Drive backup    │
+│   • Anthropic AI           │
+│   • REST API :27817        │ ◄────┐
+└──────────┬─────────────────┘      │
+           │                        │ HTTP + Bearer key
+           ▼                        │
+       SQLite                       │
+                              ┌─────┴────┬──────────────┬───────────────┐
+                              ▼          ▼              ▼               ▼
+                          store/    mobile/    owner-dashboard/   customer-display/
+                        (المتجر)   (كاشير      (المالك من           (شاشة العميل
+                                    محمول)      أي مكان)             الجانبية)
 ```
 
-**Edit a file directly in GitHub**
+## التشغيل السريع — كل التطبيقات
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# 1) الكاشير الرئيسي
+cd desktop && npm install && npm run dev:electron
 
-**Use GitHub Codespaces**
+# 2) المتجر الإلكتروني (terminal جديد)
+cd store && npm install && npm run dev          # http://localhost:5174/demo
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# 3) موبايل الكاشير
+cd mobile && npm install && npm run dev          # http://<your-ip>:5176
 
-## What technologies are used for this project?
+# 4) شاشة العميل (شاشة ثانية)
+cd customer-display && npm install && npm run dev   # http://localhost:5175
 
-This project is built with:
+# 5) موقع متابعة صاحب المكان
+cd owner-dashboard && npm install && npm run dev    # http://localhost:5177
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# 6) تطبيق العميل (PWA)
+cd customer-app && npm install && npm run dev       # http://<your-ip>:5180
 
-## How can I deploy this project?
+# 7) تطبيق السائق (PWA)
+cd driver-app && npm install && npm run dev         # http://<your-ip>:5181
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+**تسجيل الدخول الأول للكاشير:** `admin@systemalaa.app` / `admin`
+(باسورد مؤقت — يطلب منك تختار باسورد جديد عند أول دخول، والحساب يربط
+بجهازك تلقائيًا).
 
-## Can I connect a custom domain to my Lovable project?
+## الميزات الكاملة
 
-Yes, you can!
+راجع **`desktop/README.md`** لقائمة كاملة بكل ميزة:
+- 5 قوالب POS (Classic / Touch Grid / Restaurant / Quick Service / Dual)
+- محاسبة بالقيد المزدوج (شجرة حسابات عربية، ميزان مراجعة، قائمة دخل،
+  ميزانية عمومية، أعمار الديون)
+- مخزون متعدد المخازن + متغيرات منتج + جرد + PO/GRN
+- متجر إلكتروني لكل عميل + مينيو QR للطاولات + KDS
+- AI: مساعد ذكي + تحليل صور للمنتجات + توقع الطلب + كشف الشذوذ
+- WhatsApp: تسجيل بـ QR + إرسال الفواتير تلقائيًا + offline queue
+- نسخ احتياطي يومي على Google Drive (ملف واحد يتحدّث في مكانه)
+- ترخيص جهاز واحد لكل كود + تشفير AES-256-GCM + scrypt + audit chain
+- 8 قوالب صناعية جاهزة (تجزئة، سوبرماركت، مطعم، صيدلية، صالون، ...)
+- REST API + Webhooks + Marketplace integrations (12 موفر)
+- Voice POS (أوامر صوتية عربية) + i18n عربي/إنجليزي
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## البناء للإنتاج
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+# Windows installer للكاشير
+cd desktop && npm run dist:win
+# → release/Horus System Setup x.y.z.exe
+
+# Vercel/Netlify deploys للمواقع
+cd store && npm run build && vercel
+cd mobile && npm run build && vercel
+cd owner-dashboard && npm run build && vercel
+cd customer-display && npm run build
+# انسخ dist/ على شاشة العميل (file:// أو static host)
+```
+
+## الفرع النشط
+
+```bash
+git checkout claude/systemalaa-desktop-app-YK5q1
+```
+
+## PR
+
+https://github.com/Alaa2134/alsaka/pull/1
