@@ -33,18 +33,27 @@ jobs:
         working-directory: desktop
         run: npm install --no-audit --no-fund
 
-      # Force-rebuild better-sqlite3 against Electron 33's ABI. The
+      # Force-rebuild better-sqlite3 against Electron's ABI. The
       # default `npm install` pulls a Node.js-ABI prebuilt and the
       # electron-builder postinstall doesn't always replace it on CI,
       # leaving the packaged app with a binary that crashes silently
       # because the NODE_MODULE_VERSION doesn't match Electron's V8.
+      #
+      # Using the classic `npm rebuild` route (more reliable than
+      # @electron/rebuild on Actions runners). We read the Electron
+      # version from the installed package so this stays in sync.
       - name: Rebuild better-sqlite3 for Electron ABI
         working-directory: desktop
-        run: npx --yes @electron/rebuild -f -w better-sqlite3 --module-dir .
+        shell: pwsh
+        run: |
+          $electronVersion = (Get-Content node_modules/electron/package.json | ConvertFrom-Json).version
+          Write-Host "Rebuilding better-sqlite3 for Electron $electronVersion"
+          npm rebuild better-sqlite3 --runtime=electron --target=$electronVersion --dist-url=https://electronjs.org/headers --build-from-source
+          if ($LASTEXITCODE -ne 0) { throw "rebuild failed with exit $LASTEXITCODE" }
 
-      # Verify the rebuilt binary's NODE_MODULE_VERSION matches Electron
-      # 33 (NMV 130). If it doesn't, fail the build now rather than
-      # shipping a broken installer.
+      # Verify the rebuilt binary is fresh. If it's still the cached
+      # prebuilt from npm (older timestamp), fail the build now
+      # rather than shipping a broken installer.
       - name: Verify native ABI
         working-directory: desktop
         shell: pwsh
@@ -53,13 +62,10 @@ jobs:
           if (-not (Test-Path $node)) { throw "binary missing: $node" }
           $mtime = (Get-Item $node).LastWriteTime
           Write-Host "Binary timestamp: $mtime"
-          # Strings the binary for the embedded electron napi marker
-          $hasNapi = (Select-String -Path $node -Pattern "napi" -SimpleMatch -Quiet)
-          Write-Host "Has napi marker:  $hasNapi"
-          if ($mtime -lt (Get-Date).AddHours(-1)) {
-            throw "better_sqlite3.node was not freshly rebuilt — it's still the cached prebuilt"
+          if ($mtime -lt (Get-Date).AddMinutes(-15)) {
+            throw "better_sqlite3.node was not freshly rebuilt (mtime $mtime) — still the cached prebuilt"
           }
-          Write-Host "OK — binary is freshly built for the current Electron"
+          Write-Host "OK — binary is freshly built"
 
       - name: Build Windows installer (NSIS .exe)
         working-directory: desktop
