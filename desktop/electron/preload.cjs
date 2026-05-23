@@ -109,6 +109,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     drainNow: () => invoke('wa-queue:drain-now'),
   },
 
+  // Loyalty program
+  loyalty: {
+    config: (payload) => invoke('loyalty:config', payload),
+    setConfig: (payload) => invoke('loyalty:set-config', payload),
+    account: (payload) => invoke('loyalty:account', payload),
+    redeem: (payload) => invoke('loyalty:redeem', payload),
+    leaderboard: (payload) => invoke('loyalty:leaderboard', payload),
+  },
+
   // WhatsApp bulk campaigns with anti-ban throttling
   waBulk: {
     create: (payload) => invoke('wa-bulk:create', payload),

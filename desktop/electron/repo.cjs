@@ -184,12 +184,29 @@ function saveInvoice({ invoice, items }) {
     console.warn('[SystemAlaa] sales auto-post skipped:', err.message);
   }
 
+  // Award loyalty points for sales tied to a customer. Failure must not
+  // affect the saved invoice.
+  let loyaltyResult = null;
+  if (invoice.client_id && invoice.type !== 'return') {
+    try {
+      const saved0 = getById('invoices', id);
+      loyaltyResult = require('./loyalty.cjs').awardForInvoice({
+        tenantId: invoice.tenant_id,
+        clientId: invoice.client_id,
+        invoiceId: id,
+        total: saved0.total,
+      });
+    } catch (err) {
+      console.warn('[Horus] loyalty award skipped:', err.message);
+    }
+  }
+
   const saved = getById('invoices', id);
   const items2 = dbMod.decryptRows(
     'invoice_items',
     dbMod.get().prepare(`SELECT * FROM invoice_items WHERE invoice_id = ?`).all(id),
   );
-  return { invoice: saved, items: items2 };
+  return { invoice: saved, items: items2, loyalty: loyaltyResult };
 }
 
 function searchProducts({ tenantId, query, limit = 20 }) {

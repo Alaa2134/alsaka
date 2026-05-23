@@ -169,6 +169,14 @@ declare global {
       drainNow(): Promise<IpcResult<void>>;
     };
 
+    loyalty: {
+      config(payload: { tenantId: string }): Promise<IpcResult<{ enabled: boolean; earn_per_currency: number; redeem_value: number; tier_silver: number; tier_gold: number; tier_platinum: number }>>;
+      setConfig(payload: { tenantId: string; patch: Record<string, unknown> }): Promise<IpcResult<any>>;
+      account(payload: { tenantId: string; clientId: string }): Promise<IpcResult<{ points: number; tier: string; total_earned: number; total_redeemed: number } | null>>;
+      redeem(payload: { tenantId: string; clientId: string; points: number }): Promise<IpcResult<{ ok: boolean; redeemed?: number; discountValue?: number; remaining?: number; error?: string }>>;
+      leaderboard(payload: { tenantId: string; limit?: number }): Promise<IpcResult<Array<{ client_name: string; client_phone: string | null; points: number; tier: string; total_earned: number }>>>;
+    };
+
     waBulk: {
       create(payload: {
         tenantId: string; name?: string; body: string;

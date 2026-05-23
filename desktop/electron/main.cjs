@@ -97,6 +97,7 @@ const marketplace = safeRequire('./marketplace.cjs');
 const branchSync = safeRequire('./branch-sync.cjs');
 const smartImport = safeRequire('./smart-import.cjs');
 const whatsappBulk = safeRequire('./whatsapp-bulk.cjs');
+const loyalty = safeRequire('./loyalty.cjs');
 
 const isDev = !app.isPackaged && process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL || 'http://localhost:5173';
@@ -489,6 +490,13 @@ ipcMain.handle('db:search-products', safe((_e, opts) => repo.searchProducts(opts
 ipcMain.handle('db:dashboard', safe((_e, opts) => repo.dashboardStats(opts)));
 ipcMain.handle('db:sales-report', safe((_e, opts) => repo.salesReport(opts)));
 ipcMain.handle('db:client-profile', safe((_e, opts) => repo.clientProfile(opts)));
+
+// --- Loyalty program ---
+ipcMain.handle('loyalty:config', safe((_e, { tenantId }) => loyalty.getConfig(tenantId)));
+ipcMain.handle('loyalty:set-config', safe((_e, payload) => loyalty.setConfig(payload)));
+ipcMain.handle('loyalty:account', safe((_e, payload) => loyalty.accountFor(payload)));
+ipcMain.handle('loyalty:redeem', safe((_e, payload) => loyalty.redeem(payload)));
+ipcMain.handle('loyalty:leaderboard', safe((_e, payload) => loyalty.leaderboard(payload)));
 
 // --- Accounting IPC ---
 ipcMain.handle('acc:trial-balance', safe((_e, opts) => accounting.trialBalance(opts)));
