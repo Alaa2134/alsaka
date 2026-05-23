@@ -21,6 +21,7 @@ import {
   type PaymentMethod,
 } from "@/components/pos/types";
 import { buildInvoiceImage } from "@/components/invoice/InvoiceImageBuilder";
+import { ReceiptPrint, type ReceiptData } from "@/components/invoice/ReceiptPrint";
 
 const newRowId = () =>
   globalThis.crypto?.randomUUID?.() ?? `row-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -47,6 +48,8 @@ export function InvoiceScreen() {
   const [paid, setPaid] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [busy, setBusy] = useState(false);
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [company, setCompany] = useState<{ name?: string; phone?: string; address?: string; logo_url?: string | null; vat_number?: string; footer?: string }>({});
   const lastSavedRef = useRef<any>(null);
 
   // Load preferred layout for this user
@@ -75,6 +78,22 @@ export function InvoiceScreen() {
         setClients(c ?? []);
         setProducts((p ?? []) as PosProduct[]);
         setCategories((cat ?? []).map((x: any) => ({ id: x.id, name: x.name })));
+      } catch {
+        /* ignore */
+      }
+      // Company settings (key/value) for the printed receipt header.
+      try {
+        const rows = await unwrap(api().db.list<any>("company_settings", { tenantId, limit: 500 }));
+        const kv: Record<string, string> = {};
+        for (const r of rows || []) kv[r.key] = r.value;
+        setCompany({
+          name: kv.business_name || kv.company_name,
+          phone: kv.phone || kv.business_phone,
+          address: kv.address || kv.business_address,
+          logo_url: kv.business_logo || null,
+          vat_number: kv.vat_number || kv.tax_number,
+          footer: kv.receipt_footer,
+        });
       } catch {
         /* ignore */
       }
@@ -136,6 +155,24 @@ export function InvoiceScreen() {
         }),
       );
       lastSavedRef.current = { ...result, clientName: client?.name, clientPhone: client?.phone };
+      // Stage the printable receipt for this saved invoice.
+      setReceipt({
+        number: (result.invoice as any).number ?? "—",
+        date: new Intl.DateTimeFormat("ar-EG-u-nu-latn", { dateStyle: "short", timeStyle: "short" }).format(new Date()),
+        cashierName: user?.name || undefined,
+        clientName: client?.name,
+        clientPhone: client?.phone ?? undefined,
+        paymentMethod,
+        items: result.items.map((it: any) => ({
+          product_name: it.product_name, quantity: it.quantity, price: it.price, total: it.total,
+        })),
+        subtotal: (result.invoice as any).total,
+        discount: (result.invoice as any).discount,
+        paid: (result.invoice as any).paid,
+        remaining: (result.invoice as any).remaining,
+        change: totals.change,
+        company,
+      });
       toast.success(`تم حفظ الفاتورة #${(result.invoice as any).number ?? ""}`);
       setRows([]);
       setDiscount(0);
@@ -179,9 +216,40 @@ export function InvoiceScreen() {
     } finally {
       setBusy(false);
     }
-  }, [user, rows, discount, paid, client]);
+  }, [user, rows, discount, paid, client, paymentMethod, totals, company]);
 
-  const onPrint = () => window.electronAPI?.print().catch(() => undefined);
+  // Build a receipt from the current cart (works before AND after save).
+  const buildReceipt = useCallback(
+    (numberOverride?: string | number): ReceiptData => ({
+      number: numberOverride ?? "—",
+      date: new Intl.DateTimeFormat("ar-EG-u-nu-latn", { dateStyle: "short", timeStyle: "short" }).format(new Date()),
+      cashierName: user?.name || undefined,
+      clientName: client?.name,
+      clientPhone: client?.phone ?? undefined,
+      paymentMethod,
+      items: rows
+        .filter((r) => r.product_name && r.quantity > 0)
+        .map((r) => ({ product_name: r.product_name, quantity: r.quantity, price: r.price, total: r.quantity * r.price })),
+      subtotal: totals.subtotal,
+      discount: totals.discount,
+      paid: totals.paid,
+      remaining: totals.remaining,
+      change: totals.change,
+      company,
+    }),
+    [user, client, paymentMethod, rows, totals, company],
+  );
+
+  const onPrint = () => {
+    const items = rows.filter((r) => r.product_name && r.quantity > 0);
+    if (items.length === 0) {
+      toast.error("لا توجد أصناف للطباعة");
+      return;
+    }
+    setReceipt(buildReceipt(lastSavedRef.current?.invoice?.number));
+    // Let React paint the .print-only receipt before the print dialog.
+    setTimeout(() => window.print(), 60);
+  };
   const onClear = () => {
     setRows([]);
     setDiscount(0);
@@ -246,6 +314,8 @@ export function InvoiceScreen() {
           </Badge>
         )}
       </Card>
+
+      <ReceiptPrint data={receipt} />
 
       <Layout
         rows={rows}
