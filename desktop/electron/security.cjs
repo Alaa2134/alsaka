@@ -20,7 +20,13 @@ function masterKey() {
 
 // scrypt is in Node core and reaches roughly the same memory-hard region as
 // Argon2id at N=2^15 / r=8 / p=1. No native module required.
-const SCRYPT_PARAMS = { N: 1 << 15, r: 8, p: 1, keylen: 32 };
+//
+// maxmem must be set explicitly: Node's default cap is 32 MiB, but
+// N=2^15/r=8 needs ~128*N*r ≈ 34 MiB, which throws
+// "Invalid scrypt params: MEMORY_LIMIT_EXCEEDED". We give it 64 MiB of
+// headroom so both hashing and verification of any reasonable N succeed.
+const SCRYPT_MAXMEM = 128 * 1024 * 1024; // 128 MiB
+const SCRYPT_PARAMS = { N: 1 << 15, r: 8, p: 1, keylen: 32, maxmem: SCRYPT_MAXMEM };
 
 function hashPassword(plain) {
   const salt = crypto.randomBytes(16);
@@ -46,6 +52,7 @@ function verifyPassword(plain, stored) {
     N: Number(N),
     r: Number(r),
     p: Number(p),
+    maxmem: SCRYPT_MAXMEM,
   });
   return crypto.timingSafeEqual(got, expected);
 }
