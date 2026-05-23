@@ -101,6 +101,12 @@ declare global {
         byPayment: Array<{ method: string; invoices: number; sales: number }>;
         lowStock: Array<{ id: string; name: string; stock: number; min_stock: number }>;
       }>>;
+      clientProfile(opts: { tenantId: string; clientId: string }): Promise<IpcResult<{
+        client: any;
+        stats: { invoices: number; lifetime: number; outstanding: number; avgTicket: number; last_at: string | null; first_at: string | null };
+        invoices: Array<{ id: string; number: number | null; total: number; paid: number; remaining: number; status: string; payment_method: string | null; created_at: string }>;
+        topItems: Array<{ name: string; qty: number; spent: number }>;
+      } | null>>;
     };
 
     accounting: {

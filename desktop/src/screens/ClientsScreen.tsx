@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2, UserCircle } from "lucide-react";
+import { CustomerProfile } from "@/components/clients/CustomerProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, unwrap } from "@/lib/ipc";
 import { money } from "@/lib/format";
@@ -33,6 +34,7 @@ export function ClientsScreen() {
   const [list, setList] = useState<Client[]>([]);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", credit_limit: "" });
 
   const refresh = useCallback(async () => {
@@ -168,12 +170,21 @@ export function ClientsScreen() {
                   <TD className="tabular-nums">{money(c.balance)}</TD>
                   <TD className="tabular-nums">{money(c.credit_limit)}</TD>
                   <TD>
-                    <button
-                      className="p-1 text-destructive hover:bg-destructive/10 rounded"
-                      onClick={() => remove(c.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="p-1 text-primary hover:bg-primary/10 rounded"
+                        onClick={() => setProfileId(c.id)}
+                        title="ملف العميل"
+                      >
+                        <UserCircle className="h-4 w-4" />
+                      </button>
+                      <button
+                        className="p-1 text-destructive hover:bg-destructive/10 rounded"
+                        onClick={() => remove(c.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </TD>
                 </TR>
               ))
@@ -181,6 +192,10 @@ export function ClientsScreen() {
           </tbody>
         </DataTable>
       </Card>
+
+      {profileId && (
+        <CustomerProfile tenantId={tenantId} clientId={profileId} onClose={() => setProfileId(null)} />
+      )}
     </div>
   );
 }

@@ -341,6 +341,59 @@ function salesReport({ tenantId, days = 30 }) {
   };
 }
 
+// Customer 360 profile: the client row + lifetime stats + recent
+// invoices + their most-bought products. Powers the CRM screen.
+function clientProfile({ tenantId, clientId }) {
+  const db = dbMod.get();
+  const client = dbMod.decryptRow(
+    'clients',
+    db.prepare(`SELECT * FROM clients WHERE id = ? AND tenant_id = ?`).get(clientId, tenantId),
+  );
+  if (!client) return null;
+
+  const stats = db
+    .prepare(
+      `SELECT COUNT(*) AS invoices,
+              COALESCE(SUM(total), 0) AS lifetime,
+              COALESCE(SUM(remaining), 0) AS outstanding,
+              MAX(created_at) AS last_at,
+              MIN(created_at) AS first_at
+         FROM invoices WHERE tenant_id = @t AND client_id = @c`,
+    )
+    .get({ t: tenantId, c: clientId }) || {};
+
+  const invoices = db
+    .prepare(
+      `SELECT id, number, total, paid, remaining, status, payment_method, created_at
+         FROM invoices WHERE tenant_id = @t AND client_id = @c
+        ORDER BY created_at DESC LIMIT 50`,
+    )
+    .all({ t: tenantId, c: clientId });
+
+  const topItems = db
+    .prepare(
+      `SELECT ii.product_name AS name, SUM(ii.quantity) AS qty, SUM(ii.total) AS spent
+         FROM invoice_items ii JOIN invoices i ON i.id = ii.invoice_id
+        WHERE i.tenant_id = @t AND i.client_id = @c
+        GROUP BY ii.product_name ORDER BY spent DESC LIMIT 10`,
+    )
+    .all({ t: tenantId, c: clientId });
+
+  return {
+    client,
+    stats: {
+      invoices: stats.invoices || 0,
+      lifetime: stats.lifetime || 0,
+      outstanding: stats.outstanding || 0,
+      avgTicket: stats.invoices ? (stats.lifetime || 0) / stats.invoices : 0,
+      last_at: stats.last_at || null,
+      first_at: stats.first_at || null,
+    },
+    invoices,
+    topItems,
+  };
+}
+
 module.exports = {
   list,
   getById,
@@ -351,4 +404,5 @@ module.exports = {
   searchProducts,
   dashboardStats,
   salesReport,
+  clientProfile,
 };
