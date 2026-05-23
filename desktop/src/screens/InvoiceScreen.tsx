@@ -50,7 +50,23 @@ export function InvoiceScreen() {
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [company, setCompany] = useState<{ name?: string; phone?: string; address?: string; logo_url?: string | null; vat_number?: string; footer?: string }>({});
+  const [loyalty, setLoyalty] = useState<{ points: number; tier: string; value: number } | null>(null);
   const lastSavedRef = useRef<any>(null);
+
+  // When a customer is picked, fetch their loyalty balance.
+  useEffect(() => {
+    if (!tenantId || !client?.id) { setLoyalty(null); return; }
+    (async () => {
+      try {
+        const [acc, cfg] = await Promise.all([
+          unwrap(api().loyalty.account({ tenantId, clientId: client.id })),
+          unwrap(api().loyalty.config({ tenantId })),
+        ]);
+        if (acc) setLoyalty({ points: acc.points, tier: acc.tier, value: acc.points * (cfg?.redeem_value || 0) });
+        else setLoyalty(null);
+      } catch { setLoyalty(null); }
+    })();
+  }, [tenantId, client?.id]);
 
   // Load preferred layout for this user
   useEffect(() => {
@@ -309,8 +325,13 @@ export function InvoiceScreen() {
           </button>
         ))}
         {client?.pricing_tier && client.pricing_tier !== "retail" && (
-          <Badge variant="success" className="mr-auto">
+          <Badge variant="success" className={loyalty ? "" : "mr-auto"}>
             تسعيرة {client.pricing_tier === "wholesale" ? "جملة" : "VIP"}
+          </Badge>
+        )}
+        {loyalty && loyalty.points > 0 && (
+          <Badge variant="warning" className="mr-auto gap-1" title={`قيمة تقريبية ${loyalty.value.toFixed(2)} ج.م`}>
+            ⭐ {loyalty.points} نقطة ({loyalty.value.toFixed(0)} ج.م)
           </Badge>
         )}
       </Card>
